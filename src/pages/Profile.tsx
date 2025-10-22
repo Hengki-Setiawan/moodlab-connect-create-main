@@ -353,12 +353,30 @@ const Profile = () => {
                             className="mt-4 w-full"
                             onClick={async () => {
                               try {
+                                // Confirm cancellation
+                                if (!confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')) {
+                                  return;
+                                }
+
+                                // Get current user
+                                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                                if (userError || !user) {
+                                  toast.error('Silakan login terlebih dahulu');
+                                  navigate('/auth');
+                                  return;
+                                }
+
+                                // Update order status with user validation
                                 const { error } = await supabase
                                   .from('orders')
                                   .update({ status: 'cancelled' })
-                                  .eq('id', order.id);
+                                  .eq('id', order.id)
+                                  .eq('user_id', user.id); // Ensure user can only cancel their own orders
                                 
-                                if (error) throw error;
+                                if (error) {
+                                  console.error('Database error:', error);
+                                  throw new Error(error.message || 'Gagal mengupdate status pesanan');
+                                }
                                 
                                 // Update local state
                                 setOrders(orders.map(o => 
@@ -368,7 +386,8 @@ const Profile = () => {
                                 toast.success('Pesanan berhasil dibatalkan');
                               } catch (error) {
                                 console.error('Error cancelling order:', error);
-                                toast.error('Gagal membatalkan pesanan');
+                                const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan yang tidak diketahui';
+                                toast.error(`Gagal membatalkan pesanan: ${errorMessage}`);
                               }
                             }}
                           >
