@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Sparkles, Target, TrendingUp, Users } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const Home = () => {
   return (
@@ -249,42 +250,7 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-bold mb-4 gradient-text">Moodlab</h3>
-              <p className="text-sm text-muted-foreground">
-                Agensi pemasaran digital untuk Gen Z
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Layanan</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/layanan" className="text-muted-foreground hover:text-foreground">Konsultasi</Link></li>
-                <li><Link to="/layanan" className="text-muted-foreground hover:text-foreground">Kerjasama Agensi</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Produk</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/produk" className="text-muted-foreground hover:text-foreground">Template</Link></li>
-                <li><Link to="/produk" className="text-muted-foreground hover:text-foreground">E-book</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Perusahaan</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/about" className="text-muted-foreground hover:text-foreground">About</Link></li>
-                <li><Link to="/kontak" className="text-muted-foreground hover:text-foreground">Kontak</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="text-center text-sm text-muted-foreground pt-8 border-t border-border">
-            <p>&copy; 2024 Moodlab. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

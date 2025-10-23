@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from "@/components/Footer";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -149,7 +150,8 @@ const Cart = () => {
             </div>
           )}
         </div>
-      </section>
+       </section>
+       <Footer />
     </div>
   );
 };

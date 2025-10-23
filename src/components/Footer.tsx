@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logo from "@/assets/logo.png";
 
 export function Footer() {
   return (
@@ -7,7 +8,10 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">MoodLab</h3>
+            <div className="flex items-center mb-4">
+              <img src={logo} alt="MoodLab Logo" className="h-10 mr-3" />
+              <h3 className="text-xl font-bold">MoodLab</h3>
+            </div>
             <p className="text-gray-400">
               Solusi digital terbaik untuk kebutuhan bisnis dan kreatif Anda.
             </p>

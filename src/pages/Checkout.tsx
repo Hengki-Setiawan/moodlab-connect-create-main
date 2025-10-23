@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -246,7 +247,8 @@ const Checkout = () => {
             </div>
           </div>
         </div>
-      </section>
+       </section>
+       <Footer />
     </div>
   );
 };
