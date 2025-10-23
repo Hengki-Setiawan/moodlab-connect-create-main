@@ -48,10 +48,14 @@ export function Footer() {
           </div>
           <div>
             <h3 className="text-xl font-bold mb-4">Kontak</h3>
-            <p className="text-gray-400 mb-2">Email: info@moodlab.id</p>
-            <p className="text-gray-400 mb-2">Telepon: +62 812 3456 7890</p>
+            <p className="text-gray-400 mb-2">
+              Email: <a href="mailto:moodlab.idn@gmail.com" className="hover:text-white transition">moodlab.idn@gmail.com</a>
+            </p>
+            <p className="text-gray-400 mb-2">
+              Telepon: <a href="https://wa.me/6281341277339" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">081341277339</a>
+            </p>
             <p className="text-gray-400">
-              Alamat: Jl. Kreatif No. 123, Jakarta, Indonesia
+              Alamat: <a href="https://maps.google.com/?q=Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222</a>
             </p>
           </div>
         </div>

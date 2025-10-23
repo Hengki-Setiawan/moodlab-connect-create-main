@@ -141,7 +141,9 @@ const Kontak = () => {
                     <div>
                       <h3 className="font-semibold mb-1">Email</h3>
                       <a 
-                        href="mailto:moodlab.idn@gmail.com"
+                        href="https://mail.google.com/mail/?view=cm&fs=1&to=moodlab.idn@gmail.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
                         moodlab.idn@gmail.com
@@ -193,6 +195,27 @@ const Kontak = () => {
                 </CardContent>
               </Card>
 
+              <Card className="border-2 hover:border-primary transition-colors">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <MapPin className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Alamat</h3>
+                      <a 
+                        href="https://maps.google.com/?q=Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               <Card className="border-2 gradient-primary animate-gradient text-primary-foreground">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
