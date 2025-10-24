@@ -11,6 +11,8 @@ import { BarChart, Bar, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { supabaseAdmin } from "@/integrations/supabase/admin";
+import UsersManagement from "@/components/admin/UsersManagement";
+import ServicesManagement from "@/components/admin/ServicesManagement";
 
 interface User {
   id: string;
@@ -573,14 +575,16 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={tab} onValueChange={(v) => { setTab(v); navigate(`/admin-dashboard?tab=${v}`, { replace: true }); }} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-6 mb-8">
-            <TabsTrigger value="products">Produk</TabsTrigger>
-            <TabsTrigger value="orders">Pesanan</TabsTrigger>
-            <TabsTrigger value="consultations">Konsultasi</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="pages">Pages</TabsTrigger>
-            <TabsTrigger value="storage">Storage</TabsTrigger>
-          </TabsList>
+          <TabsList className="grid grid-cols-8 w-full">
+              <TabsTrigger value="products">Produk</TabsTrigger>
+              <TabsTrigger value="orders">Pesanan</TabsTrigger>
+              <TabsTrigger value="consultations">Konsultasi</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="pages">Pages</TabsTrigger>
+              <TabsTrigger value="storage">Storage</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="services">Services</TabsTrigger>
+            </TabsList>
 
           {/* Storage */}
           <TabsContent value="storage">
@@ -1029,6 +1033,14 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UsersManagement />
+          </TabsContent>
+
+          <TabsContent value="services">
+            <ServicesManagement />
           </TabsContent>
         </Tabs>
       </main>

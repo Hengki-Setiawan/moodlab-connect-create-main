@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Trash2, Home, Settings, LogOut, ShoppingCart, Users, BarChart, FileText, HardDrive } from "lucide-react";
+import { PlusCircle, Trash2, Home, Settings, LogOut, ShoppingCart, Users, BarChart, FileText, HardDrive, Briefcase } from "lucide-react";
 
 const AdminNavbar = () => {
   const location = useLocation();
@@ -82,6 +82,17 @@ const AdminNavbar = () => {
               </Link>
             </li>
             <li>
+              <Link to="/admin-dashboard?tab=users">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "users" ? "bg-white/20" : ""}`}
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Akun Pengunjung
+                </Button>
+              </Link>
+            </li>
+            <li>
               <Link to="/admin-dashboard?tab=consultations">
                 <Button 
                   variant="ghost" 
@@ -111,6 +122,17 @@ const AdminNavbar = () => {
                 >
                   <FileText className="mr-2 h-5 w-5" />
                   Kelola Konten
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin-dashboard?tab=services">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "services" ? "bg-white/20" : ""}`}
+                >
+                  <Briefcase className="mr-2 h-5 w-5" />
+                  Kelola Layanan
                 </Button>
               </Link>
             </li>
