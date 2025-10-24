@@ -143,7 +143,7 @@ const Profile = () => {
         )
       `)
       .eq("orders.user_id", userId)
-      .eq("orders.status", "berhasil") // Hanya ambil pesanan yang sudah selesai/dibayar
+      .in("orders.status", ["paid", "completed"]) // Menggunakan status yang benar
       .order("orders.created_at", { ascending: false });
 
     console.log('Query result:', { data, error });
