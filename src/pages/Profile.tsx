@@ -119,12 +119,17 @@ const Profile = () => {
   };
 
   const fetchPurchasedProducts = async (userId: string) => {
+    // Ambil produk yang sudah dibeli dan pembayarannya berhasil
     const { data, error } = await supabase
-      .from("user_product_access")
+      .from("order_items")
       .select(`
         id,
-        accessed_at,
-        product:products (
+        order:orders!inner(
+          id,
+          status,
+          created_at
+        ),
+        product:products!inner(
           id,
           name,
           description,
@@ -132,15 +137,23 @@ const Profile = () => {
           image_url
         )
       `)
-      .eq("user_id", userId)
-      .order("accessed_at", { ascending: false });
+      .eq("orders.user_id", userId)
+      .eq("orders.status", "completed") // Hanya ambil pesanan yang sudah selesai/dibayar
+      .order("order.created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching purchased products:", error);
       return;
     }
 
-    setPurchasedProducts((data || []) as PurchasedProduct[]);
+    // Transform data untuk menyesuaikan dengan struktur PurchasedProduct
+    const transformedData = (data || []).map(item => ({
+      id: item.id,
+      accessed_at: item.order.created_at,
+      product: item.product
+    }));
+
+    setPurchasedProducts(transformedData as PurchasedProduct[]);
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -168,10 +181,48 @@ const Profile = () => {
 
   const handleDownload = async (fileUrl: string, productName: string) => {
     try {
-      // TODO: Implement actual file download from Supabase Storage
-      toast.info("Fitur download akan segera tersedia");
+      if (!fileUrl) {
+        toast.error("URL file tidak tersedia");
+        return;
+      }
+      
+      // Buat nama file yang bersih untuk download
+      const fileName = productName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
+      
+      // Tampilkan loading toast
+      toast.loading("Sedang mengunduh file...");
+      
+      // Lakukan fetch ke URL file dari Supabase Storage
+      const response = await fetch(fileUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Konversi response ke blob
+      const blob = await response.blob();
+      
+      // Buat URL objek untuk blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Buat elemen anchor untuk download
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      
+      // Klik anchor untuk memulai download
+      a.click();
+      
+      // Bersihkan
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+      
+      toast.dismiss();
+      toast.success("File berhasil diunduh");
     } catch (error) {
       console.error("Error downloading file:", error);
+      toast.dismiss();
       toast.error("Gagal mengunduh file");
     }
   };

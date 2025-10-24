@@ -58,7 +58,7 @@ const Auth = () => {
     }
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `https://www.moodlab.web.id/`;
       
       const { error } = await supabase.auth.signUp({
         email,
