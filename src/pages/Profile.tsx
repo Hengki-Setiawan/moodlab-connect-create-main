@@ -126,12 +126,15 @@ const Profile = () => {
       .from("order_items")
       .select(`
         id,
-        order:orders!inner(
+        order_id,
+        product_id,
+        orders!inner(
           id,
           status,
-          created_at
+          created_at,
+          user_id
         ),
-        product:products!inner(
+        products!inner(
           id,
           name,
           description,
@@ -141,7 +144,7 @@ const Profile = () => {
       `)
       .eq("orders.user_id", userId)
       .eq("orders.status", "berhasil") // Hanya ambil pesanan yang sudah selesai/dibayar
-      .order("order.created_at", { ascending: false });
+      .order("orders.created_at", { ascending: false });
 
     console.log('Query result:', { data, error });
 
@@ -153,8 +156,14 @@ const Profile = () => {
     // Transform data untuk menyesuaikan dengan struktur PurchasedProduct
     const transformedData = (data || []).map(item => ({
       id: item.id,
-      accessed_at: item.order.created_at,
-      product: item.product
+      accessed_at: item.orders.created_at,
+      product: {
+        id: item.products.id,
+        name: item.products.name,
+        description: item.products.description,
+        file_url: item.products.file_url,
+        image_url: item.products.image_url
+      }
     }));
 
     console.log('Transformed purchased products:', transformedData);
