@@ -474,15 +474,15 @@ const AdminDashboard = () => {
     }).format(price);
   };
 
-+  const formatCurrencySafe = (value: any) => {
-+    const num = Number(value);
-+    if (!isFinite(num)) return "Rp0";
-+    return new Intl.NumberFormat("id-ID", {
-+      style: "currency",
-+      currency: "IDR",
-+      minimumFractionDigits: 0,
-+    }).format(num);
-+  };
+  const formatCurrencySafe = (value: any) => {
+    const num = Number(value);
+    if (!isFinite(num)) return "Rp0";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
 
   // Filter produk berdasarkan searchTerm
   const displayedProducts = products.filter((p) =>
