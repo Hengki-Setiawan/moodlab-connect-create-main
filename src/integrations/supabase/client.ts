@@ -2,8 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://gowtvvaijekpgozygrzj.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdvd3R2dmFpamVrcGdvenlncnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExMzM3ODIsImV4cCI6MjA3NjcwOTc4Mn0.hgA7ppBnfiXEBDT4VATPpmqCa08rtaBlaT44G3KGexs";
+// Gunakan env variables agar tidak hardcode key di sumber kode
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

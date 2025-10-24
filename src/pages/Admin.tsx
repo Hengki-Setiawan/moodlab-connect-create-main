@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, PlusCircle, UserPlus } from "lucide-react";
+import AdminNavbar from "@/components/AdminNavbar";
+import { getImageUrl } from "@/integrations/supabase/storage";
 
 interface Product {
   id: string;
@@ -45,14 +47,13 @@ const Admin = () => {
         return;
       }
 
-      const { data: roleData, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
+      // Gunakan RPC has_role agar tidak terblokir RLS
+      const { data: hasRole, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
 
-      if (error || !roleData) {
+      if (error || hasRole !== true) {
         toast.error("Anda tidak memiliki akses admin");
         navigate("/");
         return;
@@ -158,6 +159,13 @@ const Admin = () => {
     }).format(price);
   };
 
+  const resolveImageUrl = (url: string | null) => {
+    if (!url) return "/placeholder.svg";
+    const isHttp = /^https?:\/\//.test(url);
+    if (isHttp) return url;
+    return getImageUrl(url) || "/placeholder.svg";
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -186,8 +194,9 @@ const Admin = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
+      <AdminNavbar />
 
-      <section className="pt-32 pb-20 px-4">
+      <section className="pt-32 pb-20 px-4 ml-64">
         <div className="container mx-auto max-w-6xl">
           <h1 className="text-4xl md:text-6xl font-bold mb-12 text-center">
             Dashboard <span className="gradient-text">Admin</span>
@@ -238,7 +247,7 @@ const Admin = () => {
                     {product.image_url ? (
                       <div className="aspect-video w-full">
                         <img
-                          src={product.image_url}
+                          src={resolveImageUrl(product.image_url)}
                           alt={product.name}
                           className="w-full h-full object-cover rounded-t-lg"
                         />

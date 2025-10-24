@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Trash2, Home, Settings, LogOut } from "lucide-react";
+import { PlusCircle, Trash2, Home, Settings, LogOut, ShoppingCart, Users, BarChart, FileText, HardDrive } from "lucide-react";
 
 const AdminNavbar = () => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
+  const currentTab = new URLSearchParams(location.search).get('tab');
 
   useEffect(() => {
     checkAdminStatus();
@@ -21,15 +22,13 @@ const AdminNavbar = () => {
         return;
       }
 
-      // Check if user has admin role
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
+      // Check admin via RPC has_role agar tidak terblokir RLS
+      const { data: hasRole, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
 
-      if (error || !data) {
+      if (error || hasRole !== true) {
         setIsAdmin(false);
         return;
       }
@@ -61,16 +60,61 @@ const AdminNavbar = () => {
         <nav className="flex-1">
           <ul className="space-y-2">
             <li>
-              <Link to="/">
+              <Link to="/admin-dashboard">
                 <Button 
                   variant="ghost" 
-                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/" ? "bg-white/20" : ""}`}
+                  className={`w-full justify-start text-white hover:bg.white/10 ${location.pathname === "/admin-dashboard" ? "bg-white/20" : ""}`}
                 >
                   <Home className="mr-2 h-5 w-5" />
-                  Halaman Utama
+                  Dashboard Admin
                 </Button>
               </Link>
             </li>
+            <li>
+              <Link to="/admin-dashboard?tab=orders">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "orders" ? "bg-white/20" : ""}`}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Pesanan
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin-dashboard?tab=consultations">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text.white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "consultations" ? "bg-white/20" : ""}`}
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Konsultasi
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin-dashboard?tab=analytics">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "analytics" ? "bg-white/20" : ""}`}
+                >
+                  <BarChart className="mr-2 h-5 w-5" />
+                  Analytics
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin-dashboard?tab=pages">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "pages" ? "bg-white/20" : ""}`}
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  Kelola Konten
+                </Button>
+              </Link>
+            </li>
+            {/* Item lama tetap dipertahankan */}
             <li>
               <Link to="/add-product">
                 <Button 
@@ -101,6 +145,17 @@ const AdminNavbar = () => {
                 >
                   <Settings className="mr-2 h-5 w-5" />
                   Kelola Admin
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin-dashboard?tab=storage">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/admin-dashboard" && currentTab === "storage" ? "bg-white/20" : ""}`}
+                >
+                  <HardDrive className="mr-2 h-5 w-5" />
+                  Storage
                 </Button>
               </Link>
             </li>

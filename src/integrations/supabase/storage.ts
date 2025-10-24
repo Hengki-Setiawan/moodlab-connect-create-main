@@ -4,11 +4,11 @@ import { supabaseAdmin } from './admin';
 /**
  * Upload gambar ke Supabase Storage
  * @param {File} file - File gambar yang akan diupload
- * @param {string} bucket - Nama bucket di Supabase Storage (default: 'products')
- * @param {string} folder - Nama folder di dalam bucket (default: '')
+ * @param {string} bucket - Nama bucket di Supabase Storage (default: 'Gambar')
+ * @param {string} folder - Nama folder di dalam bucket (default: 'products')
  * @returns {Promise<{path: string, url: string} | null>} - Path dan URL gambar jika berhasil, null jika gagal
  */
-export const uploadImage = async (file, bucket = 'products', folder = '') => {
+export const uploadImage = async (file, bucket = 'Gambar', folder = 'products') => {
   try {
     if (!file) return null;
     
@@ -17,7 +17,7 @@ export const uploadImage = async (file, bucket = 'products', folder = '') => {
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
     
-    // Upload file ke Supabase Storage
+    // Upload file ke Supabase Storage (gunakan service role untuk kemudahan)
     const { data, error } = await supabaseAdmin
       .storage
       .from(bucket)
@@ -47,10 +47,10 @@ export const uploadImage = async (file, bucket = 'products', folder = '') => {
 /**
  * Menghapus gambar dari Supabase Storage
  * @param {string} path - Path gambar di Supabase Storage
- * @param {string} bucket - Nama bucket di Supabase Storage (default: 'products')
+ * @param {string} bucket - Nama bucket di Supabase Storage (default: 'Gambar')
  * @returns {Promise<boolean>} - true jika berhasil, false jika gagal
  */
-export const deleteImage = async (path, bucket = 'products') => {
+export const deleteImage = async (path, bucket = 'Gambar') => {
   try {
     if (!path) return false;
     
@@ -71,10 +71,10 @@ export const deleteImage = async (path, bucket = 'products') => {
 /**
  * Mendapatkan URL publik dari path gambar di Supabase Storage
  * @param {string} path - Path gambar di Supabase Storage
- * @param {string} bucket - Nama bucket di Supabase Storage (default: 'products')
+ * @param {string} bucket - Nama bucket di Supabase Storage (default: 'Gambar')
  * @returns {string | null} - URL publik gambar jika berhasil, null jika gagal
  */
-export const getImageUrl = (path, bucket = 'products') => {
+export const getImageUrl = (path, bucket = 'Gambar') => {
   try {
     if (!path) return null;
     

@@ -26,25 +26,22 @@ export function AdminProtected({ children }: AdminProtectedProps) {
           return;
         }
         
-        // Periksa apakah pengguna adalah admin
-        const { data: userRoles, error } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
+        // Periksa admin via RPC has_role (bypass RLS)
+        const { data: hasRole, error } = await supabase.rpc('has_role', {
+          _user_id: session.user.id,
+          _role: 'admin',
+        });
         
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking admin status:', error);
+        if (error) {
+          console.error('Error checking admin status via RPC:', error);
           setIsAdmin(false);
+          navigate('/', { replace: true });
           return;
         }
         
-        // Jika pengguna memiliki peran admin, izinkan akses
-        if (userRoles) {
+        if (hasRole === true) {
           setIsAdmin(true);
         } else {
-          // Jika bukan admin, redirect ke halaman utama
           setIsAdmin(false);
           navigate('/', { replace: true });
         }

@@ -4,8 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowRight, Sparkles, Target, TrendingUp, Users } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Home = () => {
+  const [content, setContent] = useState<{ hero_badge?: string; hero_title?: string; hero_subtitle?: string }>({});
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      const { data } = await supabase.from('page_contents').select('content').eq('page','home').maybeSingle();
+      setContent(data?.content || {});
+    };
+    fetchContent();
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -16,16 +28,22 @@ const Home = () => {
           <div className="text-center space-y-6">
             <div className="inline-flex items-center space-x-2 bg-muted px-4 py-2 rounded-full mb-4">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Agensi Pemasaran Digital untuk Gen Z</span>
+              <span className="text-sm font-medium">{content.hero_badge || "Agensi Pemasaran Digital untuk Gen Z"}</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight">
-              Ubah <span className="gradient-text">Popularitas</span>
-              <br />
-              Menjadi <span className="gradient-text">Loyalitas</span>
-            </h1>
+            {content.hero_title ? (
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight">{content.hero_title}</h1>
+            ) : (
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+                Ubah <span className="gradient-text">Popularitas</span>
+                <br />
+                Menjadi <span className="gradient-text">Loyalitas</span>
+              </h1>
+            )}
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Kami memahami "mood" audiens Gen Z Anda. Moodlab hadir untuk membangun konten yang relevan, 
-              autentik, dan mengubah engagement menjadi loyalitas pelanggan jangka panjang.
+              {content.hero_subtitle || (
+                <>Kami memahami "mood" audiens Gen Z Anda. Moodlab hadir untuk membangun konten yang relevan, 
+                autentik, dan mengubah engagement menjadi loyalitas pelanggan jangka panjang.</>
+              )}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button size="lg" asChild className="gradient-primary animate-gradient">

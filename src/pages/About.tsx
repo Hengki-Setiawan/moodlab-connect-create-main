@@ -8,8 +8,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const About = () => {
+  const [content, setContent] = useState<{ hero_title?: string; hero_subtitle?: string }>({});
   const faqs = [
     {
       question: "Berapa lama waktu yang dibutuhkan untuk pembuatan website?",
@@ -33,6 +36,14 @@ const About = () => {
     },
   ];
 
+  useEffect(() => {
+    const fetchContent = async () => {
+      const { data } = await supabase.from('page_contents').select('content').eq('page','about').maybeSingle();
+      setContent(data?.content || {});
+    };
+    fetchContent();
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -41,11 +52,15 @@ const About = () => {
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-4 mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold">
-              Tentang <span className="gradient-text">Moodlab</span>
-            </h1>
+            {content.hero_title ? (
+              <h1 className="text-4xl md:text-6xl font-bold">{content.hero_title}</h1>
+            ) : (
+              <h1 className="text-4xl md:text-6xl font-bold">
+                Tentang <span className="gradient-text">Moodlab</span>
+              </h1>
+            )}
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Membangun merek yang relevan dan autentik di era digital
+              {content.hero_subtitle || "Membangun merek yang relevan dan autentik di era digital"}
             </p>
           </div>
 

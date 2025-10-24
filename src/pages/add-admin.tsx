@@ -1,68 +1,117 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabaseAdmin } from '@/integrations/supabase/admin';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { AdminProtected } from '@/components/AdminProtected';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminNavbar from '@/components/AdminNavbar';
+import Navbar from '@/components/Navbar';
+
+interface RoleRow {
+  id: string;
+  user_id: string;
+  role: 'admin' | 'moderator' | 'user';
+  email: string | null;
+  created_at?: string;
+}
 
 export default function AddAdmin() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'admin' | 'moderator'>('moderator');
+  const [roles, setRoles] = useState<RoleRow[]>([]);
 
-  const addSpecificUserAsAdmin = async () => {
-    const userId = '8d0c210f-b07e-4b36-83cc-df3fdb2de6f7';
-    const email = 'hengkishadow@gmail.com';
-    
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('user_roles')
+        .select('id, user_id, role, email, created_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setRoles((data || []) as RoleRow[]);
+    } catch (err) {
+      console.error('Gagal memuat daftar peran:', err);
+    }
+  };
+
+  const addUserRole = async () => {
+    if (!email.trim()) {
+      toast.error('Masukkan email akun terlebih dahulu');
+      return;
+    }
     try {
       setLoading(true);
-      
-      // Periksa apakah user sudah ada di tabel user_roles sebagai admin
+
+      // Cari user_id berdasarkan email di tabel profiles
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email.trim())
+        .single();
+
+      if (userError || !userData) {
+        console.error('Tidak menemukan user dengan email tersebut:', userError);
+        toast.error('User dengan email ini belum terdaftar. Pastikan akun sudah login minimal sekali.');
+        return;
+      }
+
+      // Cek apakah role yang sama sudah ada
       const { data: existingRole, error: checkError } = await supabaseAdmin
         .from('user_roles')
         .select('*')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
+        .eq('user_id', userData.id)
+        .eq('role', role)
         .single();
-      
+
       if (checkError && checkError.code !== 'PGRST116') {
         console.error('Error checking existing role:', checkError);
-        toast.error('Gagal memeriksa status admin');
-        setResult({ success: false, error: checkError });
+        toast.error('Gagal memeriksa role pengguna');
         return;
       }
-      
-      // Jika user sudah menjadi admin, tidak perlu menambahkan lagi
+
       if (existingRole) {
-        toast.info('User sudah memiliki peran admin');
-        setResult({ success: true, message: 'User sudah memiliki peran admin' });
+        toast.info('Pengguna sudah memiliki peran tersebut');
         return;
       }
-      
-      // Tambahkan user ke tabel user_roles sebagai admin
-      const { data, error } = await supabaseAdmin
+
+      // Tambahkan role baru
+      const { error: insertError } = await supabaseAdmin
         .from('user_roles')
-        .insert([
-          { user_id: userId, role: 'admin', email: email }
-        ])
-        .select();
-      
-      if (error) {
-        console.error('Error adding admin role:', error);
-        toast.error('Gagal menambahkan peran admin');
-        setResult({ success: false, error });
+        .insert([{ user_id: userData.id, role, email: userData.email }]);
+
+      if (insertError) {
+        console.error('Error menambahkan role:', insertError);
+        toast.error('Gagal menambahkan role');
         return;
       }
-      
-      toast.success('Berhasil menambahkan user sebagai admin');
-      setResult({ success: true, data });
-      
+
+      toast.success(`Berhasil menambahkan ${role} untuk ${email}`);
+      setEmail('');
+      await fetchRoles();
     } catch (error) {
       console.error('Unexpected error:', error);
-      toast.error('Terjadi kesalahan tidak terduga');
-      setResult({ success: false, error });
+      toast.error('Terjadi kesalahan');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const removeModerator = async (row: RoleRow) => {
+    if (row.role !== 'moderator') return;
+    try {
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('id', row.id);
+      if (error) throw error;
+      toast.success(`Moderator dengan email ${row.email ?? ''} berhasil dikeluarkan`);
+      await fetchRoles();
+    } catch (err) {
+      console.error('Gagal menghapus moderator:', err);
+      toast.error('Gagal menghapus moderator');
     }
   };
 
@@ -72,35 +121,74 @@ export default function AddAdmin() {
       <AdminProtected>
         <AdminNavbar />
         <div className="container mx-auto p-6 ml-64 pt-32">
-          <h1 className="text-2xl font-bold mb-6">Tambah Admin</h1>
-      
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <p className="mb-4">
-          Klik tombol di bawah untuk menambahkan akun berikut sebagai admin:
-        </p>
-        
-        <div className="mb-4 p-3 bg-gray-100 rounded">
-          <p><strong>Email:</strong> hengkishadow@gmail.com</p>
-          <p><strong>User ID:</strong> 8d0c210f-b07e-4b36-83cc-df3fdb2de6f7</p>
-        </div>
-        
-        <Button 
-          onClick={addSpecificUserAsAdmin}
-          disabled={loading}
-          className="w-full md:w-auto"
-        >
-          {loading ? 'Menambahkan...' : 'Tambahkan Sebagai Admin'}
-        </Button>
-        
-        {result && (
-          <div className={`mt-4 p-3 rounded ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            <p><strong>{result.success ? 'Berhasil!' : 'Gagal!'}</strong></p>
-            <pre className="text-xs mt-2 overflow-auto">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+          <h1 className="text-2xl font-bold mb-6">Kelola Admin & Moderator</h1>
+
+          <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 className="text-lg font-semibold mb-4">Tambah Role</h2>
+            <div className="grid md:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium mb-2">Email akun</label>
+                <input
+                  type="email"
+                  className="border rounded px-3 py-2 w-full"
+                  placeholder="user@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Peran</label>
+                <select
+                  className="border rounded px-3 py-2 w-full"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as 'admin' | 'moderator')}
+                >
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <Button onClick={addUserRole} disabled={loading} className="w-full">{loading ? 'Memproses...' : 'Tambahkan Role'}</Button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">Catatan: akun target harus sudah pernah login agar ada record di tabel profiles.</p>
           </div>
-        )}
-      </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Daftar Admin & Moderator</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peran</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {roles.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">Belum ada admin/moderator</td>
+                    </tr>
+                  ) : (
+                    roles.map((r) => (
+                      <tr key={r.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{r.email ?? '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{r.role}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          {r.role === 'moderator' ? (
+                            <Button variant="outline" size="sm" onClick={() => removeModerator(r)}>Keluarkan</Button>
+                          ) : (
+                            <span className="text-xs text-gray-400">Admin tidak dapat dihapus di halaman ini</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </AdminProtected>
     </div>

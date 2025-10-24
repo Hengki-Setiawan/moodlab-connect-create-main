@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { AdminProtected } from '@/components/AdminProtected';
 import AdminNavbar from '@/components/AdminNavbar';
+import Navbar from '@/components/Navbar';
 
 export default function DeleteProducts() {
   const [products, setProducts] = useState([]);
@@ -122,6 +123,15 @@ export default function DeleteProducts() {
         ) : (
           products.map((product) => (
             <div key={product.id} className="border rounded-lg p-4 bg-white shadow-sm">
+              {product.image_url ? (
+                <div className="w-full h-40 mb-3 overflow-hidden rounded">
+                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-full h-40 mb-3 overflow-hidden rounded bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+                  Tidak ada gambar
+                </div>
+              )}
               <h3 className="font-semibold text-lg">{product.name}</h3>
               <p className="text-green-600 font-medium">
                 Rp {typeof product.price === 'number' ? product.price.toLocaleString() : product.price}

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/utils";
+import { getImageUrl } from "@/integrations/supabase/storage";
 
 interface Product {
   id: string;
@@ -112,7 +113,7 @@ const ProductDetail = () => {
             <div>
               {product.image_url ? (
                 <img
-                  src={product.image_url}
+                  src={resolveImageUrl(product.image_url)}
                   alt={product.name}
                   className="w-full h-auto rounded-lg object-cover"
                 />
@@ -177,5 +178,12 @@ const ProductDetail = () => {
     </div>
   );
 };
+
+function resolveImageUrl(url: string | null) {
+  if (!url) return "/placeholder.svg";
+  const isHttp = /^https?:\/\//.test(url);
+  if (isHttp) return url;
+  return getImageUrl(url) || "/placeholder.svg";
+}
 
 export default ProductDetail;

@@ -9,20 +9,37 @@ import logo from "@/assets/logo.png";
 const Navbar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { cartCount } = useCart();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      checkAdmin(session?.user ?? null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      checkAdmin(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAdmin = async (u: any) => {
+    try {
+      if (!u) { setIsAdmin(false); return; }
+      // Gunakan RPC has_role agar tidak terblokir RLS
+      const { data: hasRole, error } = await supabase.rpc('has_role', {
+        _user_id: u.id,
+        _role: 'admin',
+      });
+      setIsAdmin(!error && hasRole === true);
+    } catch {
+      setIsAdmin(false);
+    }
+  };
 
   return (
     <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-50 border-b">
@@ -52,7 +69,7 @@ const Navbar = () => {
             </Button>
             {user ? (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => navigate("/profile")}>
+                <Button variant="ghost" size="icon" onClick={() => navigate(isAdmin ? "/admin-dashboard" : "/profile")}>
                   <User className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" onClick={() => {
@@ -85,7 +102,7 @@ const Navbar = () => {
               </Button>
               {user ? (
                 <>
-                  <Button className="w-full" onClick={() => { navigate("/profile"); setIsOpen(false); }}>Profile</Button>
+                  <Button className="w-full" onClick={() => { navigate(isAdmin ? "/admin-dashboard" : "/profile"); setIsOpen(false); }}>Profile</Button>
                   <Button variant="outline" className="w-full" onClick={() => { 
                     supabase.auth.signOut();
                     navigate("/");

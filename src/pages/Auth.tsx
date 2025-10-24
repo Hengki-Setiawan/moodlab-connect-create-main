@@ -29,8 +29,24 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Setelah login, cek apakah user adalah admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Gunakan RPC has_role agar bypass RLS
+        const { data: hasRole, error: roleError } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin',
+        });
+
+        if (!roleError && hasRole === true) {
+          toast.success("Berhasil masuk sebagai admin!");
+          navigate("/admin-dashboard");
+          return;
+        }
+      }
+
       toast.success("Berhasil masuk!");
-      navigate("/");
+      navigate("/profile");
     } catch (error: any) {
       console.error("Login error:", error);
       toast.error("Gagal masuk", {

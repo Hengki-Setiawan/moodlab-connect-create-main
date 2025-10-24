@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailPopup from "@/components/ProductDetailPopup";
+import { getImageUrl } from "@/integrations/supabase/storage";
 
 interface Product {
   id: string;
@@ -67,6 +68,13 @@ const Produk = () => {
 
   const templates = products.filter(product => product.type === "template");
   const ebooks = products.filter(product => product.type === "ebook");
+
+  const resolveImageUrl = (url: string | null) => {
+    if (!url) return "/placeholder.svg";
+    const isHttp = /^https?:\/\//.test(url);
+    if (isHttp) return url;
+    return getImageUrl(url) || "/placeholder.svg";
+  };
 
   return (
     <div className="min-h-screen">
@@ -132,7 +140,7 @@ const Produk = () => {
                     <Card key={product.id} className="group hover:shadow-lg transition-all">
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img
-                          src={product.image_url || "/placeholder.svg"}
+                          src={resolveImageUrl(product.image_url)}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -193,7 +201,7 @@ const Produk = () => {
                     <Card key={product.id} className="group hover:shadow-lg transition-all">
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img
-                          src={product.image_url || "/placeholder.svg"}
+                          src={resolveImageUrl(product.image_url)}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
