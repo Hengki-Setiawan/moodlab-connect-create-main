@@ -89,6 +89,7 @@ const AdminDashboard = () => {
   const [storageFiles, setStorageFiles] = useState<{ name: string; id?: string; updated_at?: string; created_at?: string }[]>([]);
   const [loadingStorage, setLoadingStorage] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [currentPath, setCurrentPath] = useState<string>('');
 
   const loadBuckets = async () => {
     try {
@@ -106,7 +107,8 @@ const AdminDashboard = () => {
   const loadFiles = async (bucket: string) => {
     try {
       setLoadingStorage(true);
-      const { data, error } = await supabaseAdmin.storage.from(bucket).list('', { limit: 100, offset: 0, sortBy: { column: 'name', order: 'asc' } });
+      const prefix = currentPath ? currentPath : '';
+      const { data, error } = await supabaseAdmin.storage.from(bucket).list(prefix, { limit: 100, offset: 0, sortBy: { column: 'name', order: 'asc' } });
       if (error) throw error;
       setStorageFiles(data || []);
     } catch (err) {
@@ -123,10 +125,21 @@ const AdminDashboard = () => {
   }, [tab]);
 
   useEffect(() => {
+    if (tab === 'storage') {
+      if (selectedBucket) {
+        const lower = selectedBucket.toLowerCase();
+        setCurrentPath(lower === 'gambar' ? 'products' : 'uploads');
+      } else {
+        setCurrentPath('');
+      }
+    }
+  }, [tab, selectedBucket]);
+
+  useEffect(() => {
     if (tab === 'storage' && selectedBucket) {
       loadFiles(selectedBucket);
     }
-  }, [tab, selectedBucket]);
+  }, [tab, selectedBucket, currentPath]);
 
   const handleBucketSelect = (name: string) => {
     setSelectedBucket(name);
@@ -139,7 +152,8 @@ const AdminDashboard = () => {
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        const path = `uploads/${Date.now()}_${file.name}`;
+        const pathPrefix = currentPath ? `${currentPath}/` : '';
+        const path = `${pathPrefix}${Date.now()}_${file.name}`;
         const { error } = await supabaseAdmin.storage.from(selectedBucket).upload(path, file, { upsert: false });
         if (error) throw error;
       }
@@ -152,9 +166,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const removeFile = async (path: string) => {
+  const removeFile = async (name: string) => {
     if (!selectedBucket) return;
     try {
+      const path = `${currentPath ? currentPath + '/' : ''}${name}`;
       const { error } = await supabaseAdmin.storage.from(selectedBucket).remove([path]);
       if (error) throw error;
       await loadFiles(selectedBucket);
@@ -163,9 +178,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const getSignedUrl = async (path: string) => {
+  const getSignedUrl = async (name: string) => {
     if (!selectedBucket) return;
     try {
+      const path = `${currentPath ? currentPath + '/' : ''}${name}`;
       const { data, error } = await supabaseAdmin.storage.from(selectedBucket).createSignedUrl(path, 300);
       if (error) throw error;
       if (data?.signedUrl) {
@@ -603,6 +619,16 @@ const AdminDashboard = () => {
                         <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
                       ))
                     )}
+                  </SelectContent>
+                </Select>
+                <Select value={currentPath} onValueChange={setCurrentPath}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Pilih folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">/ (root)</SelectItem>
+                    <SelectItem value="uploads">uploads</SelectItem>
+                    <SelectItem value="products">products</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="outline" disabled={!selectedBucket || loadingStorage} onClick={() => selectedBucket && loadFiles(selectedBucket)}>Refresh</Button>
