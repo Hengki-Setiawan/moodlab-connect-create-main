@@ -119,54 +119,61 @@ const Profile = () => {
   };
 
   const fetchPurchasedProducts = async (userId: string) => {
-    console.log('Fetching purchased products for user:', userId);
-    
-    // Ambil produk yang sudah dibeli dan pembayarannya berhasil
+    console.log('Fetching purchased products via orders for user:', userId);
+
     const { data, error } = await supabase
-      .from("order_items")
+      .from("orders")
       .select(`
         id,
-        order_id,
-        product_id,
-        orders!inner(
+        status,
+        created_at,
+        order_items (
           id,
-          status,
-          created_at,
-          user_id
-        ),
-        products!inner(
-          id,
-          name,
-          description,
-          file_url,
-          image_url
+          quantity,
+          product:products (
+            id,
+            name,
+            description,
+            file_url,
+            image_url
+          )
         )
       `)
-      .eq("orders.user_id", userId)
-      .in("orders.status", ["paid", "completed"]) // Menggunakan status yang benar
-      .order("orders.created_at", { ascending: false });
+      .eq("user_id", userId)
+      .in("status", ["paid", "completed"]) // hanya order yang berhasil dibayar
+      .order("created_at", { ascending: false });
 
-    console.log('Query result:', { data, error });
+    console.log('Orders for purchased products:', { data, error });
 
     if (error) {
-      console.error("Error fetching purchased products:", error);
+      console.error("Error fetching purchased products from orders:", error);
       return;
     }
 
-    // Transform data untuk menyesuaikan dengan struktur PurchasedProduct
-    const transformedData = (data || []).map(item => ({
-      id: item.id,
-      accessed_at: item.orders.created_at,
-      product: {
-        id: item.products.id,
-        name: item.products.name,
-        description: item.products.description,
-        file_url: item.products.file_url,
-        image_url: item.products.image_url
-      }
-    }));
+    const items = ((data || []) as any[]).flatMap((order: any) =>
+      (order.order_items || []).map((oi: any) => ({
+        id: oi.id,
+        accessed_at: order.created_at,
+        product: {
+          id: oi.product?.id ?? "",
+          name: oi.product?.name ?? "",
+          description: oi.product?.description ?? "",
+          file_url: oi.product?.file_url ?? null,
+          image_url: oi.product?.image_url ?? null
+        }
+      }))
+    );
 
-    console.log('Transformed purchased products:', transformedData);
+    // Hilangkan duplikasi berdasarkan product.id
+    const uniqueByProduct = new Map<string, any>();
+    for (const item of items) {
+      if (item.product.id) {
+        uniqueByProduct.set(item.product.id, item);
+      }
+    }
+    const transformedData = Array.from(uniqueByProduct.values());
+
+    console.log('Transformed purchased products (via orders):', transformedData);
     setPurchasedProducts(transformedData as PurchasedProduct[]);
   };
 
