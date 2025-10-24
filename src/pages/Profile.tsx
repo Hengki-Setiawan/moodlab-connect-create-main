@@ -138,7 +138,7 @@ const Profile = () => {
         )
       `)
       .eq("orders.user_id", userId)
-      .eq("orders.status", "completed") // Hanya ambil pesanan yang sudah selesai/dibayar
+      .eq("orders.status", "berhasil") // Hanya ambil pesanan yang sudah selesai/dibayar
       .order("order.created_at", { ascending: false });
 
     if (error) {
