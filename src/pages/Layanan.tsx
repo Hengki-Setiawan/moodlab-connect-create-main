@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, Globe, Palette, Code } from "lucide-react";
+import { MessageSquare, Globe, Palette, Code, Briefcase, Zap, Megaphone } from "lucide-react";
 import Footer from "@/components/Footer";
 
 interface Service {
@@ -185,6 +185,12 @@ const Layanan = () => {
         return Palette;
       case 'Code':
         return Code;
+      case 'Briefcase':
+        return Briefcase;
+      case 'Zap':
+        return Zap;
+      case 'Megaphone':
+        return Megaphone;
       default:
         return MessageSquare;
     }
