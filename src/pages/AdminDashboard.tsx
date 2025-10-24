@@ -539,17 +539,17 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
+    <div className="min-h-screen bg-gray-50 md:ml-64 ml-0">
       <AdminNavbar />
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-3">
           <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
-            <Button variant="outline" onClick={() => navigate("/")}>
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+            <span className="text-xs md:text-sm text-muted-foreground">{user?.email}</span>
+            <Button size="sm" variant="outline" onClick={() => navigate("/")}>
               Kembali ke Website
             </Button>
-            <Button variant="outline" onClick={() => {
+            <Button size="sm" variant="outline" onClick={() => {
               supabase.auth.signOut();
               navigate("/");
             }}>
@@ -591,7 +591,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={tab} onValueChange={(v) => { setTab(v); navigate(`/admin-dashboard?tab=${v}`, { replace: true }); }} className="w-full">
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 w-full">
               <TabsTrigger value="products">Produk</TabsTrigger>
               <TabsTrigger value="orders">Pesanan</TabsTrigger>
               <TabsTrigger value="consultations">Konsultasi</TabsTrigger>
@@ -613,7 +613,7 @@ const AdminDashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {buckets.length === 0 ? (
-                      <SelectItem value="" disabled>Tidak ada bucket</SelectItem>
+                      <SelectItem value="NONE" disabled>Tidak ada bucket</SelectItem>
                     ) : (
                       buckets.map((b) => (
                         <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
@@ -621,12 +621,12 @@ const AdminDashboard = () => {
                     )}
                   </SelectContent>
                 </Select>
-                <Select value={currentPath} onValueChange={setCurrentPath}>
+                <Select value={currentPath || 'ROOT'} onValueChange={(v) => setCurrentPath(v === 'ROOT' ? '' : v)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Pilih folder" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">/ (root)</SelectItem>
+                    <SelectItem value="ROOT">/ (root)</SelectItem>
                     <SelectItem value="uploads">uploads</SelectItem>
                     <SelectItem value="products">products</SelectItem>
                   </SelectContent>

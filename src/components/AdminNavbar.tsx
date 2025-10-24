@@ -50,7 +50,7 @@ const AdminNavbar = () => {
   }
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-6 shadow-xl z-50">
+    <div className="hidden md:block fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-6 shadow-xl z-50">
       <div className="flex flex-col h-full">
         <div className="mb-10">
           <h2 className="text-2xl font-bold mb-1">Admin Dashboard</h2>
