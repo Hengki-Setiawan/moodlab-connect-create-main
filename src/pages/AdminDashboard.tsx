@@ -474,6 +474,16 @@ const AdminDashboard = () => {
     }).format(price);
   };
 
++  const formatCurrencySafe = (value: any) => {
++    const num = Number(value);
++    if (!isFinite(num)) return "Rp0";
++    return new Intl.NumberFormat("id-ID", {
++      style: "currency",
++      currency: "IDR",
++      minimumFractionDigits: 0,
++    }).format(num);
++  };
+
   // Filter produk berdasarkan searchTerm
   const displayedProducts = products.filter((p) =>
     p.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -591,21 +601,20 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={tab} onValueChange={(v) => { setTab(v); navigate(`/admin-dashboard?tab=${v}`, { replace: true }); }} className="w-full">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 w-full">
-              <TabsTrigger value="products">Produk</TabsTrigger>
-              <TabsTrigger value="orders">Pesanan</TabsTrigger>
-              <TabsTrigger value="consultations">Konsultasi</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="pages">Pages</TabsTrigger>
-              <TabsTrigger value="storage">Storage</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsList className="flex flex-nowrap overflow-x-auto gap-2 w-full mb-4">
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="products">Produk</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="orders">Pesanan</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="consultations">Konsultasi</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="pages">Pages</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="storage">Storage</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="users">Users</TabsTrigger>
+              <TabsTrigger className="shrink-0 text-sm md:text-base px-3 py-2" value="services">Services</TabsTrigger>
             </TabsList>
-
           {/* Storage */}
           <TabsContent value="storage">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Kelola Storage</h2>
+              <h2 className="text-lg md:text-xl font-bold">Kelola Storage</h2>
               <div className="flex gap-2 items-center">
                 <Select value={selectedBucket} onValueChange={handleBucketSelect}>
                   <SelectTrigger className="w-[220px]">
@@ -678,7 +687,7 @@ const AdminDashboard = () => {
 
           <TabsContent value="products">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Daftar Produk</h2>
+              <h2 className="text-lg md:text-xl font-bold">Daftar Produk</h2>
               <div className="flex gap-2">
                 <Button onClick={() => navigate("/add-product")}>
                   <Plus className="mr-2 h-4 w-4" /> Tambah Produk
@@ -705,18 +714,18 @@ const AdminDashboard = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Dibuat</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Dibuat</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {displayedProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colSpan={6} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
                           Tidak ada produk
                         </td>
                       </tr>
@@ -725,19 +734,19 @@ const AdminDashboard = () => {
                         <tr key={product.id}>
                           {editingProductId === product.id ? (
                             <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
                                 <input type="number" className="border rounded px-2 py-1 w-full" value={editingData.price} onChange={(e) => setEditingData({ ...editingData, price: Number(e.target.value) })} />
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.type} onChange={(e) => setEditingData({ ...editingData, type: e.target.value })} />
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.category} onChange={(e) => setEditingData({ ...editingData, category: e.target.value })} />
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(product.created_at)}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{formatDate(product.created_at)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={cancelEditProduct}>Batal</Button>
                                 <Button size="sm" onClick={saveEditProduct}>Simpan</Button>
@@ -768,31 +777,31 @@ const AdminDashboard = () => {
 
           <TabsContent value="orders">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Daftar Pesanan</h2>
+              <h2 className="text-lg md:text-xl font-bold">Daftar Pesanan</h2>
             </div>
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">Tidak ada pesanan</td>
+                        <td colSpan={4} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">Tidak ada pesanan</td>
                       </tr>
                     ) : (
                       orders.map((order) => (
                         <tr key={order.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.id}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(order.total)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{order.status}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(order.created_at)}</td>
+                          <td className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">{order.id}</td>
+                          <td className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">{formatCurrencySafe(order.total)}</td>
+                          <td className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">{order.status}</td>
+                          <td className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">{formatDate(order.created_at)}</td>
                         </tr>
                       ))
                     )}
@@ -804,35 +813,34 @@ const AdminDashboard = () => {
 
           <TabsContent value="consultations">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Permintaan Konsultasi</h2>
+              <h2 className="text-lg md:text-xl font-bold">Permintaan Konsultasi</h2>
             </div>
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layanan</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layanan</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {consultations.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Tidak ada konsultasi</td>
+                        <td colSpan={6} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">Tidak ada konsultasi</td>
                       </tr>
                     ) : (
                       consultations.map((c) => (
                         <tr key={c.id}>
                           {editingConsultId === c.id ? (
                             <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{c.name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{c.email}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{c.service_type}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">{c.name}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{c.email}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">{c.service_type}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">
                                 <Select value={editingConsultStatus} onValueChange={(v) => setEditingConsultStatus(v)}>
                                   <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Pilih status" />
@@ -845,20 +853,20 @@ const AdminDashboard = () => {
                                   </SelectContent>
                                 </Select>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(c.created_at)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{formatDate(c.created_at)}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={cancelEditConsultation}>Batal</Button>
                                 <Button size="sm" onClick={saveEditConsultation}>Simpan</Button>
                               </td>
                             </>
                           ) : (
                             <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{c.name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{c.email}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{c.service_type}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{c.status}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(c.created_at)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">{c.name}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{c.email}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">{c.service_type}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">{c.status}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{formatDate(c.created_at)}</td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <Button variant="ghost" size="sm" onClick={() => startEditConsultation(c)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -876,7 +884,7 @@ const AdminDashboard = () => {
 
           <TabsContent value="analytics">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Analytics</h2>
+              <h2 className="text-lg md:text-xl font-bold">Analytics</h2>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={exportAnalyticsCSV} disabled={loadingAnalytics}>
                   <FileText className="mr-2 h-4 w-4" /> Export CSV
