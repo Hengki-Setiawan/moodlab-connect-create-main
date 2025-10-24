@@ -119,6 +119,8 @@ const Profile = () => {
   };
 
   const fetchPurchasedProducts = async (userId: string) => {
+    console.log('Fetching purchased products for user:', userId);
+    
     // Ambil produk yang sudah dibeli dan pembayarannya berhasil
     const { data, error } = await supabase
       .from("order_items")
@@ -141,6 +143,8 @@ const Profile = () => {
       .eq("orders.status", "berhasil") // Hanya ambil pesanan yang sudah selesai/dibayar
       .order("order.created_at", { ascending: false });
 
+    console.log('Query result:', { data, error });
+
     if (error) {
       console.error("Error fetching purchased products:", error);
       return;
@@ -153,6 +157,7 @@ const Profile = () => {
       product: item.product
     }));
 
+    console.log('Transformed purchased products:', transformedData);
     setPurchasedProducts(transformedData as PurchasedProduct[]);
   };
 
