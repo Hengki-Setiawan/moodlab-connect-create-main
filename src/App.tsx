@@ -27,6 +27,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProtected } from "@/components/AdminProtected";
 import { StaffProtected } from "@/components/StaffProtected";
+import ChatWidget from "./components/ChatWidget";
 
 // Komponen kecil untuk mencatat page view setiap kali rute berubah
 const RouteChangeTracker = () => {
@@ -83,8 +84,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
--            <Route path="/admin-dashboard" element={<AdminProtected><AdminDashboard /></AdminProtected>} />
-+            <Route path="/admin-dashboard" element={<StaffProtected><AdminDashboard /></StaffProtected>} />
+            <Route path="/admin-dashboard" element={<StaffProtected><AdminDashboard /></StaffProtected>} />
             <Route path="/test-admin" element={<TestAdmin />} />
             <Route path="/delete-products" element={<DeleteProducts />} />
             <Route path="/add-product" element={<AddProductPage />} />
@@ -94,6 +94,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <ChatWidget />
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
