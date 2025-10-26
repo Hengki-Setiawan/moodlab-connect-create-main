@@ -651,7 +651,7 @@ const AdminDashboard = () => {
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
@@ -735,23 +735,23 @@ const AdminDashboard = () => {
                         <tr key={product.id}>
                           {editingProductId === product.id ? (
                             <>
-                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
+                              <td className="px-3 py-2 md:px-6 md:py-4 align-top text-sm font-medium">
                                 <div className="space-y-2">
                                   <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
-                                  <textarea className="border rounded px-2 py-1 w-full" rows={2} placeholder="Deskripsi" value={editingData.description} onChange={(e) => setEditingData({ ...editingData, description: e.target.value })} />
+                                  <textarea className="border rounded px-2 py-1 w-full resize-y" rows={3} placeholder="Deskripsi" value={editingData.description} onChange={(e) => setEditingData({ ...editingData, description: e.target.value })} />
                                 </div>
                               </td>
-                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm">
                                 <input type="number" className="border rounded px-2 py-1 w-full" value={editingData.price} onChange={(e) => setEditingData({ ...editingData, price: Number(e.target.value) })} />
                               </td>
-                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm capitalize">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.type} onChange={(e) => setEditingData({ ...editingData, type: e.target.value })} />
                               </td>
-                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm capitalize">
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm capitalize">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.category} onChange={(e) => setEditingData({ ...editingData, category: e.target.value })} />
                               </td>
-                              <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">{formatDate(product.created_at)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end">
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm">{formatDate(product.created_at)}</td>
+                              <td className="px-6 py-4 text-right text-sm font-medium flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={cancelEditProduct}>Batal</Button>
                                 <Button size="sm" onClick={saveEditProduct}>Simpan</Button>
                               </td>
