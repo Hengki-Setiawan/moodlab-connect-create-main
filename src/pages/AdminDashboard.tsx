@@ -23,6 +23,7 @@ interface User {
 interface Product {
   id: string;
   name: string;
+  description?: string;
   price: number;
   type: string;
   category: string;
@@ -68,7 +69,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   // Edit produk
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<{ name: string; price: number; type: string; category: string }>({ name: '', price: 0, type: '', category: '' });
+  const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string }>({ name: '', description: '', price: 0, type: '', category: '' });
   // Edit status konsultasi
   const [editingConsultId, setEditingConsultId] = useState<string | null>(null);
   const [editingConsultStatus, setEditingConsultStatus] = useState<string>('pending');
@@ -491,7 +492,7 @@ const AdminDashboard = () => {
 
   const startEditProduct = (p: Product) => {
     setEditingProductId(p.id);
-    setEditingData({ name: p.name ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '' });
+    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '' });
   };
 
   const cancelEditProduct = () => {
@@ -735,7 +736,10 @@ const AdminDashboard = () => {
                           {editingProductId === product.id ? (
                             <>
                               <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
-                                <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
+                                <div className="space-y-2">
+                                  <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
+                                  <textarea className="border rounded px-2 py-1 w-full" rows={2} placeholder="Deskripsi" value={editingData.description} onChange={(e) => setEditingData({ ...editingData, description: e.target.value })} />
+                                </div>
                               </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
                                 <input type="number" className="border rounded px-2 py-1 w-full" value={editingData.price} onChange={(e) => setEditingData({ ...editingData, price: Number(e.target.value) })} />
