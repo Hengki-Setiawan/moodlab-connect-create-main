@@ -227,20 +227,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-primary hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Paket Bundling</CardTitle>
-                <CardDescription>
-                  Dapatkan diskon khusus untuk pembelian paket lengkap
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-primary font-semibold mb-4">Hemat hingga 30%</p>
-                <Button asChild className="w-full gradient-primary">
-                  <Link to="/produk">Lihat Paket</Link>
-                </Button>
-              </CardContent>
-            </Card>
+{/* Kartu 'Paket Bundling' dihapus sesuai permintaan */}
           </div>
         </div>
       </section>
