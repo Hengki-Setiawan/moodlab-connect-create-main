@@ -10,6 +10,7 @@ import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/integrations/supabase/storage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   id: string;
@@ -67,11 +68,11 @@ const ProductDetail = () => {
       <div className="min-h-screen">
         <Navbar />
         <div className="container mx-auto max-w-6xl pt-32 pb-20 px-4">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-1/4"></div>
-            <div className="h-64 bg-muted rounded"></div>
-            <div className="h-8 bg-muted rounded w-1/2"></div>
-            <div className="h-32 bg-muted rounded"></div>
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-32" />
           </div>
         </div>
         <Footer />

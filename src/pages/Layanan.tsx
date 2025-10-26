@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Globe, Palette, Code, Briefcase, Zap, Megaphone } from "lucide-react";
 import Footer from "@/components/Footer";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Service {
   id: string;
@@ -241,11 +242,11 @@ const Layanan = () => {
             </div>
             <div className="grid md:grid-cols-2 gap-8">
               {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="animate-pulse">
+                <Card key={i}>
                   <CardHeader>
-                    <div className="h-12 w-12 bg-muted rounded mb-4"></div>
-                    <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-2"></div>
+                    <Skeleton className="h-12 w-12 rounded mb-4" />
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full mt-2" />
                   </CardHeader>
                 </Card>
               ))}
@@ -356,6 +357,17 @@ const Layanan = () => {
                 })}
               </div>
             </div>
+          )}
+
+          {/* Empty state jika tidak ada layanan */}
+          {consultationServices.length === 0 && agencyServices.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <p className="text-xl mb-2">Belum ada layanan aktif</p>
+                <p className="text-muted-foreground mb-6">Silakan kembali lagi nanti atau hubungi kami.</p>
+                <Button onClick={() => navigate('/kontak')}>Hubungi Kami</Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       </section>

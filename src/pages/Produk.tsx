@@ -10,6 +10,7 @@ import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailPopup from "@/components/ProductDetailPopup";
 import { getImageUrl } from "@/integrations/supabase/storage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   id: string;
@@ -121,11 +122,11 @@ const Produk = () => {
               {isLoading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Card key={i} className="animate-pulse">
-                      <div className="aspect-video bg-muted rounded-t-lg"></div>
+                    <Card key={i}>
+                      <Skeleton className="aspect-video rounded-t-lg" />
                       <CardHeader>
-                        <div className="h-6 bg-muted rounded w-3/4"></div>
-                        <div className="h-4 bg-muted rounded w-full"></div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full mt-2" />
                       </CardHeader>
                     </Card>
                   ))}
@@ -182,11 +183,11 @@ const Produk = () => {
               {isLoading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Card key={i} className="animate-pulse">
-                      <div className="aspect-video bg-muted rounded-t-lg"></div>
+                    <Card key={i}>
+                      <Skeleton className="aspect-video rounded-t-lg" />
                       <CardHeader>
-                        <div className="h-6 bg-muted rounded w-3/4"></div>
-                        <div className="h-4 bg-muted rounded w-full"></div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full mt-2" />
                       </CardHeader>
                     </Card>
                   ))}
