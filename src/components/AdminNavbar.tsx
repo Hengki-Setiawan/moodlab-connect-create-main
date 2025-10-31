@@ -57,7 +57,7 @@ const AdminNavbar = () => {
           <p className="text-purple-200 text-sm">Moodlab Management</p>
         </div>
 
-        <nav className="flex-1">
+        <nav className="flex-1 min-h-0 overflow-y-auto pr-2">
           <ul className="space-y-2">
             <li>
               <Link to="/admin-dashboard">
