@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Trash2, Home, Settings, LogOut, ShoppingCart, Users, BarChart, FileText, HardDrive, Briefcase } from "lucide-react";
+import { PlusCircle, Trash2, Home, Settings, LogOut, ShoppingCart, Users, BarChart, FileText, HardDrive, Briefcase, User } from "lucide-react";
 
 const AdminNavbar = () => {
   const location = useLocation();
@@ -67,6 +67,17 @@ const AdminNavbar = () => {
                 >
                   <Home className="mr-2 h-5 w-5" />
                   Dashboard Admin
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/profile">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start text-white hover:bg-white/10 ${location.pathname === "/profile" ? "bg-white/20" : ""}`}
+                >
+                  <User className="mr-2 h-5 w-5" />
+                  Profil Saya
                 </Button>
               </Link>
             </li>
