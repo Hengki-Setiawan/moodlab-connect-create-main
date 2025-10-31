@@ -249,7 +249,7 @@ const AdminDashboard = () => {
     setIsLoading(true);
     try {
       // Fetch products
-      const { data: productsData, error: productsError } = await supabase
+      const { data: productsData, error: productsError } = await supabaseAdmin
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
@@ -258,7 +258,7 @@ const AdminDashboard = () => {
       setProducts(productsData || []);
 
       // Fetch orders
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData, error: ordersError } = await supabaseAdmin
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false });
@@ -267,7 +267,7 @@ const AdminDashboard = () => {
       setOrders(ordersData || []);
 
       // Fetch consultations
-      const { data: consultationsData, error: consultationsError } = await supabase
+      const { data: consultationsData, error: consultationsError } = await supabaseAdmin
         .from("consultations")
         .select("*")
         .order("created_at", { ascending: false });
@@ -284,7 +284,7 @@ const AdminDashboard = () => {
   const fetchAnalytics = async () => {
     setLoadingAnalytics(true);
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from("page_views")
         .select("*");
 
@@ -351,6 +351,26 @@ const AdminDashboard = () => {
       setLoadingAnalytics(false);
     }
   };
+
+  // Realtime subscription untuk menyegarkan data saat ada perubahan
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consultations' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_views' }, () => {
+        fetchAnalytics();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const loadPageContents = async () => {
     try {
