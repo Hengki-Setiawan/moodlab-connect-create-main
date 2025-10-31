@@ -40,15 +40,57 @@ const RouteChangeTracker = () => {
         const referrer = document.referrer || null;
         const userAgent = navigator.userAgent || null;
 
-        await supabase
-          .from("page_views")
-          .insert({
+        // Persistent visitor_id di localStorage
+        const VISITOR_KEY = "ml_visitor_id";
+        let visitorId = localStorage.getItem(VISITOR_KEY);
+        if (!visitorId) {
+          visitorId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+          localStorage.setItem(VISITOR_KEY, visitorId);
+        }
+
+        // Session id per sesi browser (sessionStorage)
+        const SESSION_KEY = "ml_session_id";
+        let sessionId = sessionStorage.getItem(SESSION_KEY);
+        if (!sessionId) {
+          sessionId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+          sessionStorage.setItem(SESSION_KEY, sessionId);
+        }
+
+        // Ambil UTM parameters jika ada
+        const params = new URLSearchParams(location.search);
+        const utm_source = params.get("utm_source") || null;
+        const utm_medium = params.get("utm_medium") || null;
+        const utm_campaign = params.get("utm_campaign") || null;
+        const utm_term = params.get("utm_term") || null;
+        const utm_content = params.get("utm_content") || null;
+
+        const payload = {
+          path: `${location.pathname}${location.search}`,
+          user_id: user?.id ?? null,
+          referrer,
+          user_agent: userAgent,
+          viewed_at: new Date().toISOString(),
+          visitor_id: visitorId,
+          session_id: sessionId,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_term,
+          utm_content,
+        } as any;
+
+        // Coba insert dengan kolom tambahan; jika gagal (mis. kolom belum ada), fallback ke payload minimal
+        let { error } = await supabase.from("page_views").insert(payload);
+        if (error) {
+          const minimal = {
             path: `${location.pathname}${location.search}`,
             user_id: user?.id ?? null,
             referrer,
             user_agent: userAgent,
             viewed_at: new Date().toISOString(),
-          });
+          };
+          await supabase.from("page_views").insert(minimal);
+        }
       } catch (error) {
         console.error("Error tracking page view:", error);
       }

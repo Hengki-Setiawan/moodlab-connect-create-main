@@ -59,7 +59,9 @@ const AdminDashboard = () => {
     viewsByDay: { date: string; count: number }[];
     topPages: { path: string; count: number }[];
     topReferrers: { referrer: string; count: number }[];
-  }>({ viewsByDay: [], topPages: [], topReferrers: [] });
+    totalViews: number;
+    uniqueVisitors: number;
+  }>({ viewsByDay: [], topPages: [], topReferrers: [], totalViews: 0, uniqueVisitors: 0 });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   // Tambahan state untuk filter tanggal
   const [dateRange, setDateRange] = useState<'7d' | '30d' | 'all' | 'custom'>('7d');
@@ -318,6 +320,7 @@ const AdminDashboard = () => {
       const byDay = new Map<string, number>();
       const pages = new Map<string, number>();
       const refs = new Map<string, number>();
+      const uniqueSet = new Set<string>();
 
       (data || []).forEach((v: any) => {
         const day = new Date(v.viewed_at).toISOString().slice(0, 10);
@@ -328,6 +331,10 @@ const AdminDashboard = () => {
 
         const r = v.referrer || "direct";
         refs.set(r, (refs.get(r) || 0) + 1);
+
+        // Unique visitor heuristic: prefer visitor_id, then user_id, then UA+referrer
+        const uniqueKey = v.visitor_id || v.user_id || `${v.user_agent || ''}|${r}`;
+        uniqueSet.add(uniqueKey);
       });
 
       const viewsByDay = Array.from(byDay.entries())
@@ -344,7 +351,9 @@ const AdminDashboard = () => {
         .slice(0, 10)
         .map(([referrer, count]) => ({ referrer, count }));
 
-      setAnalytics({ viewsByDay, topPages, topReferrers });
+      const totalViews = (data || []).length;
+      const uniqueVisitors = uniqueSet.size;
+      setAnalytics({ viewsByDay, topPages, topReferrers, totalViews, uniqueVisitors });
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -427,7 +436,7 @@ const AdminDashboard = () => {
   // Export data mentah ke CSV berdasarkan filter saat ini
   const exportAnalyticsCSV = async () => {
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from('page_views')
         .select('*');
 
@@ -454,7 +463,7 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       const rows = (data || []) as any[];
-      const headers = ['id', 'path', 'user_id', 'referrer', 'user_agent', 'viewed_at'];
+      const headers = ['id', 'path', 'user_id', 'visitor_id', 'session_id', 'referrer', 'user_agent', 'viewed_at', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
       const csv = [
         headers.join(','),
         ...rows.map(r => headers.map(h => {
@@ -946,6 +955,28 @@ const AdminDashboard = () => {
               <div className="flex items-end">
                 <Button onClick={fetchAnalytics} disabled={loadingAnalytics} className="w-full">Terapkan</Button>
               </div>
+            </div>
+
+            {/* Ringkasan metrik mirip Vercel: Total Views & Unique Visitors */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Total Views</CardTitle>
+                  <CardDescription>Total kunjungan pada rentang terpilih</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analytics.totalViews}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Unique Visitors</CardTitle>
+                  <CardDescription>Pengunjung unik pada rentang terpilih</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{analytics.uniqueVisitors}</div>
+                </CardContent>
+              </Card>
             </div>
 
             <Card>
