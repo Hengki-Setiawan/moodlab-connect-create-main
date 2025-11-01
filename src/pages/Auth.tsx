@@ -45,17 +45,24 @@ const Auth = () => {
         const { data: resolvedEmail, error: rpcError } = await supabase.rpc('get_auth_email_by_username', {
           _username: identifier,
         });
-        // Jika fungsi RPC belum ada di DB, berikan pesan yang jelas
+        // Jika fungsi RPC belum ada di DB, tampilkan pesan ramah dan hentikan proses tanpa melempar error mentah
         if (rpcError) {
           const msg = typeof rpcError?.message === 'string' ? rpcError.message : '';
-          if (msg.includes('Could not find the function') || msg.includes('schema cache')) {
+          if (msg.includes('Could not find the function') || msg.includes('schema cache') || msg.toLowerCase().includes('not found')) {
             toast.error('Login dengan username belum aktif', {
-              description: 'Fungsi RPC belum tersedia. Jalankan migrasi Supabase lalu coba lagi. Untuk sementara, gunakan email.',
+              description: 'Fungsi RPC belum tersedia di Supabase. Jalankan migrasi terlebih dahulu atau login dengan email.',
             });
+            setIsLoading(false);
+            return;
           }
+          // Error lain tetap ditangani di blok catch umum
           throw rpcError;
         }
-        if (!resolvedEmail) throw new Error("Username tidak ditemukan");
+        if (!resolvedEmail) {
+          toast.error('Username tidak ditemukan', { description: 'Silakan periksa kembali atau gunakan email.' });
+          setIsLoading(false);
+          return;
+        }
         emailToUse = resolvedEmail;
       }
 
