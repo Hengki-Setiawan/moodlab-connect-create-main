@@ -215,6 +215,7 @@ export type Database = {
           id: string
           is_admin: boolean | null
           phone: string | null
+          username: string | null
           updated_at: string | null
         }
         Insert: {
@@ -223,6 +224,7 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           phone?: string | null
+          username?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -231,6 +233,7 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           phone?: string | null
+          username?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -306,6 +309,13 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      ,
+      get_auth_email_by_username: {
+        Args: {
+          _username: string
+        }
+        Returns: string | null
       }
     }
     Enums: {
