@@ -17,6 +17,9 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  // Dialog verifikasi email setelah signup
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [signupEmailState, setSignupEmailState] = useState("");
   // State untuk validasi realtime username saat pendaftaran
   const [signupUsername, setSignupUsername] = useState("");
   const [usernameChecking, setUsernameChecking] = useState(false);
@@ -118,6 +121,7 @@ const Auth = () => {
       if (lowerMsg.includes('invalid login credentials')) friendly = 'Email/username atau password salah';
       else if (lowerMsg.includes('too many requests') || lowerMsg.includes('rate limit')) friendly = 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
       else if (lowerMsg.includes('network') || lowerMsg.includes('connection closed')) friendly = 'Gangguan koneksi. Periksa jaringan/SSL lalu coba lagi.';
+      else if (lowerMsg.includes('email not confirmed') || lowerMsg.includes('not confirmed')) friendly = 'Email belum dikonfirmasi. Silakan cek inbox Anda untuk verifikasi.';
       toast.error("Gagal masuk", { description: friendly });
     } finally {
       setIsLoading(false);
@@ -134,7 +138,11 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
-    const redirectUrl = `https://www.moodlab.web.id/`;
+    // Redirect verifikasi mengikuti domain aktif (env atau origin)
+    const SITE_URL = (typeof import.meta.env.VITE_SITE_URL === 'string' && import.meta.env.VITE_SITE_URL.length > 0)
+      ? import.meta.env.VITE_SITE_URL
+      : window.location.origin;
+    const redirectUrl = `${SITE_URL}/auth`;
 
     if (password !== confirmPassword) {
       toast.error("Password tidak cocok");
@@ -195,8 +203,10 @@ const Auth = () => {
 
       if (error) throw error;
 
+      setSignupEmailState(email);
+      setVerifyOpen(true);
       toast.success("Akun berhasil dibuat!", {
-        description: "Silakan cek email Anda untuk verifikasi",
+        description: "Email harus dikonfirmasi terlebih dahulu sebelum bisa login.",
       });
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -252,6 +262,27 @@ const Auth = () => {
       toast.error("Gagal membuat akun", { description: friendly });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Kirim ulang email verifikasi
+  const handleResendVerification = async () => {
+    try {
+      const SITE_URL = (typeof import.meta.env.VITE_SITE_URL === 'string' && import.meta.env.VITE_SITE_URL.length > 0)
+        ? import.meta.env.VITE_SITE_URL
+        : window.location.origin;
+      const redirectUrl = `${SITE_URL}/auth`;
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: signupEmailState,
+        options: { emailRedirectTo: redirectUrl },
+      } as any);
+      if (error) throw error;
+      toast.success('Email verifikasi dikirim ulang', { description: 'Silakan cek inbox atau folder spam.' });
+    } catch (err: any) {
+      console.error('resend signup email error:', err);
+      const msg = typeof err?.message === 'string' ? err.message : 'Gagal mengirim ulang email';
+      toast.error('Gagal kirim ulang verifikasi', { description: msg });
     }
   };
 
@@ -506,6 +537,26 @@ const Auth = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Dialog Verifikasi Email setelah signup */}
+          <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Verifikasi Email Diperlukan</DialogTitle>
+                <DialogDescription>
+                  Kami telah mengirim link verifikasi ke <b>{signupEmailState}</b>.
+                  Email harus dikonfirmasi terlebih dahulu sebelum Anda bisa login.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Button onClick={handleResendVerification} className="w-full">Kirim Ulang Email Verifikasi</Button>
+                <a href="https://mail.google.com/" target="_blank" rel="noreferrer">
+                  <Button variant="secondary" className="w-full">Buka Email Saya</Button>
+                </a>
+              </div>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </section>
     </div>
