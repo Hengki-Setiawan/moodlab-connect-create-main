@@ -150,6 +150,62 @@ const ProductDetail = () => {
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-xl font-bold mb-2">Apa yang Anda Dapatkan</h3>
+                  <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+                    {product.type === 'template' && (
+                      <>
+                        <li>File siap pakai dan mudah disesuaikan</li>
+                        <li>Desain profesional dan modern</li>
+                        <li>Panduan singkat penggunaan</li>
+                        <li>Pembaruan minor bila diperlukan</li>
+                      </>
+                    )}
+                    {product.type === 'ebook' && (
+                      <>
+                        <li>Konten PDF ringkas dan praktis</li>
+                        <li>Akses selamanya di perangkat Anda</li>
+                        <li>Contoh kasus untuk tiap bab</li>
+                        <li>Tips implementasi yang bisa langsung dipraktikkan</li>
+                      </>
+                    )}
+                    {product.type === 'service' && (
+                      <>
+                        <li>Konsultasi dan eksekusi sesuai kebutuhan</li>
+                        <li>Laporan progres berkala</li>
+                        <li>Support via chat/email selama periode layanan</li>
+                        <li>Strategi disesuaikan dengan industri Anda</li>
+                      </>
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-xl font-bold mb-2">Spesifikasi</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Tipe</span>
+                      <div className="font-medium capitalize">{product.type}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Kategori</span>
+                      <div className="font-medium capitalize">{product.category}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Stok</span>
+                      <div className="font-medium">{product.stock ?? 0}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Format</span>
+                      <div className="font-medium">{product.type === 'ebook' ? 'PDF' : product.type === 'template' ? 'File Template' : 'Layanan'}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {product.type === "service" ? (
                 <Button
                   className="w-full"
@@ -171,6 +227,18 @@ const ProductDetail = () => {
                 </Button>
               )}
             </div>
+          </div>
+
+          <div className="mt-12">
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold mb-2">Jaminan Kepuasan</h3>
+                <p className="text-sm text-muted-foreground">
+                  Kami berkomitmen menghadirkan produk dan layanan berkualitas. Butuh bantuan?
+                  Hubungi kami melalui halaman Kontak. Tim kami siap membantu.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

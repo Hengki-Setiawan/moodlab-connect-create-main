@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -29,6 +29,8 @@ const Produk = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"template" | "ebook">("template");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,6 +76,46 @@ const Produk = () => {
   });
   const ebooks = products.filter(product => product.type === "ebook");
 
+  const matchesSearch = (p: Product) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q) ||
+      (p.category || "").toLowerCase().includes(q) ||
+      (p.type || "").toLowerCase().includes(q)
+    );
+  };
+
+  const matchesCategory = (p: Product) => {
+    if (!activeCategory) return true;
+    const c = (p.category || "").toLowerCase();
+    const t = (p.type || "").toLowerCase();
+    const cat = activeCategory.toLowerCase();
+    // Cocokkan kategori langsung atau tipe khusus redesign
+    return c === cat || t === cat || (cat.includes("redesign") && (/redesign/.test(c) || /redesign/.test(t)));
+  };
+
+  const templateCategories = useMemo(() => {
+    const set = new Set<string>();
+    templates.forEach((p) => {
+      const c = (p.category || '').toLowerCase();
+      if (c) set.add(c);
+      const t = (p.type || '').toLowerCase();
+      if (t.includes('redesign')) set.add('redesigns');
+    });
+    return Array.from(set);
+  }, [templates]);
+
+  const ebookCategories = useMemo(() => {
+    const set = new Set<string>();
+    ebooks.forEach((p) => {
+      const c = (p.category || '').toLowerCase();
+      if (c) set.add(c);
+    });
+    return Array.from(set);
+  }, [ebooks]);
+
   const resolveImageUrl = (url: string | null) => {
     if (!url) return "/placeholder.svg";
     const isHttp = /^https?:\/\//.test(url);
@@ -96,7 +138,23 @@ const Produk = () => {
             </p>
           </div>
 
-          <div className="flex justify-center mb-12">
+          {/* Pencarian */}
+          <div className="max-w-3xl mx-auto mb-6">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Cari produk (nama, deskripsi, kategori)"
+                className="flex-1 border rounded px-4 py-2"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Button onClick={() => {/* filter berbasis client, tidak perlu aksi */}}>
+                Search
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-center mb-6">
             <div className="bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab("template")}
@@ -121,6 +179,31 @@ const Produk = () => {
             </div>
           </div>
 
+          {/* Filter kategori */}
+          <div className="flex flex-wrap gap-2 justify-center mb-12">
+            {(
+              activeTab === 'template' ? templateCategories : ebookCategories
+            ).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                className={`px-3 py-1 rounded-full border text-sm ${
+                  activeCategory === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-background'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+            {((activeTab === 'template' ? templateCategories : ebookCategories).length > 0) && (
+              <button
+                onClick={() => setActiveCategory(null)}
+                className="px-3 py-1 rounded-full border text-sm"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
           {activeTab === "template" && (
             <div>
               {isLoading ? (
@@ -141,7 +224,7 @@ const Produk = () => {
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {templates.map((product) => (
+                  {templates.filter((p) => matchesSearch(p) && matchesCategory(p)).map((product) => (
                     <Card key={product.id} className="group hover:shadow-lg transition-all">
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img
@@ -202,7 +285,7 @@ const Produk = () => {
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {ebooks.map((product) => (
+                  {ebooks.filter((p) => matchesSearch(p) && matchesCategory(p)).map((product) => (
                     <Card key={product.id} className="group hover:shadow-lg transition-all">
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img

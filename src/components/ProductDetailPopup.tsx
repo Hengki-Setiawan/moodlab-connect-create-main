@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { getImageUrl } from '@/integrations/supabase/storage';
 import { formatPrice } from '@/lib/utils';
 
 interface Product {
@@ -37,6 +38,13 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
 
   const isDigitalProduct = product.type === 'service' || product.type === 'ebook' || product.type === 'template';
 
+  const resolveImageUrl = (url: string | null) => {
+    if (!url) return "/placeholder.svg";
+    const isHttp = /^https?:\/\//.test(url);
+    if (isHttp) return url;
+    return getImageUrl(url) || "/placeholder.svg";
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -51,7 +59,7 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
           {product.image_url && (
             <div className="aspect-video w-full overflow-hidden rounded-lg">
               <img
-                src={product.image_url}
+                src={resolveImageUrl(product.image_url)}
                 alt={product.name}
                 className="h-full w-full object-cover"
               />
@@ -72,12 +80,8 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
                  product.type === 'ebook' ? 'E-Book' : 
                  product.type === 'service' ? 'Layanan' : 'Produk'}
               </span>
-              <span className="inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-sm font-medium text-secondary">
-                {product.category === 'design' ? 'Desain' :
-                 product.category === 'education' ? 'Pendidikan' :
-                 product.category === 'business' ? 'Bisnis' :
-                 product.category === 'technology' ? 'Teknologi' :
-                 product.category === 'marketing' ? 'Pemasaran' : 'Lainnya'}
+              <span className="inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-sm font-medium text-secondary capitalize">
+                {product.category || 'lainnya'}
               </span>
             </div>
             
@@ -121,7 +125,7 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
             Tutup
           </Button>
           <Button onClick={() => onAddToCart(product)}>
-            Tambahkan ke Keranjang
+            Tambah ke Keranjang
           </Button>
         </DialogFooter>
       </DialogContent>
