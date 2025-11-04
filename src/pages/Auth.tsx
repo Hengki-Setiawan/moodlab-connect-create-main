@@ -45,30 +45,38 @@ const Auth = () => {
     try {
       let emailToUse = identifier;
 
-      // Jika bukan email, anggap sebagai username dan resolve ke email via RPC
+      // Jika bukan email, anggap sebagai username dan resolve ke email via RPC (dengan timeout)
       if (!identifier.includes("@")) {
-        const { data: resolvedEmail, error: rpcError } = await supabase.rpc('get_auth_email_by_username', {
-          _username: identifier,
-        });
-        // Jika fungsi RPC belum ada di DB, tampilkan pesan ramah dan hentikan proses tanpa melempar error mentah
-        if (rpcError) {
-          const msg = typeof rpcError?.message === 'string' ? rpcError.message : '';
-          if (msg.includes('Could not find the function') || msg.includes('schema cache') || msg.toLowerCase().includes('not found')) {
-            toast.error('Login dengan username belum aktif', {
-              description: 'Fungsi RPC belum tersedia di Supabase. Jalankan migrasi terlebih dahulu atau login dengan email.',
-            });
+        const timeoutMs = 1500;
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+        const rpcPromise = supabase.rpc('get_auth_email_by_username', { _username: identifier });
+
+        const result = await Promise.race([rpcPromise, timeoutPromise]);
+        // Jika timeout, lanjutkan mencoba login dengan input asli sebagai email (fallback)
+        if (result === null) {
+          emailToUse = identifier;
+        } else {
+          const { data: resolvedEmail, error: rpcError } = result as any;
+          // Jika fungsi RPC belum ada di DB, tampilkan pesan ramah dan hentikan proses tanpa melempar error mentah
+          if (rpcError) {
+            const msg = typeof rpcError?.message === 'string' ? rpcError.message : '';
+            if (msg.includes('Could not find the function') || msg.includes('schema cache') || msg.toLowerCase().includes('not found')) {
+              toast.error('Login dengan username belum aktif', {
+                description: 'Fungsi RPC belum tersedia di Supabase. Jalankan migrasi terlebih dahulu atau login dengan email.',
+              });
+              setIsLoading(false);
+              return;
+            }
+            // Error lain tetap ditangani di blok catch umum
+            throw rpcError;
+          }
+          if (!resolvedEmail) {
+            toast.error('Username tidak ditemukan', { description: 'Silakan periksa kembali atau gunakan email.' });
             setIsLoading(false);
             return;
           }
-          // Error lain tetap ditangani di blok catch umum
-          throw rpcError;
+          emailToUse = resolvedEmail;
         }
-        if (!resolvedEmail) {
-          toast.error('Username tidak ditemukan', { description: 'Silakan periksa kembali atau gunakan email.' });
-          setIsLoading(false);
-          return;
-        }
-        emailToUse = resolvedEmail;
       }
 
       const { error } = await supabase.auth.signInWithPassword({
@@ -105,9 +113,11 @@ const Auth = () => {
           description: 'Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di .env. Jika perlu, masukkan API Key baru.',
         });
       }
-      const friendly = message.toLowerCase().includes('invalid login credentials')
-        ? 'Email/username atau password salah'
-        : message;
+      let friendly = message;
+      const lowerMsg = message.toLowerCase();
+      if (lowerMsg.includes('invalid login credentials')) friendly = 'Email/username atau password salah';
+      else if (lowerMsg.includes('too many requests') || lowerMsg.includes('rate limit')) friendly = 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
+      else if (lowerMsg.includes('network') || lowerMsg.includes('connection closed')) friendly = 'Gangguan koneksi. Periksa jaringan/SSL lalu coba lagi.';
       toast.error("Gagal masuk", { description: friendly });
     } finally {
       setIsLoading(false);
@@ -230,6 +240,10 @@ const Auth = () => {
         friendly = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
       } else if (lower.includes('invalid login credentials')) {
         friendly = 'Email/username atau password tidak valid.';
+      } else if (lower.includes('too many requests') || lower.includes('rate limit')) {
+        friendly = 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
+      } else if (lower.includes('signups not allowed') || lower.includes('new user signup disabled')) {
+        friendly = 'Pendaftaran sementara dinonaktifkan. Hubungi admin atau coba nanti.';
       } else if (isApiKeyIssue) {
         friendly = 'Konfigurasi Supabase bermasalah. Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di .env. Jika muncul pesan API key di UI, masukkan API key baru.';
       } else if (isNetworkLike) {

@@ -35,6 +35,15 @@ const RouteChangeTracker = () => {
 
   useEffect(() => {
     const track = async () => {
+      // Guard: nonaktifkan tracking jika flag env tidak diaktifkan atau API key/url tidak tersedia
+      const enableViews = String(import.meta.env.VITE_ENABLE_PAGE_VIEWS ?? 'false') === 'true';
+      const supabaseUrlOk = typeof import.meta.env.VITE_SUPABASE_URL === 'string' && import.meta.env.VITE_SUPABASE_URL.length > 0;
+      const supabaseAnonOk = typeof import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY === 'string' && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.length > 0;
+      if (!enableViews || !supabaseUrlOk || !supabaseAnonOk) {
+        // Skip tanpa error agar tidak mengganggu UX
+        return;
+      }
+
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const referrer = document.referrer || null;
@@ -79,7 +88,7 @@ const RouteChangeTracker = () => {
           utm_content,
         } as any;
 
-        // Coba insert dengan kolom tambahan; jika gagal (mis. kolom belum ada), fallback ke payload minimal
+        // Coba insert dengan kolom tambahan; jika gagal (mis. kolom belum ada/RLS), fallback ke payload minimal
         let { error } = await supabase.from("page_views").insert(payload);
         if (error) {
           const minimal = {
