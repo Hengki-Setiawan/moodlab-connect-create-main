@@ -17,6 +17,11 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  // State untuk validasi realtime username saat pendaftaran
+  const [signupUsername, setSignupUsername] = useState("");
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameMessage, setUsernameMessage] = useState("");
   const navigate = useNavigate();
 
   // Dengarkan event recovery dari Supabase
@@ -100,7 +105,10 @@ const Auth = () => {
           description: 'Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di .env. Jika perlu, masukkan API Key baru.',
         });
       }
-      toast.error("Gagal masuk", { description: message });
+      const friendly = message.toLowerCase().includes('invalid login credentials')
+        ? 'Email/username atau password salah'
+        : message;
+      toast.error("Gagal masuk", { description: friendly });
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +124,7 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
+    const redirectUrl = `https://www.moodlab.web.id/`;
 
     if (password !== confirmPassword) {
       toast.error("Password tidak cocok");
@@ -124,7 +133,6 @@ const Auth = () => {
     }
 
     try {
-      const redirectUrl = `https://www.moodlab.web.id/`;
       // Validasi format username dasar (opsional, hanya ketika user mengisi)
       if (username) {
         const valid = /^[a-zA-Z0-9_\.\-]{3,24}$/.test(username);
@@ -146,8 +154,15 @@ const Auth = () => {
             setIsLoading(false);
             return;
           }
-          // Error lain tetap dilanjutkan ke catch umum
-          throw rpcErr;
+          // Jika error jaringan, lanjutkan proses signup (akan ada fallback saat bentrok)
+          if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
+            toast.warning('Tidak bisa memeriksa username', {
+              description: 'Masalah koneksi ke Supabase. Melanjutkan pendaftaran tanpa cek username.',
+            });
+          } else {
+            // Error lain tetap dilanjutkan ke catch umum
+            throw rpcErr;
+          }
         }
         if (existingEmail) {
           toast.error('Username sudah digunakan', { description: 'Pilih username lain yang unik.' });
@@ -176,18 +191,93 @@ const Auth = () => {
     } catch (error: any) {
       console.error("Signup error:", error);
       const rawMsg = typeof error?.message === 'string' ? error.message : '';
+      // Fallback lebih agresif: jika ada error dan user mengisi username,
+      // coba daftar ulang tanpa username KECUALI jika penyebabnya adalah email sudah terdaftar
+      // atau masalah jaringan/API key yang tidak akan tertolong oleh penghapusan username.
+      const lower = rawMsg.toLowerCase();
+      const isNetworkLike = lower.includes('failed to fetch') || lower.includes('connection closed') || lower.includes('net::err_connection_closed');
+      const isEmailTaken = lower.includes('user already registered');
+      const isApiKeyIssue = lower.includes('no api key') || lower.includes('api key') || lower.includes('invalid key') || lower.includes('not allowed');
+
+      if (signupUsername && !isNetworkLike && !isEmailTaken && !isApiKeyIssue) {
+        try {
+          const { error: retryErr } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                full_name: fullName,
+                // Hapus username agar trigger menyimpan NULL (tidak bentrok unik)
+              },
+              emailRedirectTo: redirectUrl,
+            },
+          });
+          if (!retryErr) {
+            toast.success("Akun berhasil dibuat tanpa username", {
+              description: "Anda bisa mengatur username unik di halaman Profil nanti.",
+            });
+            return;
+          }
+        } catch (retry) {
+          console.error('Retry signup without username error:', retry);
+        }
+      }
       let friendly = rawMsg || 'Terjadi kesalahan saat mendaftar';
       // Berikan pesan yang lebih informatif untuk error umum Supabase
-      if (rawMsg.toLowerCase().includes('database error saving new user')) {
+      if (lower.includes('database error saving new user')) {
         friendly = 'Gagal menyimpan user baru di database. Kemungkinan username sudah dipakai atau email sudah terdaftar.';
-      } else if (rawMsg.toLowerCase().includes('user already registered')) {
+      } else if (lower.includes('user already registered')) {
         friendly = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
-      } else if (rawMsg.toLowerCase().includes('api key') || rawMsg.toLowerCase().includes('invalid key') || rawMsg.toLowerCase().includes('not allowed')) {
-        friendly = 'Konfigurasi Supabase bermasalah. Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di .env.';
+      } else if (lower.includes('invalid login credentials')) {
+        friendly = 'Email/username atau password tidak valid.';
+      } else if (isApiKeyIssue) {
+        friendly = 'Konfigurasi Supabase bermasalah. Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di .env. Jika muncul pesan API key di UI, masukkan API key baru.';
+      } else if (isNetworkLike) {
+        friendly = 'Gangguan koneksi ke Supabase (ERR_CONNECTION_CLOSED). Coba ulangi, periksa jaringan/SSL, atau nonaktifkan ekstensi pemblokir.';
       }
       toast.error("Gagal membuat akun", { description: friendly });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Cek ketersediaan username saat user selesai mengetik (onBlur)
+  const checkUsernameAvailability = async (uname: string) => {
+    const val = uname.trim();
+    if (!val) { setUsernameAvailable(null); setUsernameMessage(''); return; }
+    const valid = /^[a-zA-Z0-9_\.\-]{3,24}$/.test(val);
+    if (!valid) {
+      setUsernameAvailable(false);
+      setUsernameMessage('Gunakan 3–24 karakter: huruf, angka, titik, _ atau -');
+      return;
+    }
+    try {
+      setUsernameChecking(true);
+      setUsernameMessage('Memeriksa ketersediaan...');
+      const { data, error } = await supabase.rpc('get_auth_email_by_username', { _username: val });
+      if (error) {
+        const msg = typeof error?.message === 'string' ? error.message : '';
+        if (msg.includes('Could not find the function') || msg.includes('schema cache') || msg.toLowerCase().includes('not found')) {
+          setUsernameAvailable(null);
+          setUsernameMessage('Fitur username belum aktif di database');
+        } else {
+          setUsernameAvailable(null);
+          setUsernameMessage('Gagal cek username, coba lagi');
+        }
+      } else {
+        if (data) {
+          setUsernameAvailable(false);
+          setUsernameMessage('Username sudah digunakan');
+        } else {
+          setUsernameAvailable(true);
+          setUsernameMessage('Username tersedia');
+        }
+      }
+    } catch {
+      setUsernameAvailable(null);
+      setUsernameMessage('Gagal cek username, periksa koneksi');
+    } finally {
+      setUsernameChecking(false);
     }
   };
 
@@ -301,14 +391,21 @@ const Auth = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="signup-username">Username</Label>
+                      <Label htmlFor="signup-username">Username (opsional)</Label>
                       <Input
                         id="signup-username"
                         name="username"
-                        required
                         placeholder="moodlab_user"
                         className="mt-1.5"
+                        value={signupUsername}
+                        onChange={(e) => setSignupUsername(e.target.value)}
+                        onBlur={() => checkUsernameAvailability(signupUsername)}
                       />
+                      {usernameMessage && (
+                        <p className={`mt-1 text-sm ${usernameAvailable === false ? 'text-red-600' : usernameAvailable === true ? 'text-green-600' : 'text-gray-500'}`}>
+                          {usernameChecking ? 'Memeriksa ketersediaan...' : usernameMessage}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="signup-email">Email</Label>
