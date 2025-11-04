@@ -39,6 +39,31 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Deteksi hasil redirect setelah klik email verifikasi Supabase
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('type');
+      const errorCode = params.get('error_code');
+      // token_hash biasanya ada saat redirect dari verifikasi
+      const tokenHash = params.get('token_hash');
+
+      if (type === 'signup' && tokenHash && !errorCode) {
+        toast.success('Verifikasi email berhasil', {
+          description: 'Silakan login dengan email dan password Anda.',
+        });
+        // Bersihkan query string agar tidak memicu ulang
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (errorCode) {
+        const errDesc = params.get('error_description') || 'Terjadi kesalahan saat verifikasi.';
+        toast.error('Verifikasi gagal', { description: errDesc });
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (e) {
+      console.error('Parse verification params error:', e);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -116,7 +141,7 @@ const Auth = () => {
       // Deteksi kemungkinan kesalahan API key Supabase
       if (message.toLowerCase().includes('api key') || message.toLowerCase().includes('invalid key') || message.toLowerCase().includes('not allowed')) {
         toast.error('Konfigurasi Supabase bermasalah', {
-          description: 'Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di .env. Jika perlu, masukkan API Key baru.',
+          description: 'Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di .env. Jika perlu, masukkan API Key baru.',
         });
       }
       let friendly = message;
@@ -443,6 +468,19 @@ const Auth = () => {
                         </Button>
                       </div>
                     </div>
+                    {unconfirmedEmail && (
+                      <div className="mt-3 p-3 rounded-md border bg-yellow-50">
+                        <p className="text-sm text-yellow-800">
+                          Email <b>{unconfirmedEmail}</b> belum dikonfirmasi. Kirim ulang verifikasi lalu cek inbox.
+                        </p>
+                        <div className="mt-2 flex gap-2">
+                          <Button type="button" onClick={handleResendVerificationLogin} className="flex-1">Kirim Ulang Verifikasi</Button>
+                          <a href="https://mail.google.com/" target="_blank" rel="noreferrer" className="flex-1">
+                            <Button type="button" variant="secondary" className="w-full">Buka Email</Button>
+                          </a>
+                        </div>
+                      </div>
+                    )}
                     <Button
                       type="submit"
                       disabled={isLoading}
@@ -451,19 +489,6 @@ const Auth = () => {
                     >
                       {isLoading ? "Memproses..." : "Masuk"}
                     </Button>
-                    {unconfirmedEmail && (
-                      <div className="mt-4 p-4 rounded-lg border bg-yellow-50">
-                        <p className="text-sm text-yellow-800">
-                          Email <b>{unconfirmedEmail}</b> belum dikonfirmasi. Kirim ulang verifikasi lalu cek inbox.
-                        </p>
-                        <div className="mt-3 flex gap-2">
-                          <Button type="button" onClick={handleResendVerificationLogin} className="flex-1">Kirim Ulang Verifikasi</Button>
-                          <a href="https://mail.google.com/" target="_blank" rel="noreferrer" className="flex-1">
-                            <Button type="button" variant="secondary" className="w-full">Buka Email</Button>
-                          </a>
-                        </div>
-                      </div>
-                    )}
                   </form>
                 </TabsContent>
 
