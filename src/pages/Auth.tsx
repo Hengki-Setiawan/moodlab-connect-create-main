@@ -125,6 +125,36 @@ const Auth = () => {
 
     try {
       const redirectUrl = `https://www.moodlab.web.id/`;
+      // Validasi format username dasar (opsional, hanya ketika user mengisi)
+      if (username) {
+        const valid = /^[a-zA-Z0-9_\.\-]{3,24}$/.test(username);
+        if (!valid) {
+          toast.error("Format username tidak valid", { description: "Gunakan 3–24 karakter: huruf, angka, titik, garis bawah, atau minus." });
+          setIsLoading(false);
+          return;
+        }
+
+        // Cek ketersediaan username via RPC (bypass RLS)
+        const { data: existingEmail, error: rpcErr } = await supabase.rpc('get_auth_email_by_username', { _username: username });
+        if (rpcErr) {
+          const msg = typeof rpcErr?.message === 'string' ? rpcErr.message : '';
+          // Jika fungsi belum tersedia, beri tahu user untuk lanjut tanpa username atau aktifkan migrasi
+          if (msg.includes('Could not find the function') || msg.includes('schema cache') || msg.toLowerCase().includes('not found')) {
+            toast.error('Fitur username belum aktif', {
+              description: 'Silakan jalankan migrasi RPC atau daftar tanpa username (opsional).',
+            });
+            setIsLoading(false);
+            return;
+          }
+          // Error lain tetap dilanjutkan ke catch umum
+          throw rpcErr;
+        }
+        if (existingEmail) {
+          toast.error('Username sudah digunakan', { description: 'Pilih username lain yang unik.' });
+          setIsLoading(false);
+          return;
+        }
+      }
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -145,9 +175,17 @@ const Auth = () => {
       });
     } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error("Gagal membuat akun", {
-        description: error.message,
-      });
+      const rawMsg = typeof error?.message === 'string' ? error.message : '';
+      let friendly = rawMsg || 'Terjadi kesalahan saat mendaftar';
+      // Berikan pesan yang lebih informatif untuk error umum Supabase
+      if (rawMsg.toLowerCase().includes('database error saving new user')) {
+        friendly = 'Gagal menyimpan user baru di database. Kemungkinan username sudah dipakai atau email sudah terdaftar.';
+      } else if (rawMsg.toLowerCase().includes('user already registered')) {
+        friendly = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
+      } else if (rawMsg.toLowerCase().includes('api key') || rawMsg.toLowerCase().includes('invalid key') || rawMsg.toLowerCase().includes('not allowed')) {
+        friendly = 'Konfigurasi Supabase bermasalah. Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di .env.';
+      }
+      toast.error("Gagal membuat akun", { description: friendly });
     } finally {
       setIsLoading(false);
     }

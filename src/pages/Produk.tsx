@@ -39,7 +39,7 @@ const Produk = () => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("id,name,description,price,type,category,image_url,created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -67,7 +67,11 @@ const Produk = () => {
     await addToCart(product.id);
   };
 
-  const templates = products.filter(product => product.type === "template");
+  const templates = products.filter(product => {
+    const type = (product.type || '').toLowerCase();
+    const category = (product.category || '').toLowerCase();
+    return type === 'template' || type === 'redesign' || type === 'redesigns' || /redesign/.test(category);
+  });
   const ebooks = products.filter(product => product.type === "ebook");
 
   const resolveImageUrl = (url: string | null) => {
