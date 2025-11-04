@@ -20,6 +20,8 @@ const Auth = () => {
   // Dialog verifikasi email setelah signup
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [signupEmailState, setSignupEmailState] = useState("");
+  // Email belum terverifikasi terdeteksi saat gagal login
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
   // State untuk validasi realtime username saat pendaftaran
   const [signupUsername, setSignupUsername] = useState("");
   const [usernameChecking, setUsernameChecking] = useState(false);
@@ -40,14 +42,15 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setUnconfirmedEmail("");
 
     const formData = new FormData(e.currentTarget);
     const identifier = formData.get("identifier") as string; // bisa email atau username
     const password = formData.get("password") as string;
+    // siapkan email yang akan digunakan untuk sign-in (bisa hasil resolve dari username)
+    let emailToUse = identifier;
 
     try {
-      let emailToUse = identifier;
-
       // Jika bukan email, anggap sebagai username dan resolve ke email via RPC (dengan timeout)
       if (!identifier.includes("@")) {
         const timeoutMs = 1500;
@@ -121,7 +124,13 @@ const Auth = () => {
       if (lowerMsg.includes('invalid login credentials')) friendly = 'Email/username atau password salah';
       else if (lowerMsg.includes('too many requests') || lowerMsg.includes('rate limit')) friendly = 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
       else if (lowerMsg.includes('network') || lowerMsg.includes('connection closed')) friendly = 'Gangguan koneksi. Periksa jaringan/SSL lalu coba lagi.';
-      else if (lowerMsg.includes('email not confirmed') || lowerMsg.includes('not confirmed')) friendly = 'Email belum dikonfirmasi. Silakan cek inbox Anda untuk verifikasi.';
+      else if (lowerMsg.includes('email not confirmed') || lowerMsg.includes('not confirmed')) {
+        friendly = 'Email belum dikonfirmasi. Silakan cek inbox Anda untuk verifikasi.';
+        // Simpan email agar tombol "Kirim Ulang Verifikasi" muncul di form login
+        if (emailToUse && emailToUse.includes('@')) {
+          setUnconfirmedEmail(emailToUse);
+        }
+      }
       toast.error("Gagal masuk", { description: friendly });
     } finally {
       setIsLoading(false);
@@ -286,6 +295,28 @@ const Auth = () => {
     }
   };
 
+  // Kirim ulang verifikasi saat gagal login karena email belum terkonfirmasi
+  const handleResendVerificationLogin = async () => {
+    if (!unconfirmedEmail) return;
+    try {
+      const SITE_URL = (typeof import.meta.env.VITE_SITE_URL === 'string' && import.meta.env.VITE_SITE_URL.length > 0)
+        ? import.meta.env.VITE_SITE_URL
+        : window.location.origin;
+      const redirectUrl = `${SITE_URL}/auth`;
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: unconfirmedEmail,
+        options: { emailRedirectTo: redirectUrl },
+      } as any);
+      if (error) throw error;
+      toast.success('Email verifikasi dikirim ulang', { description: 'Silakan cek inbox atau folder spam.' });
+    } catch (err: any) {
+      console.error('resend signup email (login) error:', err);
+      const msg = typeof err?.message === 'string' ? err.message : 'Gagal mengirim ulang email';
+      toast.error('Gagal kirim ulang verifikasi', { description: msg });
+    }
+  };
+
   // Cek ketersediaan username saat user selesai mengetik (onBlur)
   const checkUsernameAvailability = async (uname: string) => {
     const val = uname.trim();
@@ -420,6 +451,19 @@ const Auth = () => {
                     >
                       {isLoading ? "Memproses..." : "Masuk"}
                     </Button>
+                    {unconfirmedEmail && (
+                      <div className="mt-4 p-4 rounded-lg border bg-yellow-50">
+                        <p className="text-sm text-yellow-800">
+                          Email <b>{unconfirmedEmail}</b> belum dikonfirmasi. Kirim ulang verifikasi lalu cek inbox.
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <Button type="button" onClick={handleResendVerificationLogin} className="flex-1">Kirim Ulang Verifikasi</Button>
+                          <a href="https://mail.google.com/" target="_blank" rel="noreferrer" className="flex-1">
+                            <Button type="button" variant="secondary" className="w-full">Buka Email</Button>
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </form>
                 </TabsContent>
 
@@ -540,12 +584,13 @@ const Auth = () => {
 
           {/* Dialog Verifikasi Email setelah signup */}
           <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Verifikasi Email Diperlukan</DialogTitle>
                 <DialogDescription>
                   Kami telah mengirim link verifikasi ke <b>{signupEmailState}</b>.
-                  Email harus dikonfirmasi terlebih dahulu sebelum Anda bisa login.
+                  Silakan buka email Anda dan klik link verifikasi.
+                  Jika tidak menerima email, kirim ulang menggunakan tombol di bawah.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
