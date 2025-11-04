@@ -79,11 +79,15 @@ const Produk = () => {
   const matchesSearch = (p: Product) => {
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
+    const digits = searchTerm.replace(/\D/g, "");
+    const priceStr = (p.price ?? 0).toString();
+    const priceId = (p.price ?? 0).toLocaleString("id-ID");
     return (
       (p.name || "").toLowerCase().includes(q) ||
       (p.description || "").toLowerCase().includes(q) ||
       (p.category || "").toLowerCase().includes(q) ||
-      (p.type || "").toLowerCase().includes(q)
+      (p.type || "").toLowerCase().includes(q) ||
+      (!!digits && (priceStr.includes(digits) || priceId.includes(digits)))
     );
   };
 
@@ -104,7 +108,8 @@ const Produk = () => {
       const t = (p.type || '').toLowerCase();
       if (t.includes('redesign')) set.add('redesigns');
     });
-    return Array.from(set);
+    const defaults = ['design','business','technology','education','marketing','redesigns'];
+    return Array.from(new Set([...defaults, ...Array.from(set)]));
   }, [templates]);
 
   const ebookCategories = useMemo(() => {
@@ -113,7 +118,8 @@ const Produk = () => {
       const c = (p.category || '').toLowerCase();
       if (c) set.add(c);
     });
-    return Array.from(set);
+    const defaults = ['education','business','marketing','technology','other'];
+    return Array.from(new Set([...defaults, ...Array.from(set)]));
   }, [ebooks]);
 
   const resolveImageUrl = (url: string | null) => {
@@ -225,7 +231,7 @@ const Produk = () => {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {templates.filter((p) => matchesSearch(p) && matchesCategory(p)).map((product) => (
-                    <Card key={product.id} className="group hover:shadow-lg transition-all">
+                    <Card key={product.id} className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/produk/${product.id}`)}>
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img
                           src={resolveImageUrl(product.image_url)}
@@ -244,13 +250,13 @@ const Produk = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/produk/${product.id}`)}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/produk/${product.id}`); }}
                             >
                               Detail
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleAddToCart(product)}
+                              onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
                               className="gradient-primary"
                             >
                               Beli
@@ -286,7 +292,7 @@ const Produk = () => {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {ebooks.filter((p) => matchesSearch(p) && matchesCategory(p)).map((product) => (
-                    <Card key={product.id} className="group hover:shadow-lg transition-all">
+                    <Card key={product.id} className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/produk/${product.id}`)}>
                       <div className="aspect-video overflow-hidden rounded-t-lg">
                         <img
                           src={resolveImageUrl(product.image_url)}
@@ -305,13 +311,13 @@ const Produk = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/produk/${product.id}`)}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/produk/${product.id}`); }}
                             >
                               Detail
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleAddToCart(product)}
+                              onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
                               className="gradient-primary"
                             >
                               Beli

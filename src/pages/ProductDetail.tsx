@@ -27,6 +27,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { addToCart } = useCart();
 
@@ -35,6 +36,25 @@ const ProductDetail = () => {
       fetchProduct(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchRelated = async () => {
+      if (!product) return;
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, description, price, image_url, type, category, stock")
+        .eq("type", product.type)
+        .eq("category", product.category)
+        .neq("id", product.id)
+        .limit(6);
+      if (error) {
+        console.error("Error fetching related products:", error);
+        return;
+      }
+      setRelatedProducts((data || []) as Product[]);
+    };
+    fetchRelated();
+  }, [product]);
 
   const fetchProduct = async (productId: string) => {
     try {
@@ -110,6 +130,20 @@ const ProductDetail = () => {
             Kembali
           </Button>
 
+          {product && (
+            <div className="text-sm text-muted-foreground mb-6">
+              <span className="cursor-pointer hover:underline" onClick={() => navigate("/produk")}>
+                Produk
+              </span>
+              <span className="mx-2">/</span>
+              <span className="cursor-pointer hover:underline" onClick={() => navigate(`/produk?tab=${product.type}&category=${(product.category||'').toLowerCase()}`)}>
+                {(product.type || '').toUpperCase()}
+              </span>
+              <span className="mx-2">/</span>
+              <span className="font-medium text-foreground">{product.name}</span>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 gap-8">
             <div>
               {product.image_url ? (
@@ -139,6 +173,30 @@ const ProductDetail = () => {
                 <p className="text-2xl font-bold mt-4 text-primary">
                   {formatPrice(product.price)}
                 </p>
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      const shareData = {
+                        title: product.name,
+                        text: product.description || product.name,
+                        url: window.location.href,
+                      };
+                      try {
+                        if (navigator.share) {
+                          await navigator.share(shareData);
+                        } else {
+                          await navigator.clipboard.writeText(window.location.href);
+                          alert("Link produk telah disalin ke clipboard");
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                  >
+                    Bagikan
+                  </Button>
+                </div>
               </div>
 
               <Card>
@@ -240,6 +298,32 @@ const ProductDetail = () => {
               </CardContent>
             </Card>
           </div>
+
+          {relatedProducts.length > 0 && (
+            <div className="mt-12">
+              <h3 className="text-2xl font-semibold mb-4">Produk Terkait</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedProducts.map((rp) => (
+                  <div key={rp.id} className="border rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer" onClick={() => navigate(`/produk/${rp.id}`)}>
+                    <div className="aspect-video overflow-hidden">
+                      <img src={resolveImageUrl(rp.image_url)} alt={rp.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">{rp.name}</h4>
+                        <span className="text-primary font-bold">{formatPrice(rp.price)}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rp.description}</p>
+                      <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/produk/${rp.id}`); }}>Detail</Button>
+                        <Button size="sm" className="gradient-primary" onClick={async (e) => { e.stopPropagation(); await addToCart(rp.id); }}>Beli</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
