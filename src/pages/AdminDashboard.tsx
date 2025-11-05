@@ -29,6 +29,7 @@ interface Product {
   type: string;
   category: string;
   image_url?: string | null;
+  file_url?: string | null;
   created_at: string;
 }
 
@@ -73,11 +74,17 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   // Edit produk
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string }>(
-  { name: '', description: '', price: 0, type: '', category: '', image_url: '' }
+const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string; file_url?: string }>(
+  { name: '', description: '', price: 0, type: '', category: '', image_url: '', file_url: '' }
 );
 const [imageFile, setImageFile] = useState<File | null>(null);
 const [imagePreview, setImagePreview] = useState<string | null>(null);
+// Picker Storage untuk file digital
+const [digitalBucket, setDigitalBucket] = useState<string>('Produk Digital');
+const [digitalFolder, setDigitalFolder] = useState<string>('uploads');
+const [digitalFiles, setDigitalFiles] = useState<string[]>([]);
+const [digitalLoading, setDigitalLoading] = useState<boolean>(false);
+const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(null);
   // Edit status konsultasi
   const [editingConsultId, setEditingConsultId] = useState<string | null>(null);
   const [editingConsultStatus, setEditingConsultStatus] = useState<string>('pending');
@@ -555,9 +562,59 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const startEditProduct = (p: Product) => {
     setEditingProductId(p.id);
-    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined });
+    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined, file_url: p.file_url ?? '' });
     setImageFile(null);
     setImagePreview(p.image_url ?? null);
+
+    // Set default picker Storage
+    setDigitalBucket('Produk Digital');
+    setDigitalFolder('uploads');
+    // Tampilkan nama file dari file_url jika ada
+    try {
+      if (p.file_url) {
+        const url = new URL(p.file_url);
+        const segments = url.pathname.split('/').filter(Boolean);
+        const last = segments[segments.length - 1];
+        setDigitalSelectedName(last || null);
+      } else {
+        setDigitalSelectedName(null);
+      }
+    } catch {
+      setDigitalSelectedName(null);
+    }
+    // Muat daftar file dari Storage
+    (async () => {
+      try {
+        setDigitalLoading(true);
+        const { data, error } = await supabaseAdmin
+          .storage
+          .from(digitalBucket)
+          .list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+        if (error) throw error;
+        setDigitalFiles((data || []).map((d: any) => d.name));
+      } catch (err) {
+        console.error('Error memuat file digital:', err);
+      } finally {
+        setDigitalLoading(false);
+      }
+    })();
+  };
+
+  // Muat ulang daftar file digital dari Storage saat mengedit produk
+  const loadDigitalFilesForProductEditing = async () => {
+    try {
+      setDigitalLoading(true);
+      const { data, error } = await supabaseAdmin
+        .storage
+        .from(digitalBucket)
+        .list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+      if (error) throw error;
+      setDigitalFiles((data || []).map((d: any) => d.name));
+    } catch (err) {
+      console.error('Error memuat file digital:', err);
+    } finally {
+      setDigitalLoading(false);
+    }
   };
 
   const cancelEditProduct = () => {
@@ -797,6 +854,7 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Digital</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Dibuat</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -804,7 +862,7 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
                   <tbody className="divide-y divide-gray-200">
                     {displayedProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
+                        <td colSpan={8} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
                           Tidak ada produk
                         </td>
                       </tr>
@@ -846,6 +904,58 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm capitalize">
                                 <input className="border rounded px-2 py-1 w-full" value={editingData.category} onChange={(e) => setEditingData({ ...editingData, category: e.target.value })} />
                               </td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <select className="border rounded px-2 py-1" value={digitalBucket} onChange={(e) => setDigitalBucket(e.target.value)}>
+                                      <option value="Produk Digital">Produk Digital</option>
+                                    </select>
+                                    <select className="border rounded px-2 py-1" value={digitalFolder} onChange={(e) => setDigitalFolder(e.target.value)}>
+                                      <option value="uploads">uploads</option>
+                                    </select>
+                                    <Button type="button" variant="outline" size="sm" onClick={loadDigitalFilesForProductEditing} disabled={digitalLoading}>
+                                      {digitalLoading ? 'Memuat...' : 'Refresh'}
+                                    </Button>
+                                  </div>
+                                  {digitalFiles.length > 0 && (
+                                    <select
+                                      className="border rounded px-2 py-1 w-full"
+                                      value={digitalSelectedName || ''}
+                                      onChange={async (e) => {
+                                        const name = e.target.value;
+                                        setDigitalSelectedName(name);
+                                        try {
+                                          const path = `${digitalFolder}/${name}`;
+                                          const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+                                          const url = (data as any)?.publicUrl || '';
+                                          setEditingData({ ...editingData, file_url: url });
+                                        } catch (err) {
+                                          console.error('Gagal ambil public URL:', err);
+                                        }
+                                      }}
+                                    >
+                                      <option value="">Pilih file…</option>
+                                      {digitalFiles.map((n) => (
+                                        <option key={n} value={n}>{n}</option>
+                                      ))}
+                                    </select>
+                                  )}
+                                  <input
+                                    type="text"
+                                    className="border rounded px-2 py-1 w-full"
+                                    placeholder="https://…"
+                                    value={editingData.file_url || ''}
+                                    onChange={(e) => setEditingData({ ...editingData, file_url: e.target.value })}
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Button type="button" variant="secondary" size="sm" disabled={!editingData.file_url} onClick={() => editingData.file_url && window.open(editingData.file_url, '_blank')}>Buka</Button>
+                                    <Button type="button" variant="outline" size="sm" disabled={!editingData.file_url} onClick={() => editingData.file_url && navigator.clipboard.writeText(editingData.file_url!)}>Salin</Button>
+                                    {digitalSelectedName && (
+                                      <span className="text-xs text-gray-500">Dipilih: {digitalSelectedName}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm">{formatDate(product.created_at)}</td>
                               <td className="px-6 py-4 text-right text-sm font-medium flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={cancelEditProduct}>Batal</Button>
@@ -865,6 +975,19 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{formatPrice(product.price)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{product.type}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{product.category}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {product.file_url ? (
+                                  <div className="flex items-center gap-2">
+                                    <a href={product.file_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Buka</a>
+                                    <button
+                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                      onClick={() => navigator.clipboard.writeText(product.file_url || '')}
+                                    >Salin</button>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(product.created_at)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <Button variant="ghost" size="sm" onClick={() => startEditProduct(product)}>
