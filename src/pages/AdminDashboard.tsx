@@ -30,6 +30,7 @@ interface Product {
   category: string;
   image_url?: string | null;
   file_url?: string | null;
+  benefits?: string[] | null;
   created_at: string;
 }
 
@@ -74,8 +75,8 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   // Edit produk
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string; file_url?: string }>(
-  { name: '', description: '', price: 0, type: '', category: '', image_url: '', file_url: '' }
+const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string; file_url?: string; benefits?: string[] }>(
+  { name: '', description: '', price: 0, type: '', category: '', image_url: '', file_url: '', benefits: [] }
 );
 const [imageFile, setImageFile] = useState<File | null>(null);
 const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -562,7 +563,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
 
   const startEditProduct = (p: Product) => {
     setEditingProductId(p.id);
-    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined, file_url: p.file_url ?? '' });
+    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined, file_url: p.file_url ?? '', benefits: p.benefits ?? [] });
     setImageFile(null);
     setImagePreview(p.image_url ?? null);
 
@@ -855,6 +856,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Digital</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Benefit</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Dibuat</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -862,7 +864,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                   <tbody className="divide-y divide-gray-200">
                     {displayedProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
+                        <td colSpan={9} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
                           Tidak ada produk
                         </td>
                       </tr>
@@ -956,6 +958,21 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                                   </div>
                                 </div>
                               </td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm align-top">
+                                <textarea
+                                  className="border rounded px-2 py-1 w-full resize-y"
+                                  rows={4}
+                                  placeholder={"Tulis satu benefit per baris"}
+                                  value={(editingData.benefits || []).join('\n')}
+                                  onChange={(e) => setEditingData({
+                                    ...editingData,
+                                    benefits: e.target.value
+                                      .split(/\r?\n/)
+                                      .map((s) => s.trim())
+                                      .filter(Boolean)
+                                  })}
+                                />
+                              </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm">{formatDate(product.created_at)}</td>
                               <td className="px-6 py-4 text-right text-sm font-medium flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={cancelEditProduct}>Batal</Button>
@@ -983,6 +1000,16 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                                       className="text-xs text-gray-500 hover:text-gray-700"
                                       onClick={() => navigator.clipboard.writeText(product.file_url || '')}
                                     >Salin</button>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {product.benefits && product.benefits.length > 0 ? (
+                                  <div className="max-w-xs truncate">
+                                    {(product.benefits || []).slice(0, 3).join(', ')}
+                                    {product.benefits.length > 3 && '…'}
                                   </div>
                                 ) : (
                                   <span className="text-gray-400">—</span>

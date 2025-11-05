@@ -19,6 +19,7 @@ interface Product {
   type: string;
   category: string;
   image_url: string | null;
+  benefits?: string[] | null;
 }
 
 interface ProductDetailPopupProps {
@@ -89,29 +90,35 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
               <div>
                 <h3 className="text-lg font-semibold">Keuntungan</h3>
                 <ul className="mt-2 list-disc pl-5 text-muted-foreground">
-                  {product.type === 'service' && product.category === 'marketing' && (
+                  {(product.benefits && product.benefits.length > 0) ? (
+                    product.benefits.map((b, i) => (<li key={i}>{b}</li>))
+                  ) : (
                     <>
-                      <li>Strategi pemasaran digital yang disesuaikan dengan kebutuhan bisnis Anda</li>
-                      <li>Analisis kompetitor dan pasar untuk meningkatkan visibilitas online</li>
-                      <li>Optimasi konten dan media sosial untuk menjangkau audiens yang tepat</li>
-                      <li>Laporan performa dan analitik secara berkala</li>
-                      <li>Dukungan teknis selama periode layanan</li>
-                    </>
-                  )}
-                  {product.type === 'ebook' && (
-                    <>
-                      <li>Panduan lengkap dalam format PDF</li>
-                      <li>Akses seumur hidup ke konten</li>
-                      <li>Bisa dibaca di berbagai perangkat</li>
-                      <li>Dilengkapi contoh kasus dan studi</li>
-                    </>
-                  )}
-                  {product.type === 'template' && (
-                    <>
-                      <li>File siap pakai dan mudah disesuaikan</li>
-                      <li>Desain profesional dan modern</li>
-                      <li>Kompatibel dengan berbagai aplikasi</li>
-                      <li>Termasuk panduan penggunaan</li>
+                      {product.type === 'service' && product.category === 'marketing' && (
+                        <>
+                          <li>Strategi pemasaran digital yang disesuaikan dengan kebutuhan bisnis Anda</li>
+                          <li>Analisis kompetitor dan pasar untuk meningkatkan visibilitas online</li>
+                          <li>Optimasi konten dan media sosial untuk menjangkau audiens yang tepat</li>
+                          <li>Laporan performa dan analitik secara berkala</li>
+                          <li>Dukungan teknis selama periode layanan</li>
+                        </>
+                      )}
+                      {product.type === 'ebook' && (
+                        <>
+                          <li>Panduan lengkap dalam format PDF</li>
+                          <li>Akses seumur hidup ke konten</li>
+                          <li>Bisa dibaca di berbagai perangkat</li>
+                          <li>Dilengkapi contoh kasus dan studi</li>
+                        </>
+                      )}
+                      {product.type === 'template' && (
+                        <>
+                          <li>File siap pakai dan mudah disesuaikan</li>
+                          <li>Desain profesional dan modern</li>
+                          <li>Kompatibel dengan berbagai aplikasi</li>
+                          <li>Termasuk panduan penggunaan</li>
+                        </>
+                      )}
                     </>
                   )}
                 </ul>

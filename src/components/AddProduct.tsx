@@ -23,6 +23,7 @@ export default function AddProduct() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    benefitsText: '',
     price: '',
     stock: '',
     type: 'template',
@@ -83,7 +84,12 @@ export default function AddProduct() {
       }
 
       // Prepare data
-      const productData = {
+      const benefits = (formData.benefitsText || '')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const productData: any = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
@@ -91,7 +97,8 @@ export default function AddProduct() {
         type: formData.type,
         category: formData.category,
         image_url: null,
-        file_url: null
+        file_url: null,
+        benefits: benefits.length > 0 ? benefits : null
       };
 
       // Upload gambar jika ada
@@ -116,6 +123,7 @@ export default function AddProduct() {
         setFormData({
           name: '',
           description: '',
+          benefitsText: '',
           price: '',
           stock: '',
           type: 'template',
@@ -313,6 +321,18 @@ export default function AddProduct() {
                   placeholder="Deskripsi detail tentang produk"
                   rows={4}
                 />
+              </div>
+              <div>
+                <Label htmlFor="benefitsText">Benefit (satu baris = satu poin)</Label>
+                <Textarea
+                  id="benefitsText"
+                  name="benefitsText"
+                  value={formData.benefitsText}
+                  onChange={handleInputChange}
+                  placeholder={"Contoh:\n• File siap pakai\n• Desain profesional\n• Panduan penggunaan"}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Poin-poin ini akan ditampilkan di bagian “Apa yang Anda Dapatkan”.</p>
               </div>
               
               <div>

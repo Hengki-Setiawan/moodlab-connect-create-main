@@ -22,6 +22,7 @@ interface Product {
   image_url: string | null;
   stock: number;
   file_url?: string | null;
+  benefits?: string[] | null;
 }
 
 const ProductDetail = () => {
@@ -231,28 +232,36 @@ const ProductDetail = () => {
                 <CardContent className="pt-6">
                   <h3 className="text-xl font-bold mb-2">Apa yang Anda Dapatkan</h3>
                   <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-                    {product.type === 'template' && (
+                    {(product.benefits && product.benefits.length > 0) ? (
+                      product.benefits.map((b, idx) => (
+                        <li key={idx}>{b}</li>
+                      ))
+                    ) : (
                       <>
-                        <li>File siap pakai dan mudah disesuaikan</li>
-                        <li>Desain profesional dan modern</li>
-                        <li>Panduan singkat penggunaan</li>
-                        <li>Pembaruan minor bila diperlukan</li>
-                      </>
-                    )}
-                    {product.type === 'ebook' && (
-                      <>
-                        <li>Konten PDF ringkas dan praktis</li>
-                        <li>Akses selamanya di perangkat Anda</li>
-                        <li>Contoh kasus untuk tiap bab</li>
-                        <li>Tips implementasi yang bisa langsung dipraktikkan</li>
-                      </>
-                    )}
-                    {product.type === 'service' && (
-                      <>
-                        <li>Konsultasi dan eksekusi sesuai kebutuhan</li>
-                        <li>Laporan progres berkala</li>
-                        <li>Support via chat/email selama periode layanan</li>
-                        <li>Strategi disesuaikan dengan industri Anda</li>
+                        {product.type === 'template' && (
+                          <>
+                            <li>File siap pakai dan mudah disesuaikan</li>
+                            <li>Desain profesional dan modern</li>
+                            <li>Panduan singkat penggunaan</li>
+                            <li>Pembaruan minor bila diperlukan</li>
+                          </>
+                        )}
+                        {product.type === 'ebook' && (
+                          <>
+                            <li>Konten PDF ringkas dan praktis</li>
+                            <li>Akses selamanya di perangkat Anda</li>
+                            <li>Contoh kasus untuk tiap bab</li>
+                            <li>Tips implementasi yang bisa langsung dipraktikkan</li>
+                          </>
+                        )}
+                        {product.type === 'service' && (
+                          <>
+                            <li>Konsultasi dan eksekusi sesuai kebutuhan</li>
+                            <li>Laporan progres berkala</li>
+                            <li>Support via chat/email selama periode layanan</li>
+                            <li>Strategi disesuaikan dengan industri Anda</li>
+                          </>
+                        )}
                       </>
                     )}
                   </ul>
