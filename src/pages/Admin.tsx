@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Plus, PlusCircle, UserPlus } from "lucide-react";
 import AdminNavbar from "@/components/AdminNavbar";
 import { getImageUrl, uploadImage } from "@/integrations/supabase/storage";
+import { supabaseAdmin } from "@/integrations/supabase/admin";
 
 interface Product {
   id: string;
@@ -36,6 +37,12 @@ const Admin = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [digitalFileUrl, setDigitalFileUrl] = useState<string>("");
+  const [digitalBucket, setDigitalBucket] = useState<string>("Produk Digital");
+  const [digitalFolder, setDigitalFolder] = useState<string>("uploads");
+  const [digitalFiles, setDigitalFiles] = useState<string[]>([]);
+  const [digitalUploading, setDigitalUploading] = useState<boolean>(false);
+  const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(null);
+  const [digitalLoading, setDigitalLoading] = useState<boolean>(false);
 
   useEffect(() => {
     checkAdminStatus();
@@ -201,6 +208,92 @@ const Admin = () => {
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(String(reader.result));
     reader.readAsDataURL(file);
+  };
+
+  const handleDigitalUpload: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setDigitalUploading(true);
+      const path = `${digitalFolder}/${Date.now()}_${file.name}`;
+      const { error } = await supabaseAdmin.storage.from(digitalBucket).upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+      setDigitalFileUrl(data.publicUrl);
+      const name = path.split('/').pop() || file.name;
+      setDigitalSelectedName(name);
+      toast.success('File digital diupload');
+    } catch (err) {
+      console.error('Error upload digital file:', err);
+      toast.error('Gagal upload file digital');
+    } finally {
+      setDigitalUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const loadDigitalFiles = async () => {
+    try {
+      setDigitalLoading(true);
+      const { data, error } = await supabaseAdmin.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+      if (error) throw error;
+      setDigitalFiles((data || []).map((d: any) => d.name));
+      toast.success('Daftar file dimuat');
+    } catch (err) {
+      console.error('Error list digital files:', err);
+      toast.error('Gagal memuat daftar file');
+    } finally {
+      setDigitalLoading(false);
+    }
+  };
+
+  const handleDigitalClear = () => {
+    setDigitalFileUrl('');
+    setDigitalSelectedName(null);
+    toast.success('Link file digital dibersihkan');
+  };
+
+  const handleDigitalDelete = async () => {
+    try {
+      if (!digitalSelectedName) {
+        toast.error('Pilih file dari Storage terlebih dahulu');
+        return;
+      }
+      const confirmed = window.confirm(`Hapus file "${digitalSelectedName}" dari Storage?`);
+      if (!confirmed) return;
+      const path = `${digitalFolder}/${digitalSelectedName}`;
+      const { error } = await supabaseAdmin.storage.from(digitalBucket).remove([path]);
+      if (error) throw error;
+      toast.success('File dihapus dari Storage');
+      setDigitalSelectedName(null);
+      setDigitalFileUrl('');
+      await loadDigitalFiles();
+    } catch (err) {
+      console.error('Gagal hapus file digital:', err);
+      toast.error('Gagal menghapus file digital');
+    }
+  };
+
+  const handleCopyDigitalLink = async () => {
+    try {
+      if (!digitalFileUrl) {
+        toast.error('Tidak ada URL untuk disalin');
+        return;
+      }
+      await navigator.clipboard.writeText(digitalFileUrl);
+      toast.success('URL disalin ke clipboard');
+    } catch (err) {
+      console.error('Gagal menyalin URL:', err);
+      toast.error('Gagal menyalin URL');
+    }
+  };
+
+  const handleOpenDigitalLink = () => {
+    if (!digitalFileUrl) {
+      toast.error('Tidak ada URL untuk dibuka');
+      return;
+    }
+    window.open(digitalFileUrl, '_blank');
   };
 
   if (isLoading) {
@@ -458,15 +551,76 @@ const Admin = () => {
                     </div>
 
                     {(currentProduct.type === "ebook" || currentProduct.type === "template") && (
-                      <div className="space-y-2">
-                        <Label htmlFor="file_url">File Digital (URL dari Storage)</Label>
-                        <Input
-                          id="file_url"
-                          placeholder="https://..."
-                          value={digitalFileUrl}
-                          onChange={(e) => setDigitalFileUrl(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">Isi dengan URL publik file di Supabase Storage. Anda bisa menyalin public URL dari tab Storage.</p>
+                      <div className="space-y-3">
+                        <Label>File Digital</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Upload File ke Storage</Label>
+                            <Input id="digital-upload" type="file" accept="application/pdf,application/zip,application/octet-stream" onChange={handleDigitalUpload} disabled={digitalUploading} />
+                            {digitalUploading && (
+                              <p className="text-xs text-muted-foreground mt-1">Mengunggah...</p>
+                            )}
+                          </div>
+                          <div>
+                            <Label className="text-xs">Ambil dari Storage</Label>
+                            <div className="flex gap-2">
+                              <Select value={digitalBucket} onValueChange={setDigitalBucket}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih bucket" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Produk Digital">Produk Digital</SelectItem>
+                                  <SelectItem value="Gambar">Gambar</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Select value={digitalFolder} onValueChange={setDigitalFolder}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih folder" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="uploads">uploads</SelectItem>
+                                  <SelectItem value="products">products</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button type="button" variant="outline" onClick={loadDigitalFiles} disabled={digitalLoading}>
+                                {digitalLoading ? 'Memuat...' : 'Refresh'}
+                              </Button>
+                              <Button type="button" variant="outline" onClick={handleDigitalClear}>Clear Link</Button>
+                              <Button type="button" variant="destructive" onClick={handleDigitalDelete} disabled={!digitalSelectedName}>Hapus File</Button>
+                            </div>
+                            {digitalFiles.length > 0 && (
+                              <div className="mt-2">
+                                <Select onValueChange={(name) => {
+                                  const path = `${digitalFolder}/${name}`;
+                                  const { data } = supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+                                  setDigitalFileUrl(data.publicUrl);
+                                  setDigitalSelectedName(name);
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih file" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {digitalFiles.map((n) => (
+                                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">URL File Digital (public)</Label>
+                          <Input id="file_url" value={digitalFileUrl} onChange={(e) => setDigitalFileUrl(e.target.value)} placeholder="https://..." />
+                          <p className="text-xs text-muted-foreground mt-1">URL ini akan disimpan sebagai file_url. Gunakan public URL dari Storage agar pembeli bisa mengunduh dari halaman Profil.</p>
+                          <div className="flex gap-2 mt-2">
+                            <Button type="button" variant="outline" onClick={handleOpenDigitalLink} disabled={!digitalFileUrl}>Buka</Button>
+                            <Button type="button" variant="outline" onClick={handleCopyDigitalLink} disabled={!digitalFileUrl}>Copy URL</Button>
+                            {digitalSelectedName && (
+                              <span className="text-xs text-muted-foreground self-center">Dipilih: {digitalSelectedName}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </CardContent>

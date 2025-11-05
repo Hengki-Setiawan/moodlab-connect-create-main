@@ -18,6 +18,8 @@ export default function AddProduct() {
   const [digitalFolder, setDigitalFolder] = useState('uploads');
   const [digitalFiles, setDigitalFiles] = useState<string[]>([]);
   const [digitalUploading, setDigitalUploading] = useState(false);
+  const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(null);
+  const [digitalLoading, setDigitalLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -141,6 +143,8 @@ export default function AddProduct() {
       if (error) throw error;
       const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
       setDigitalFileUrl(data.publicUrl);
+      const name = path.split('/').pop() || file.name;
+      setDigitalSelectedName(name);
       toast.success('File digital diupload');
     } catch (err) {
       console.error('Error upload digital file:', err);
@@ -153,6 +157,7 @@ export default function AddProduct() {
 
   const loadDigitalFiles = async () => {
     try {
+      setDigitalLoading(true);
       const { data, error } = await supabaseAdmin.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
       if (error) throw error;
       setDigitalFiles((data || []).map((d: any) => d.name));
@@ -160,7 +165,58 @@ export default function AddProduct() {
     } catch (err) {
       console.error('Error list digital files:', err);
       toast.error('Gagal memuat daftar file');
+    } finally {
+      setDigitalLoading(false);
     }
+  };
+
+  const handleDigitalClear = () => {
+    setDigitalFileUrl('');
+    setDigitalSelectedName(null);
+    toast.success('Link file digital dibersihkan');
+  };
+
+  const handleDigitalDelete = async () => {
+    try {
+      if (!digitalSelectedName) {
+        toast.error('Pilih file dari Storage terlebih dahulu');
+        return;
+      }
+      const confirmed = window.confirm(`Hapus file "${digitalSelectedName}" dari Storage?`);
+      if (!confirmed) return;
+      const path = `${digitalFolder}/${digitalSelectedName}`;
+      const { error } = await supabaseAdmin.storage.from(digitalBucket).remove([path]);
+      if (error) throw error;
+      toast.success('File dihapus dari Storage');
+      setDigitalSelectedName(null);
+      setDigitalFileUrl('');
+      await loadDigitalFiles();
+    } catch (err) {
+      console.error('Gagal hapus file digital:', err);
+      toast.error('Gagal menghapus file digital');
+    }
+  };
+
+  const handleCopyDigitalLink = async () => {
+    try {
+      if (!digitalFileUrl) {
+        toast.error('Tidak ada URL untuk disalin');
+        return;
+      }
+      await navigator.clipboard.writeText(digitalFileUrl);
+      toast.success('URL disalin ke clipboard');
+    } catch (err) {
+      console.error('Gagal menyalin URL:', err);
+      toast.error('Gagal menyalin URL');
+    }
+  };
+
+  const handleOpenDigitalLink = () => {
+    if (!digitalFileUrl) {
+      toast.error('Tidak ada URL untuk dibuka');
+      return;
+    }
+    window.open(digitalFileUrl, '_blank');
   };
 
   return (
@@ -292,6 +348,9 @@ export default function AddProduct() {
                     <div>
                       <Label className="text-xs">Upload File ke Storage</Label>
                       <Input type="file" accept="application/pdf,application/zip,application/octet-stream" onChange={handleDigitalUpload} disabled={digitalUploading} />
+                      {digitalUploading && (
+                        <p className="text-xs text-muted-foreground mt-1">Mengunggah...</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs">Ambil dari Storage</Label>
@@ -314,7 +373,11 @@ export default function AddProduct() {
                             <SelectItem value="products">products</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button type="button" variant="outline" onClick={loadDigitalFiles}>Refresh</Button>
+                        <Button type="button" variant="outline" onClick={loadDigitalFiles} disabled={digitalLoading}>
+                          {digitalLoading ? 'Memuat...' : 'Refresh'}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={handleDigitalClear}>Clear Link</Button>
+                        <Button type="button" variant="destructive" onClick={handleDigitalDelete} disabled={!digitalSelectedName}>Hapus File</Button>
                       </div>
                       {digitalFiles.length > 0 && (
                         <div className="mt-2">
@@ -322,6 +385,7 @@ export default function AddProduct() {
                             const path = `${digitalFolder}/${name}`;
                             const { data } = supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
                             setDigitalFileUrl(data.publicUrl);
+                            setDigitalSelectedName(name);
                           }}>
                             <SelectTrigger>
                               <SelectValue placeholder="Pilih file" />
@@ -340,6 +404,13 @@ export default function AddProduct() {
                     <Label className="text-xs">URL File Digital (public)</Label>
                     <Input value={digitalFileUrl} onChange={(e) => setDigitalFileUrl(e.target.value)} placeholder="https://..." />
                     <p className="text-xs text-muted-foreground mt-1">URL ini akan disimpan sebagai file_url. Gunakan public URL dari Storage agar pembeli bisa mengunduh dari halaman Profil.</p>
+                    <div className="flex gap-2 mt-2">
+                      <Button type="button" variant="outline" onClick={handleOpenDigitalLink} disabled={!digitalFileUrl}>Buka</Button>
+                      <Button type="button" variant="outline" onClick={handleCopyDigitalLink} disabled={!digitalFileUrl}>Copy URL</Button>
+                      {digitalSelectedName && (
+                        <span className="text-xs text-muted-foreground self-center">Dipilih: {digitalSelectedName}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
