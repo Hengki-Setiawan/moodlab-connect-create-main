@@ -187,6 +187,34 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
     }
   };
 
+  const renameFile = async (oldName: string) => {
+    if (!selectedBucket) return;
+    try {
+      const suggested = oldName;
+      const input = prompt('Ganti nama file:', suggested);
+      if (!input) return;
+      const trimmed = input.trim();
+      if (trimmed === '' || trimmed === oldName) return;
+      const prefix = currentPath ? currentPath + '/' : '';
+      const fromPath = `${prefix}${oldName}`;
+      // Pertahankan ekstensi jika user tidak menuliskannya
+      let targetName = trimmed.replace(/^\//, '');
+      const hasExt = /\.[^./\\]+$/.test(oldName);
+      if (hasExt && !/\.[^./\\]+$/.test(targetName)) {
+        const ext = oldName.substring(oldName.lastIndexOf('.'));
+        targetName += ext;
+      }
+      const toPath = `${prefix}${targetName}`;
+      const { error } = await supabaseAdmin.storage.from(selectedBucket).move(fromPath, toPath);
+      if (error) throw error;
+      await loadFiles(selectedBucket);
+      alert('Nama file berhasil diubah');
+    } catch (err) {
+      console.error('Error renaming file:', err);
+      alert('Gagal mengganti nama file');
+    }
+  };
+
   const getSignedUrl = async (name: string) => {
     if (!selectedBucket) return;
     try {
@@ -721,6 +749,7 @@ const [imagePreview, setImagePreview] = useState<string | null>(null);
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{f.name}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                             <div className="flex gap-2 justify-end">
+                              <Button variant="outline" onClick={() => renameFile(f.name)}>Rename</Button>
                               <Button variant="outline" onClick={() => getSignedUrl(f.name)}>Copy URL</Button>
                               <Button variant="destructive" onClick={() => removeFile(f.name)}>Hapus</Button>
                             </div>
