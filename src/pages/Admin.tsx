@@ -175,7 +175,42 @@ const Admin = () => {
     setIsEditing(true);
     setImageFile(null);
     setImagePreview("");
+    // Set default bucket & folder untuk file digital saat edit
+    setDigitalBucket('Produk Digital');
+    setDigitalFolder('uploads');
     setDigitalFileUrl(product.file_url || "");
+
+    // Jika ada file_url sebelumnya, coba ekstrak nama file untuk ditampilkan
+    try {
+      if (product.file_url) {
+        const url = new URL(product.file_url);
+        const segments = url.pathname.split('/').filter(Boolean);
+        const last = segments[segments.length - 1];
+        if (last) setDigitalSelectedName(last);
+      } else {
+        setDigitalSelectedName(null);
+      }
+    } catch {
+      // Abaikan parsing error
+      setDigitalSelectedName(null);
+    }
+
+    // Auto-load daftar file dari Storage pada folder default
+    (async () => {
+      try {
+        setDigitalLoading(true);
+        const { data, error } = await supabaseAdmin
+          .storage
+          .from('Produk Digital')
+          .list('uploads', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+        if (error) throw error;
+        setDigitalFiles((data || []).map((d: any) => d.name));
+      } catch (err) {
+        console.error('Error auto-load digital files saat edit:', err);
+      } finally {
+        setDigitalLoading(false);
+      }
+    })();
   };
 
   const formatPrice = (price: number) => {
