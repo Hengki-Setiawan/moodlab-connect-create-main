@@ -21,6 +21,7 @@ interface Product {
   category: string;
   image_url: string | null;
   stock: number;
+  file_url?: string | null;
 }
 
 const ProductDetail = () => {
@@ -30,6 +31,7 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { addToCart } = useCart();
+  const [digitalAvailable, setDigitalAvailable] = useState(true);
 
   useEffect(() => {
     if (id) {
@@ -82,6 +84,23 @@ const ProductDetail = () => {
   const goBack = () => {
     navigate(-1);
   };
+
+  // Cek ketersediaan file digital saat produk dimuat
+  useEffect(() => {
+    (async () => {
+      if (!product) return;
+      if (product.type === 'service') { setDigitalAvailable(true); return; }
+      const url = (product.file_url || '').trim();
+      if (!url) { setDigitalAvailable(false); return; }
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        setDigitalAvailable(res.ok);
+      } catch (e) {
+        console.error('HEAD check gagal pada ProductDetail:', e);
+        setDigitalAvailable(false);
+      }
+    })();
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -278,10 +297,14 @@ const ProductDetail = () => {
                   className="w-full"
                   size="lg"
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={product.stock === 0 || !digitalAvailable}
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" />
-                  {product.stock === 0 ? "Stok Habis" : "Tambah ke Keranjang"}
+                  {product.stock === 0
+                    ? "Stok Habis"
+                    : !digitalAvailable
+                      ? "File Tidak Tersedia"
+                      : "Tambah ke Keranjang"}
                 </Button>
               )}
             </div>

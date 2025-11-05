@@ -11,6 +11,13 @@ const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, cartTotal, isLoading } = useCart();
 
+  const hasDigitalUnavailable = cartItems.some((item) => {
+    const type = (item.product as any).type;
+    const fileUrl = (item.product as any).file_url;
+    const isDigital = type === 'ebook' || type === 'template';
+    return isDigital && (!fileUrl || String(fileUrl).trim() === '');
+  });
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -20,6 +27,10 @@ const Cart = () => {
   };
 
   const handleCheckout = async () => {
+    if (hasDigitalUnavailable) {
+      alert('Ada produk digital yang filenya belum tersedia di Storage. Hapus produk tersebut dari keranjang atau tunggu hingga file tersedia.');
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
@@ -138,13 +149,21 @@ const Cart = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={handleCheckout}
-                  >
-                    Lanjut ke Pembayaran
-                  </Button>
+                  <div className="w-full">
+                    {hasDigitalUnavailable && (
+                      <div className="text-sm text-red-600 mb-3">
+                        Ada produk digital tanpa file di Storage. Checkout dinonaktifkan.
+                      </div>
+                    )}
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      onClick={handleCheckout}
+                      disabled={hasDigitalUnavailable}
+                    >
+                      Lanjut ke Pembayaran
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             </div>

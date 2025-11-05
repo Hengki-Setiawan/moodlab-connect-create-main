@@ -7,6 +7,8 @@ interface Product {
   name: string;
   price: number;
   image_url: string | null;
+  type?: string | null;
+  file_url?: string | null;
 }
 
 interface CartItem {
@@ -56,7 +58,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             id,
             name,
             price,
-            image_url
+            image_url,
+            type,
+            file_url
           )
         `)
         .eq("user_id", user.id);
@@ -77,6 +81,39 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (!user) {
         toast.error("Silakan login terlebih dahulu");
         return;
+      }
+
+      // Ambil detail produk untuk validasi ketersediaan file digital
+      const { data: prod, error: pErr } = await supabase
+        .from('products')
+        .select('id, type, file_url, stock')
+        .eq('id', productId)
+        .single();
+
+      if (pErr || !prod) {
+        toast.error('Produk tidak ditemukan');
+        return;
+      }
+
+      const isDigital = prod.type === 'ebook' || prod.type === 'template';
+      if (isDigital) {
+        const url = (prod.file_url || '').trim();
+        if (!url) {
+          toast.error('Produk digital belum tersedia di Storage. Tidak bisa dibeli.');
+          return;
+        }
+        // Cek ketersediaan file via HEAD request (graceful fallback)
+        try {
+          const res = await fetch(url, { method: 'HEAD' });
+          if (!res.ok) {
+            toast.error('File digital tidak ditemukan/terkunci di Storage. Tidak bisa dibeli.');
+            return;
+          }
+        } catch (e) {
+          console.error('HEAD check gagal untuk file_url:', e);
+          toast.error('Gagal mengakses file digital. Tidak bisa dibeli.');
+          return;
+        }
       }
 
       // Check if item already in cart

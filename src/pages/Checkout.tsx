@@ -33,6 +33,19 @@ const Checkout = () => {
     setIsProcessing(true);
 
     try {
+      // Validasi: blokir jika ada produk digital tanpa file_url
+      const hasDigitalUnavailable = cartItems.some((item) => {
+        const type = (item.product as any).type;
+        const fileUrl = (item.product as any).file_url;
+        const isDigital = type === 'ebook' || type === 'template';
+        return isDigital && (!fileUrl || String(fileUrl).trim() === '');
+      });
+      if (hasDigitalUnavailable) {
+        toast.error('Checkout diblokir: terdapat produk digital tanpa file di Storage.');
+        setIsProcessing(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Silakan login terlebih dahulu");
