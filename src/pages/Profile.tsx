@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Package } from "lucide-react";
+import { Download, Package, Trash, AlertCircle } from "lucide-react";
 import Footer from "@/components/Footer";
 
 interface Profile {
@@ -49,6 +49,12 @@ const Profile = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [purchasedProducts, setPurchasedProducts] = useState<PurchasedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hiddenProductIds, setHiddenProductIds] = useState<string[]>([]);
+  const [complainProductId, setComplainProductId] = useState<string | null>(null);
+  const [complainReason, setComplainReason] = useState<string>("");
+  const [complainEmail, setComplainEmail] = useState<string>("");
+  const [complainPhone, setComplainPhone] = useState<string>("");
+  const [complainSubmitting, setComplainSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     checkAuth();
@@ -175,6 +181,80 @@ const Profile = () => {
 
     console.log('Transformed purchased products (via orders):', transformedData);
     setPurchasedProducts(transformedData as PurchasedProduct[]);
+  };
+
+  const hideProductFromList = async (productId: string) => {
+    try {
+      if (!confirm('Hapus produk ini dari daftar Anda? (Tidak menghapus pembelian)')) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Silakan login terlebih dahulu');
+        navigate('/auth');
+        return;
+      }
+      // Coba simpan ke tabel user_hidden_products jika tersedia
+      const { error } = await supabase
+        .from('user_hidden_products')
+        .insert({ user_id: user.id, product_id: productId });
+      if (error) {
+        console.warn('Gagal menyimpan ke user_hidden_products, gunakan fallback lokal:', error);
+      }
+      setHiddenProductIds((prev) => Array.from(new Set([...prev, productId])));
+      toast.success('Produk dihapus dari daftar Anda');
+    } catch (err) {
+      console.error('Error hiding product:', err);
+      toast.error('Gagal menghapus produk dari daftar');
+    }
+  };
+
+  const openComplaintForm = (productId: string) => {
+    setComplainProductId(productId);
+    setComplainReason('');
+    setComplainEmail(profile.email || '');
+    setComplainPhone(profile.phone || '');
+  };
+
+  const submitComplaint = async (product: { id: string; name: string }) => {
+    try {
+      setComplainSubmitting(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Silakan login terlebih dahulu');
+        navigate('/auth');
+        return;
+      }
+      // Simpan komplain ke tabel refund_requests jika tersedia
+      const insertPayload = {
+        user_id: user.id,
+        product_id: product.id,
+        reason: complainReason,
+        contact_email: complainEmail,
+        contact_phone: complainPhone,
+        status: 'pending'
+      } as any;
+      const { error } = await supabase.from('refund_requests').insert(insertPayload);
+      if (error) {
+        console.warn('Gagal menyimpan ke refund_requests, lanjutkan kirim email saja:', error);
+      }
+      // Kirim email via mailto ke tim Moodlab
+      const subject = encodeURIComponent(`Pengajuan Pengembalian - ${product.name}`);
+      const body = encodeURIComponent(
+        `Nama: ${profile.full_name}\n` +
+        `Email: ${complainEmail}\n` +
+        `Nomor: ${complainPhone}\n` +
+        `Produk: ${product.name}\n` +
+        `Alasan Komplain/Pengembalian:\n${complainReason}\n\n` +
+        `Tanggal: ${new Date().toLocaleString('id-ID')}`
+      );
+      window.location.href = `mailto:support@moodlab.id?subject=${subject}&body=${body}`;
+      toast.success('Komplain dikirim. Kami akan menghubungi Anda via email.');
+      setComplainProductId(null);
+    } catch (err) {
+      console.error('Error submitting complaint:', err);
+      toast.error('Gagal mengirim komplain');
+    } finally {
+      setComplainSubmitting(false);
+    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -486,7 +566,9 @@ const Profile = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  purchasedProducts.map((item) => (
+                  purchasedProducts
+                    .filter((pp) => !hiddenProductIds.includes(pp.product.id))
+                    .map((item) => (
                     <Card key={item.id}>
                       <div className="flex gap-4 p-6">
                         {item.product.image_url ? (
@@ -506,6 +588,7 @@ const Profile = () => {
                           <p className="text-sm text-muted-foreground mb-4">
                             {item.product.description}
                           </p>
+                          <div className="flex flex-wrap gap-2">
                           <Button
                             onClick={() =>
                               handleDownload(
@@ -518,6 +601,63 @@ const Profile = () => {
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </Button>
+                          <Button variant="outline" onClick={() => openComplaintForm(item.product)}>
+                            <AlertCircle className="h-4 w-4 mr-2" /> Komplain
+                          </Button>
+                          <Button variant="destructive" onClick={() => hideProductFromList(item.product.id)}>
+                            <Trash className="h-4 w-4 mr-2" /> Hapus dari daftar
+                          </Button>
+                          </div>
+                          {complainProductId === item.product.id && (
+                            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+                              <h4 className="font-semibold mb-2">Form Komplain / Pengembalian</h4>
+                              <div className="grid gap-3">
+                                <div>
+                                  <Label htmlFor={`reason-${item.product.id}`}>Alasan</Label>
+                                  <textarea
+                                    id={`reason-${item.product.id}`}
+                                    className="w-full border rounded px-3 py-2"
+                                    rows={4}
+                                    placeholder="Jelaskan masalah/alasannya..."
+                                    value={complainReason}
+                                    onChange={(e) => setComplainReason(e.target.value)}
+                                  />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <Label htmlFor={`email-${item.product.id}`}>Email</Label>
+                                    <Input
+                                      id={`email-${item.product.id}`}
+                                      type="email"
+                                      placeholder="email@contoh.com"
+                                      value={complainEmail}
+                                      onChange={(e) => setComplainEmail(e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`phone-${item.product.id}`}>Nomor Telepon</Label>
+                                    <Input
+                                      id={`phone-${item.product.id}`}
+                                      type="tel"
+                                      placeholder="08xxxxxxxxxx"
+                                      value={complainPhone}
+                                      onChange={(e) => setComplainPhone(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => submitComplaint(item.product)}
+                                    disabled={complainSubmitting || complainReason.trim() === ''}
+                                  >
+                                    Kirim Komplain
+                                  </Button>
+                                  <Button variant="outline" onClick={() => setComplainProductId(null)}>Batal</Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Komplain akan dikirim ke email Moodlab dan dicatat untuk ditinjau. Jika disetujui, pengembalian akan diproses.</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </Card>
