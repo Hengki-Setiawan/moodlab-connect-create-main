@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { uploadImage } from "@/integrations/supabase/storage";
 import UsersManagement from "@/components/admin/UsersManagement";
 import ServicesManagement from "@/components/admin/ServicesManagement";
 
@@ -27,6 +28,7 @@ interface Product {
   price: number;
   type: string;
   category: string;
+  image_url?: string | null;
   created_at: string;
 }
 
@@ -71,7 +73,11 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   // Edit produk
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string }>({ name: '', description: '', price: 0, type: '', category: '' });
+const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string }>(
+  { name: '', description: '', price: 0, type: '', category: '', image_url: '' }
+);
+const [imageFile, setImageFile] = useState<File | null>(null);
+const [imagePreview, setImagePreview] = useState<string | null>(null);
   // Edit status konsultasi
   const [editingConsultId, setEditingConsultId] = useState<string | null>(null);
   const [editingConsultStatus, setEditingConsultStatus] = useState<string>('pending');
@@ -521,17 +527,28 @@ const AdminDashboard = () => {
 
   const startEditProduct = (p: Product) => {
     setEditingProductId(p.id);
-    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '' });
+    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined });
+    setImageFile(null);
+    setImagePreview(p.image_url ?? null);
   };
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const saveEditProduct = async () => {
     if (!editingProductId) return;
     try {
-      const payload = { ...editingData };
+      const payload: any = { ...editingData };
+      // Jika ada file gambar baru, upload dan set image_url
+      if (imageFile) {
+        const uploaded = await uploadImage(imageFile, 'Gambar', 'products');
+        if (uploaded && uploaded.url) {
+          payload.image_url = uploaded.url;
+        }
+      }
       const { error } = await supabaseAdmin
         .from('products')
         .update(payload)
@@ -540,6 +557,8 @@ const AdminDashboard = () => {
       console.log('Produk diperbarui');
       setProducts(prev => prev.map(p => p.id === editingProductId ? { ...p, ...payload } as Product : p));
       setEditingProductId(null);
+      setImageFile(null);
+      setImagePreview(null);
     } catch (err) {
       console.error('Gagal menyimpan perubahan produk:', err);
     }
@@ -745,6 +764,7 @@ const AdminDashboard = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                      <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gambar</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                       <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
@@ -755,7 +775,7 @@ const AdminDashboard = () => {
                   <tbody className="divide-y divide-gray-200">
                     {displayedProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
+                        <td colSpan={7} className="px-3 py-2 md:px-6 md:py-4 text-center text-sm text-gray-500">
                           Tidak ada produk
                         </td>
                       </tr>
@@ -768,6 +788,24 @@ const AdminDashboard = () => {
                                 <div className="space-y-2">
                                   <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
                                   <textarea className="border rounded px-2 py-1 w-full resize-y" rows={3} placeholder="Deskripsi" value={editingData.description} onChange={(e) => setEditingData({ ...editingData, description: e.target.value })} />
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 md:px-6 md:py-4 text-sm">
+                                <div className="flex items-center gap-3">
+                                  {imagePreview ? (
+                                    <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded" />
+                                  ) : (
+                                    <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">No Img</div>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0] || null;
+                                      setImageFile(file);
+                                      setImagePreview(file ? URL.createObjectURL(file) : (editingData.image_url || null));
+                                    }}
+                                  />
                                 </div>
                               </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm">
@@ -788,6 +826,13 @@ const AdminDashboard = () => {
                           ) : (
                             <>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{product.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {product.image_url ? (
+                                  <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{formatPrice(product.price)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{product.type}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{product.category}</td>

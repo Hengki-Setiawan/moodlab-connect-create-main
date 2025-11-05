@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminCreateRecord } from '@/integrations/supabase/admin';
 import { uploadImage } from '@/integrations/supabase/storage';
+import { supabaseAdmin } from '@/integrations/supabase/admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,11 @@ export default function AddProduct() {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [digitalFileUrl, setDigitalFileUrl] = useState('');
+  const [digitalBucket, setDigitalBucket] = useState('Produk Digital');
+  const [digitalFolder, setDigitalFolder] = useState('uploads');
+  const [digitalFiles, setDigitalFiles] = useState<string[]>([]);
+  const [digitalUploading, setDigitalUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -82,7 +88,8 @@ export default function AddProduct() {
         stock: parseInt(formData.stock || '0', 10),
         type: formData.type,
         category: formData.category,
-        image_url: null
+        image_url: null,
+        file_url: null
       };
 
       // Upload gambar jika ada
@@ -91,6 +98,11 @@ export default function AddProduct() {
         if (imageData) {
           productData.image_url = imageData.url;
         }
+      }
+
+      // Set file digital bila ada dan tipe digital
+      if ((formData.type === 'ebook' || formData.type === 'template') && digitalFileUrl) {
+        productData.file_url = digitalFileUrl;
       }
 
       // Simpan produk ke database
@@ -109,12 +121,45 @@ export default function AddProduct() {
         });
         setImageFile(null);
         setImagePreview('');
+        setDigitalFileUrl('');
       }
     } catch (error) {
       console.error('Error adding product:', error);
       toast.error('Gagal menambahkan produk. Silakan coba lagi.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDigitalUpload: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setDigitalUploading(true);
+      const path = `${digitalFolder}/${Date.now()}_${file.name}`;
+      const { error } = await supabaseAdmin.storage.from(digitalBucket).upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+      setDigitalFileUrl(data.publicUrl);
+      toast.success('File digital diupload');
+    } catch (err) {
+      console.error('Error upload digital file:', err);
+      toast.error('Gagal upload file digital');
+    } finally {
+      setDigitalUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const loadDigitalFiles = async () => {
+    try {
+      const { data, error } = await supabaseAdmin.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+      if (error) throw error;
+      setDigitalFiles((data || []).map((d: any) => d.name));
+      toast.success('Daftar file dimuat');
+    } catch (err) {
+      console.error('Error list digital files:', err);
+      toast.error('Gagal memuat daftar file');
     }
   };
 
@@ -239,6 +284,65 @@ export default function AddProduct() {
                   </div>
                 )}
               </div>
+
+              {(formData.type === 'ebook' || formData.type === 'template') && (
+                <div className="space-y-3">
+                  <Label>File Digital</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Upload File ke Storage</Label>
+                      <Input type="file" accept="application/pdf,application/zip,application/octet-stream" onChange={handleDigitalUpload} disabled={digitalUploading} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Ambil dari Storage</Label>
+                      <div className="flex gap-2">
+                        <Select value={digitalBucket} onValueChange={setDigitalBucket}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih bucket" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Produk Digital">Produk Digital</SelectItem>
+                            <SelectItem value="Gambar">Gambar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={digitalFolder} onValueChange={setDigitalFolder}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih folder" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="uploads">uploads</SelectItem>
+                            <SelectItem value="products">products</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" variant="outline" onClick={loadDigitalFiles}>Refresh</Button>
+                      </div>
+                      {digitalFiles.length > 0 && (
+                        <div className="mt-2">
+                          <Select onValueChange={(name) => {
+                            const path = `${digitalFolder}/${name}`;
+                            const { data } = supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+                            setDigitalFileUrl(data.publicUrl);
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih file" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {digitalFiles.map((n) => (
+                                <SelectItem key={n} value={n}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">URL File Digital (public)</Label>
+                    <Input value={digitalFileUrl} onChange={(e) => setDigitalFileUrl(e.target.value)} placeholder="https://..." />
+                    <p className="text-xs text-muted-foreground mt-1">URL ini akan disimpan sebagai file_url. Gunakan public URL dari Storage agar pembeli bisa mengunduh dari halaman Profil.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           

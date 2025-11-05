@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, PlusCircle, UserPlus } from "lucide-react";
 import AdminNavbar from "@/components/AdminNavbar";
-import { getImageUrl } from "@/integrations/supabase/storage";
+import { getImageUrl, uploadImage } from "@/integrations/supabase/storage";
 
 interface Product {
   id: string;
@@ -33,6 +33,9 @@ const Admin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [digitalFileUrl, setDigitalFileUrl] = useState<string>("");
 
   useEffect(() => {
     checkAdminStatus();
@@ -88,6 +91,13 @@ const Admin = () => {
     e.preventDefault();
     
     try {
+      // Upload gambar baru bila ada
+      let uploadedImageUrl: string | null = null;
+      if (imageFile) {
+        const imageData = await uploadImage(imageFile);
+        uploadedImageUrl = imageData?.url || null;
+      }
+
       if (isEditing && currentProduct.id) {
         const { error } = await supabase
           .from("products")
@@ -98,6 +108,8 @@ const Admin = () => {
             type: currentProduct.type,
             category: currentProduct.category,
             stock: currentProduct.stock,
+            image_url: uploadedImageUrl ?? currentProduct.image_url ?? null,
+            file_url: digitalFileUrl || currentProduct.file_url || null,
           })
           .eq("id", currentProduct.id);
 
@@ -113,6 +125,8 @@ const Admin = () => {
             type: currentProduct.type,
             category: currentProduct.category,
             stock: currentProduct.stock || -1,
+            image_url: uploadedImageUrl,
+            file_url: digitalFileUrl || null,
           });
 
         if (error) throw error;
@@ -121,6 +135,9 @@ const Admin = () => {
 
       setCurrentProduct({});
       setIsEditing(false);
+      setImageFile(null);
+      setImagePreview("");
+      setDigitalFileUrl("");
       fetchProducts();
     } catch (error) {
       console.error("Error saving product:", error);
@@ -149,6 +166,9 @@ const Admin = () => {
   const handleEdit = (product: Product) => {
     setCurrentProduct(product);
     setIsEditing(true);
+    setImageFile(null);
+    setImagePreview("");
+    setDigitalFileUrl(product.file_url || "");
   };
 
   const formatPrice = (price: number) => {
@@ -164,6 +184,23 @@ const Admin = () => {
     const isHttp = /^https?:\/\//.test(url);
     if (isHttp) return url;
     return getImageUrl(url) || "/placeholder.svg";
+  };
+
+  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran gambar maksimal 2MB");
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(String(reader.result));
+    reader.readAsDataURL(file);
   };
 
   if (isLoading) {
@@ -402,6 +439,36 @@ const Admin = () => {
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Gambar Produk (opsional)</Label>
+                      <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
+                      {imagePreview || currentProduct.image_url ? (
+                        <div className="mt-2">
+                          <p className="text-xs text-muted-foreground">Preview:</p>
+                          <div className="relative w-full h-40 border rounded-md overflow-hidden">
+                            <img
+                              src={imagePreview || resolveImageUrl(currentProduct.image_url || null)}
+                              alt="Preview"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {(currentProduct.type === "ebook" || currentProduct.type === "template") && (
+                      <div className="space-y-2">
+                        <Label htmlFor="file_url">File Digital (URL dari Storage)</Label>
+                        <Input
+                          id="file_url"
+                          placeholder="https://..."
+                          value={digitalFileUrl}
+                          onChange={(e) => setDigitalFileUrl(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Isi dengan URL publik file di Supabase Storage. Anda bisa menyalin public URL dari tab Storage.</p>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex gap-2">
                     {isEditing && (
