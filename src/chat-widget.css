@@ -184,3 +184,78 @@
   );
   border-radius: 8px;
 }
+
+/* ===== Fallback offline launcher (muncul jika env belum terpasang) ===== */
+.ml-offline-wrapper {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9998; /* sedikit di bawah n8n-chat */
+}
+
+.ml-offline-launcher {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid)),
+    hsl(var(--gradient-end))
+  );
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.ml-offline-launcher:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(0,0,0,0.3); }
+
+.ml-offline-launcher::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 26px;
+  height: 26px;
+  background: hsl(var(--primary-foreground));
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ffffff" d="M2 21l21-9L2 3l5 7 7 2-7 2-5 7z"/></svg>') center/contain no-repeat;
+}
+
+.ml-offline-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: 70px;
+  width: 280px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+  padding: 14px;
+}
+
+.ml-offline-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ml-offline-desc {
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.ml-offline-action {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid))
+  );
+  color: hsl(var(--primary-foreground));
+}
+
+.dark .ml-offline-tooltip { background: hsl(var(--card)); border-color: hsl(var(--border)); }
