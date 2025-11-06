@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
@@ -67,25 +68,27 @@ export default function ChatWidget() {
   return (
     <>
       <div id="n8n-chat" />
-      {showFallback && (
-        <div className="ml-offline-wrapper">
-          <button
-            className="ml-offline-launcher"
-            aria-label="Moodlab Chat (offline)"
-            onClick={() => setFallbackOpen((v) => !v)}
-          />
-          {fallbackOpen && (
-            <div className="ml-offline-tooltip">
-              <div className="ml-offline-title">Moodlab Assistant</div>
-              <div className="ml-offline-desc">
-                Chat belum aktif atau gagal inisialisasi. Pastikan `VITE_N8N_CHAT_URL` di Vercel,
-                domain situs ada di Allowed origins n8n, dan endpoint n8n memakai HTTPS.
+      {showFallback &&
+        createPortal(
+          <div className="ml-offline-wrapper" data-test-id="ml-offline-wrapper">
+            <button
+              className="ml-offline-launcher"
+              aria-label="Moodlab Chat (offline)"
+              onClick={() => setFallbackOpen((v) => !v)}
+            />
+            {fallbackOpen && (
+              <div className="ml-offline-tooltip">
+                <div className="ml-offline-title">Moodlab Assistant</div>
+                <div className="ml-offline-desc">
+                  Chat belum aktif atau gagal inisialisasi. Pastikan `VITE_N8N_CHAT_URL` di Vercel,
+                  domain situs ada di Allowed origins n8n, dan endpoint n8n memakai HTTPS.
+                </div>
+                <a href="/kontak" className="ml-offline-action">Hubungi Kami</a>
               </div>
-              <a href="/kontak" className="ml-offline-action">Hubungi Kami</a>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
