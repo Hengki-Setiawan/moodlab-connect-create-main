@@ -16,6 +16,12 @@ export default function ChatWidget() {
       return;
     }
 
+    console.log("[ChatWidget] Mulai inisialisasi dengan webhookUrl:", webhookUrl);
+
+    // Selalu tampilkan fallback dulu
+    setShowFallback(true);
+    console.log("[ChatWidget] Fallback ditampilkan awal");
+
     // Coba init widget n8n
     try {
       createChat({
@@ -38,16 +44,20 @@ export default function ChatWidget() {
           },
         },
       });
+      console.log("[ChatWidget] Inisialisasi n8n chat berhasil");
     } catch (e) {
       console.error("[ChatWidget] Gagal init n8n chat:", e);
+      return; // Jaga fallback tetap tampil jika error
     }
 
-    // Setelah 1.8s, jika launcher belum muncul, tampilkan fallback
+    // Setelah init, cek dalam 1.8s apakah launcher muncul; jika ya, sembunyikan fallback
     const timer = setTimeout(() => {
       const hasLauncher = document.querySelector('#n8n-chat [class*="launcher"]');
-      if (!hasLauncher) {
-        console.warn("[ChatWidget] Launcher tidak terbuat, tampilkan fallback offline");
-        setShowFallback(true);
+      if (hasLauncher) {
+        console.log("[ChatWidget] Launcher n8n terdeteksi, sembunyikan fallback");
+        setShowFallback(false);
+      } else {
+        console.warn("[ChatWidget] Launcher tidak terdeteksi setelah init, jaga fallback tetap tampil");
       }
     }, 1800);
 
