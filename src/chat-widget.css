@@ -9,6 +9,12 @@
   --chat-muted: #F3F4F6;
   --chat-muted-foreground: #6B7280;
   --chat-border: #E5E7EB;
+
+  /* Font khusus untuk header chatbot */
+  --chat-header-font: Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif;
+  /* Warna brand gradient (ungu) */
+  --brand-grad-start: #6B46C1;
+  --brand-grad-end: #B794F4;
 }
 
 html.dark {
@@ -19,23 +25,40 @@ html.dark {
   --chat-border: #374151;
 }
 
-/* Tombol Launcher */
-#n8n-chat [class*="launcher-button"] {
-  background: linear-gradient(135deg, #4db7ff, #9d5cff, #ff5bb7) !important;
+/* Tombol Launcher / Toggle / Close (cakupan luas agar pasti kena) */
+#n8n-chat :is([class*="launcher"],[class*="toggle"],[class*="close"]) {
+  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
+  color: #fff !important;
+}
+
+#n8n-chat :is([class*="launcher"],[class*="toggle"],[class*="close"]) svg {
+  color: #fff !important;
+  fill: #fff !important;
 }
 
 #n8n-chat [class*="launcher-button"] svg {
   color: white !important;
 }
 
-/* Header */
-#n8n-chat [class*="chat-header"] {
-  background: linear-gradient(135deg, #4db7ff, #9d5cff, #ff5bb7) !important;
+/* Header (cakupan luas: header, ChatHeader, header class generic) */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
+  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
 }
 
-#n8n-chat [class*="chat-header"] h1,
-#n8n-chat [class*="chat-header"] p {
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before {
+  /* Matikan overlay bawaan jika ada */
+  background: none !important;
+}
+
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
   color: var(--chat-primary-foreground) !important;
+}
+
+/* Font header chatbot */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
+  font-family: var(--chat-header-font) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.2px !important;
 }
 
 /* Bubble Pesan Keluar (User) */

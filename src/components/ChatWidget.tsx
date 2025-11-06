@@ -23,17 +23,17 @@ import { createChat } from "@n8n/chat";
     }
 
      try {
-       createChat({
-         webhookUrl,
-         webhookConfig: {
-           method: "POST",
-           headers: apiKey ? { "X-API-Key": apiKey } : {},
-         },
-         target: "#moodlab-n8n-chat-container",
-         mode: "window",
-         showWelcomeScreen: false,
-         loadPreviousSession: false,
-         initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
+      createChat({
+        webhookUrl,
+        webhookConfig: {
+          method: "POST",
+          headers: apiKey ? { "X-API-Key": apiKey } : {},
+        },
+        target: "#moodlab-n8n-chat-container",
+        mode: "window",
+        showWelcomeScreen: false,
+        loadPreviousSession: false,
+        initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
         i18n: {
           en: {
             title: "Moodlab Assistant",
@@ -45,6 +45,34 @@ import { createChat } from "@n8n/chat";
       // @ts-expect-error - simple global flag
       window.__mlN8nChatInited = true;
       console.log("[ChatWidget] n8n chat initialized successfully.");
+
+      // Terapkan patch gaya inline sebagai fallback jika CSS override tidak menempel
+      const applyInlineBranding = () => {
+        const root = document.querySelector('#n8n-chat') || document.body;
+        const header = root?.querySelector(
+          '[class*="chat-header"],[class*="ChatHeader"],[class*="header"], header'
+        ) as HTMLElement | null;
+        if (header) {
+          header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
+          const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
+          if (title) {
+            title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
+            title.style.fontWeight = '800';
+            title.style.letterSpacing = '0.2px';
+            title.style.color = '#FFFFFF';
+          }
+        }
+        const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
+        btns?.forEach((el) => {
+          const b = el as HTMLElement;
+          b.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
+          b.style.color = '#FFFFFF';
+        });
+      };
+
+      // Jalankan setelah render widget
+      requestAnimationFrame(() => applyInlineBranding());
+      setTimeout(applyInlineBranding, 500);
     } catch (error) {
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
     }
