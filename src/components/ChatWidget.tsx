@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import "@n8n/chat/style.css";
+import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
 
 export default function ChatWidget() {
@@ -14,13 +15,16 @@ export default function ChatWidget() {
       webhookUrl,
       target: "#n8n-chat",
       mode: "window",
+      showWelcomeScreen: false,
+      chatInputKey: "chatInput",
+      chatSessionKey: "sessionId",
       loadPreviousSession: true,
-      enableStreaming: true,
+      enableStreaming: false,
       initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
       i18n: {
         en: {
-          title: "Halo! 👋",
-          subtitle: "Mulai chat dengan Moodlab",
+          title: "Moodlab Assistant",
+          subtitle: "Kami siap membantu pertanyaanmu",
           footer: "",
           getStarted: "Mulai Percakapan",
           inputPlaceholder: "Tulis pertanyaanmu...",

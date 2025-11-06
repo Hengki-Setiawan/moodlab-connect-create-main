@@ -1,0 +1,186 @@
+/* Tema kustom untuk widget @n8n/chat agar selaras brand Moodlab */
+
+#n8n-chat {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Tombol launcher (gelembung) */
+#n8n-chat [class*="launcher"] {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid)),
+    hsl(var(--gradient-end))
+  );
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  border: none;
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+#n8n-chat [class*="launcher"]:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(0,0,0,0.3); }
+
+/* Sembunyikan ikon default lalu tampilkan ikon kustom */
+#n8n-chat [class*="launcher"] svg { display: none !important; }
+#n8n-chat [class*="launcher"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 26px;
+  height: 26px;
+  background: hsl(var(--primary-foreground));
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ffffff" d="M2 21l21-9L2 3l5 7 7 2-7 2-5 7z"/></svg>') center/contain no-repeat;
+}
+
+/* Jendela chat */
+#n8n-chat [class*="window"],
+#n8n-chat [class*="container"] {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+  backdrop-filter: saturate(1.2) blur(6px);
+}
+
+/* Header */
+#n8n-chat [class*="header"] {
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid)),
+    hsl(var(--gradient-end))
+  );
+  color: hsl(var(--primary-foreground));
+  padding-top: 18px;
+}
+
+#n8n-chat [class*="header"] [class*="title"],
+#n8n-chat [class*="header"] h1,
+#n8n-chat [class*="header"] h2 {
+  color: hsl(var(--primary-foreground));
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+/* Area pesan */
+#n8n-chat [class*="messages"],
+#n8n-chat [class*="body"] {
+  background: hsl(var(--card));
+}
+
+/* Bubble pesan masuk (AI) */
+#n8n-chat [class*="message"][class*="in"] [class*="bubble"],
+#n8n-chat [class*="incoming"] [class*="bubble"] {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-radius: 16px;
+  border: 1px solid hsl(var(--border));
+}
+
+/* Bubble pesan keluar (user) */
+#n8n-chat [class*="message"][class*="out"] [class*="bubble"],
+#n8n-chat [class*="outgoing"] [class*="bubble"] {
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid)),
+    hsl(var(--gradient-end))
+  );
+  color: hsl(var(--primary-foreground));
+  border-radius: 16px 16px 4px 16px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* Input dan footer */
+#n8n-chat [class*="footer"],
+#n8n-chat [class*="input-area"] {
+  background: hsl(var(--card));
+  border-top: 1px solid hsl(var(--border));
+}
+
+#n8n-chat input[type="text"],
+#n8n-chat textarea,
+#n8n-chat [class*="input"] {
+  border: 1px solid hsl(var(--input));
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+}
+
+#n8n-chat [class*="send"],
+#n8n-chat button[type="submit"] {
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid))
+  );
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: 12px;
+  position: relative;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+#n8n-chat [class*="send"]:hover,
+#n8n-chat button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+}
+
+/* Sembunyikan ikon default tombol kirim lalu pakai ikon kustom */
+#n8n-chat [class*="send"] svg,
+#n8n-chat button[type="submit"] svg { display: none !important; }
+
+#n8n-chat [class*="send"]::before,
+#n8n-chat button[type="submit"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  background: hsl(var(--primary-foreground));
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ffffff" d="M3.4 20.6L21 12 3.4 3.4 7 11l6 1-6 1-3.6 7.6z"/></svg>') center/contain no-repeat;
+}
+
+/* Placeholder teks */
+#n8n-chat ::placeholder { color: hsl(var(--muted-foreground)); }
+
+/* Animasi halus */
+#n8n-chat [class*="bubble"],
+#n8n-chat [class*="window"],
+#n8n-chat [class*="launcher"] {
+  transition: all 200ms ease;
+}
+
+/* Dark mode support */
+.dark #n8n-chat [class*="messages"],
+.dark #n8n-chat [class*="body"],
+.dark #n8n-chat [class*="footer"] {
+  background: hsl(var(--card));
+}
+
+.dark #n8n-chat [class*="message"][class*="in"] [class*="bubble"],
+.dark #n8n-chat [class*="incoming"] [class*="bubble"] {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+/* Scrollbar yang lebih halus pada area pesan */
+#n8n-chat [class*="messages"]::-webkit-scrollbar {
+  width: 8px;
+}
+#n8n-chat [class*="messages"]::-webkit-scrollbar-track {
+  background: hsl(var(--card));
+}
+#n8n-chat [class*="messages"]::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-mid))
+  );
+  border-radius: 8px;
+}
