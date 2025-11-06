@@ -67,14 +67,27 @@ export default function ChatWidget() {
 
   return (
     <>
-      <div id="n8n-chat" />
+      <div id="n8n-chat" style={{ position: "relative", zIndex: 2147483647 }} />
       {showFallback &&
         createPortal(
-          <div className="ml-offline-wrapper" data-test-id="ml-offline-wrapper">
+          <div
+            className="ml-offline-wrapper"
+            data-test-id="ml-offline-wrapper"
+            style={{ position: "fixed", right: 24, bottom: 24, zIndex: 2147483647 }}
+          >
             <button
               className="ml-offline-launcher"
               aria-label="Moodlab Chat (offline)"
               onClick={() => setFallbackOpen((v) => !v)}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 9999,
+                background: "linear-gradient(135deg, #4db7ff, #9d5cff, #ff5bb7)",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                border: "none",
+                cursor: "pointer",
+              }}
             />
             {fallbackOpen && (
               <div className="ml-offline-tooltip">
