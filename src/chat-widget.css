@@ -1,4 +1,4 @@
-/* === Tema Flat & Minimalis untuk @n8n/chat === */
+/* === Tema minimal untuk @n8n/chat — fokus pada warna, bukan layout === */
 
 /* Variabel Warna Utama */
 :root {
@@ -19,184 +19,50 @@ html.dark {
   --chat-border: #374151;
 }
 
-/* Base container */
-#n8n-chat { z-index: 9999; }
-
 /* Tombol Launcher */
 #n8n-chat [class*="launcher-button"] {
-  background: var(--chat-primary-color) !important;
-  border-radius: 9999px !important;
-  width: 60px !important;
-  height: 60px !important;
-  border: none !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
-  transition: transform 200ms ease !important;
-}
-#n8n-chat [class*="launcher-button"]:hover {
-  transform: scale(1.05) !important;
+  background: linear-gradient(135deg, #4db7ff, #9d5cff, #ff5bb7) !important;
 }
 
-/* Ikon Launcher Kustom */
-#n8n-chat [class*="launcher-button"] svg { display: none !important; }
-#n8n-chat [class*="launcher-button"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 30px;
-  height: 30px;
-  background: var(--chat-primary-foreground);
-  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>') center/contain no-repeat;
-}
-
-/* Jendela Chat */
-#n8n-chat [class*="chat-window"] {
-  border-radius: 16px !important;
-  border: 1px solid var(--chat-border) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-  background: var(--chat-background) !important;
-  overflow: hidden;
+#n8n-chat [class*="launcher-button"] svg {
+  color: white !important;
 }
 
 /* Header */
 #n8n-chat [class*="chat-header"] {
-  background: var(--chat-background) !important;
-  border-bottom: 1px solid var(--chat-border) !important;
-  padding: 16px !important;
+  background: linear-gradient(135deg, #4db7ff, #9d5cff, #ff5bb7) !important;
 }
-#n8n-chat [class*="chat-header"] h1 {
-  color: var(--chat-foreground) !important;
-  font-size: 1.1rem !important;
-  font-weight: 600 !important;
-}
+
+#n8n-chat [class*="chat-header"] h1,
 #n8n-chat [class*="chat-header"] p {
-  color: var(--chat-muted-foreground) !important;
-  font-size: 0.9rem !important;
-}
-
-/* Area Pesan */
-#n8n-chat [class*="chat-body"] {
-  background: var(--chat-background) !important;
-  padding: 16px !important;
-}
-
-/* Bubble Pesan Masuk (AI) */
-#n8n-chat [class*="message-bubble"][class*="message-in"] {
-  background: var(--chat-muted) !important;
-  color: var(--chat-foreground) !important;
-  border-radius: 18px !important;
+  color: var(--chat-primary-foreground) !important;
 }
 
 /* Bubble Pesan Keluar (User) */
 #n8n-chat [class*="message-bubble"][class*="message-out"] {
   background: var(--chat-primary-color) !important;
   color: var(--chat-primary-foreground) !important;
-  border-radius: 18px 18px 4px 18px !important;
 }
 
-/* Footer & Input */
-#n8n-chat [class*="chat-footer"] {
-  background: var(--chat-background) !important;
-  border-top: 1px solid var(--chat-border) !important;
-  padding: 12px !important;
+/* Sembunyikan “Powered by n8n” dengan selektor yang robust */
+#n8n-chat a[href*="n8n"] {
+  display: none !important;
 }
-#n8n-chat [class*="chat-footer"] textarea {
-  border: 1px solid var(--chat-border) !important;
-  border-radius: 12px !important;
-  padding: 12px 16px !important;
-  background: var(--chat-background) !important;
-  color: var(--chat-foreground) !important;
-  box-shadow: none !important;
+#n8n-chat :is(div, p, span):has(a[href*="n8n"]) {
+  display: none !important;
 }
-#n8n-chat [class*="chat-footer"] textarea:focus {
-  border-color: var(--chat-primary-color) !important;
-  box-shadow: 0 0 0 3px var(--chat-primary-color) !important;
+#n8n-chat [class*="powered"],
+#n8n-chat [class*="powered-by"],
+#n8n-chat [class*="branding"],
+#n8n-chat [data-testid*="powered"] {
+  display: none !important;
 }
 
-/* Tombol Kirim */
-#n8n-chat [class*="send-button"] {
-  background: var(--chat-primary-color) !important;
-  border-radius: 12px !important;
-  width: 48px !important;
-  height: 48px !important;
-  border: none !important;
-  transition: opacity 200ms ease !important;
-}
-#n8n-chat [class*="send-button"]:hover {
-  opacity: 0.85 !important;
+/* Penyesuaian ringan untuk launcher di kontainer unik */
+#moodlab-n8n-chat-container [class*="chat-launcher"] {
+  background: linear-gradient(135deg, #6B46C1, #B794F4) !important;
 }
 
-/* Ikon Tombol Kirim Kustom */
-#n8n-chat [class*="send-button"] svg { display: none !important; }
-#n8n-chat [class*="send-button"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 24px;
-  height: 24px;
-  background: var(--chat-primary-foreground);
-  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>') center/contain no-repeat;
-}
-
-/* Placeholder */
-#n8n-chat ::placeholder { color: var(--chat-muted-foreground) !important; }
-
-/* Scrollbar */
-#n8n-chat [class*="chat-body"]::-webkit-scrollbar { width: 6px; }
-#n8n-chat [class*="chat-body"]::-webkit-scrollbar-track { background: transparent; }
-#n8n-chat [class*="chat-body"]::-webkit-scrollbar-thumb {
-  background: var(--chat-border);
-  border-radius: 6px;
-}
-#n8n-chat [class*="chat-body"]::-webkit-scrollbar-thumb:hover {
-  background: var(--chat-muted-foreground);
-}
-
-/* Fallback offline launcher (jika env tidak ada) */
-.ml-offline-wrapper {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 9998;
-}
-.ml-offline-launcher {
-  width: 60px;
-  height: 60px;
-  border-radius: 9999px;
-  background: var(--chat-primary-color);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-  border: none;
-  cursor: pointer;
-  position: relative;
-}
-.ml-offline-launcher::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 30px;
-  height: 30px;
-  background: var(--chat-primary-foreground);
-  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>') center/contain no-repeat;
-}
-.ml-offline-tooltip {
-  position: absolute;
-  right: 0;
-  bottom: 78px;
-  width: 280px;
-  background: var(--chat-background);
-  color: var(--chat-foreground);
-  border: 1px solid var(--chat-border);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-}
-.ml-offline-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-.ml-offline-desc {
-  font-size: 0.9rem;
-  color: var(--chat-muted-foreground);
+#moodlab-n8n-chat-container [class*="chat-launcher"] svg {
+  fill: white !important;
 }
