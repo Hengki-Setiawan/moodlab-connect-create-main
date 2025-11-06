@@ -4,6 +4,8 @@ import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
 
+console.log('[ChatWidget] VITE_N8N_CHAT_URL:', import.meta.env.VITE_N8N_CHAT_URL);
+
 export default function ChatWidget() {
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const [showFallback, setShowFallback] = useState(false);

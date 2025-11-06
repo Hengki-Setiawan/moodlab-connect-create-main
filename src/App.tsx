@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "./contexts/CartContext";
 import { Analytics } from "@vercel/analytics/react";
+import ChatWidget from "./components/ChatWidget";
 import Home from "./pages/Home";
 import Layanan from "./pages/Layanan";
 import Produk from "./pages/Produk";
@@ -120,6 +121,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Analytics />
+        {/* Global Chat Widget terhubung ke n8n melalui VITE_N8N_CHAT_URL */}
+        <ChatWidget />
         <BrowserRouter>
           {/* Tracker untuk page views */}
           <RouteChangeTracker />

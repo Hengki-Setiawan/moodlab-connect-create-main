@@ -877,6 +877,19 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                                 <div className="space-y-2">
                                   <input className="border rounded px-2 py-1 w-full" value={editingData.name} onChange={(e) => setEditingData({ ...editingData, name: e.target.value })} />
                                   <textarea className="border rounded px-2 py-1 w-full resize-y" rows={3} placeholder="Deskripsi" value={editingData.description} onChange={(e) => setEditingData({ ...editingData, description: e.target.value })} />
+                                  <textarea
+                                    className="border rounded px-2 py-1 w-full resize-y"
+                                    rows={4}
+                                    placeholder={"Tulis satu benefit per baris"}
+                                    value={(editingData.benefits || []).join('\n')}
+                                    onChange={(e) => setEditingData({
+                                      ...editingData,
+                                      benefits: e.target.value
+                                        .split(/\r?\n/)
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    })}
+                                  />
                                 </div>
                               </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm">
@@ -959,19 +972,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                                 </div>
                               </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm align-top">
-                                <textarea
-                                  className="border rounded px-2 py-1 w-full resize-y"
-                                  rows={4}
-                                  placeholder={"Tulis satu benefit per baris"}
-                                  value={(editingData.benefits || []).join('\n')}
-                                  onChange={(e) => setEditingData({
-                                    ...editingData,
-                                    benefits: e.target.value
-                                      .split(/\r?\n/)
-                                      .map((s) => s.trim())
-                                      .filter(Boolean)
-                                  })}
-                                />
+                                <div className="text-xs text-gray-500">Input Benefit dipindahkan ke kolom Nama</div>
                               </td>
                               <td className="px-3 py-2 md:px-6 md:py-4 text-sm">{formatDate(product.created_at)}</td>
                               <td className="px-6 py-4 text-right text-sm font-medium flex gap-2 justify-end">
@@ -981,7 +982,15 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
                             </>
                           ) : (
                             <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{product.name}</td>
+                              <td className="px-6 py-4 text-sm">
+                                <div className="font-medium">{product.name}</div>
+                                {product.benefits && product.benefits.length > 0 ? (
+                                  <div className="mt-1 text-xs text-gray-600 line-clamp-2">
+                                    {(product.benefits || []).slice(0, 3).join(', ')}
+                                    {product.benefits.length > 3 && '…'}
+                                  </div>
+                                ) : null}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 {product.image_url ? (
                                   <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded" />
