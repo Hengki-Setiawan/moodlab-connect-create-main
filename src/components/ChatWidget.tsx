@@ -4,8 +4,11 @@ import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
 
-const ChatWidget = () => {
-  const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL;
+ const ChatWidget = () => {
+   // Saat development, gunakan proxy lokal untuk menghindari CORS
+   const isDev = import.meta.env.DEV;
+   const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
+   const webhookUrl = isDev ? "/n8n-chat" : import.meta.env.VITE_N8N_CHAT_URL;
 
   useEffect(() => {
     if (!webhookUrl) {
@@ -19,14 +22,18 @@ const ChatWidget = () => {
       return;
     }
 
-  try {
-      createChat({
-        webhookUrl,
-        target: "#moodlab-n8n-chat-container",
-        mode: "window",
-        showWelcomeScreen: false,
-        loadPreviousSession: false,
-        initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
+     try {
+       createChat({
+         webhookUrl,
+         webhookConfig: {
+           method: "POST",
+           headers: apiKey ? { "X-API-Key": apiKey } : {},
+         },
+         target: "#moodlab-n8n-chat-container",
+         mode: "window",
+         showWelcomeScreen: false,
+         loadPreviousSession: false,
+         initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
         i18n: {
           en: {
             title: "Moodlab Assistant",
