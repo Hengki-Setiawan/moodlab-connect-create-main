@@ -76,22 +76,36 @@ import { createChat } from "@n8n/chat";
       const typing = {
         el: null as HTMLElement | null,
         active: false,
-        show() {
-          if (this.el) { this.active = true; return; }
+        _init() {
+          if (this.el) return;
           const container = document.querySelector('#n8n-chat') || document.body;
           const bubble = document.createElement('div');
           bubble.id = 'ml-typing-indicator';
           bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+          bubble.style.display = 'none'; // Awalnya disembunyikan
           container.appendChild(bubble);
           this.el = bubble;
-          this.active = true;
+        },
+        show() {
+          this._init();
+          if (this.el) {
+            this.el.style.display = 'block';
+            this.active = true;
+          }
         },
         hide() {
+          if (this.el) {
+            this.el.style.display = 'none';
+          }
           this.active = false;
-          if (!this.el) return;
-          this.el.remove();
-          this.el = null;
-        }
+        },
+        destroy() {
+          this.hide();
+          if (this.el) {
+            this.el.remove();
+            this.el = null;
+          }
+        },
       };
 
       // Intercept fetch ke webhook n8n untuk menampilkan typing lebih dini
@@ -129,11 +143,7 @@ import { createChat } from "@n8n/chat";
           m.addedNodes.forEach((node) => {
             if (!(node instanceof HTMLElement)) return;
             const cls = node.className?.toString?.() || '';
-            // Saat user mengirim (message-out) => tampilkan typing
-            if (/message-bubble/.test(cls) && /message-out/.test(cls)) {
-              typing.show();
-            }
-            // Saat balasan masuk (message-in) => sembunyikan typing
+            // HANYA cek balasan masuk (message-in) untuk menyembunyikan typing
             if (/message-bubble/.test(cls) && /message-in/.test(cls)) {
               typing.hide();
             }
@@ -154,7 +164,7 @@ import { createChat } from "@n8n/chat";
       setTimeout(applyInlineBranding, 500);
       // Cleanup
       window.addEventListener('beforeunload', () => {
-        typing.hide();
+        typing.destroy();
         observer.disconnect();
         clearInterval(timeoutId);
         // Pulihkan fetch asli
