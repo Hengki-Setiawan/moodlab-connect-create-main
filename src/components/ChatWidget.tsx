@@ -53,6 +53,9 @@ import { createChat } from "@n8n/chat";
           '[class*="chat-header"],[class*="ChatHeader"],[class*="header"], header'
         ) as HTMLElement | null;
         if (header) {
+          // Set sumber gambar Mody ke variabel CSS agar pseudo-element ::before bisa menampilkan avatar
+          const modyUrl = (import.meta.env.VITE_MODY_HEADER_URL as string | undefined) || '/mody.png';
+          header.style.setProperty('--mody-header-image', `url('${modyUrl}')`);
           header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
           header.style.padding = '6px 14px';
           header.style.display = 'flex';
