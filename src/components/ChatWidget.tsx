@@ -37,7 +37,7 @@ import { createChat } from "@n8n/chat";
         i18n: {
           en: {
             title: "Moodlab Assistant",
-            subtitle: "Kami siap membantu pertanyaanmu",
+            subtitle: "",
             inputPlaceholder: "Tulis pertanyaanmu...",
           },
         },
@@ -65,27 +65,26 @@ import { createChat } from "@n8n/chat";
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
             title.style.fontWeight = '800';
             title.style.letterSpacing = '0.3px';
-            title.style.color = '#FFFFFF';
+            // Terapkan gaya gradient seperti logo website
+            title.style.backgroundImage = 'linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)), hsl(var(--gradient-end)))';
+            // @ts-ignore - vendor prefixed properties
+            title.style.webkitBackgroundClip = 'text';
+            // @ts-ignore
+            title.style.webkitTextFillColor = 'transparent';
+            title.style.backgroundClip = 'text';
+            title.style.color = 'transparent';
             title.style.fontSize = '18px';
             title.style.lineHeight = '1.1';
-            title.style.textShadow = '0 1px 2px rgba(0,0,0,0.25)';
             title.style.position = 'relative';
             title.style.textAlign = 'center';
-            // Tambahkan ikon lucu di kiri header jika belum ada
-            let icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
-            if (!icon) {
-              icon = document.createElement('span');
-              icon.id = 'ml-header-icon';
-              icon.textContent = '✨';
-              icon.style.position = 'absolute';
-              icon.style.left = '8px';
-              icon.style.top = '50%';
-              icon.style.transform = 'translateY(-50%)';
-              icon.style.fontSize = '18px';
-              icon.style.lineHeight = '1';
-              icon.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))';
-              header.appendChild(icon);
-            }
+            // Hapus ikon fallback jika ada
+            const icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
+            if (icon) icon.remove();
+          }
+          // Sembunyikan subtitle jika ada
+          const subtitle = header.querySelector('.subtitle, [class*="subtitle"], p') as HTMLElement | null;
+          if (subtitle) {
+            subtitle.style.display = 'none';
           }
         }
         const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
