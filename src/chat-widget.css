@@ -161,3 +161,34 @@ html.dark {
 #moodlab-n8n-chat-container [class*="chat-launcher"] svg {
   fill: white !important;
 }
+
+/* ===== Quick Replies (chips) ===== */
+#ml-quick-replies {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 144px; /* di atas input & typing indicator */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  z-index: 3;
+}
+
+#ml-quick-replies .ml-chip {
+  background: #ffffff;
+  color: #166534; /* hijau gelap */
+  border: 1px solid #86efac; /* hijau muda */
+  border-radius: 9999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+#ml-quick-replies .ml-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #f0fff4; /* hijau sangat muda */
+}

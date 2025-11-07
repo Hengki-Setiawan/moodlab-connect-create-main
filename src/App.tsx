@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { CartProvider } from "./contexts/CartContext";
 import { Analytics } from "@vercel/analytics/react";
 import ChatWidget from "./components/ChatWidget";
@@ -114,6 +115,47 @@ const RouteChangeTracker = () => {
 
 const queryClient = new QueryClient();
 
+// Wrapper untuk transisi halaman halus
+const Page = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.25, ease: "easeInOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Routes dengan AnimatePresence agar perpindahan rute terasa smooth
+const AppRoutesWithAnimations = () => {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Page><Home /></Page>} />
+        <Route path="/layanan" element={<Page><Layanan /></Page>} />
+        <Route path="/produk" element={<Page><Produk /></Page>} />
+        <Route path="/produk/:id" element={<Page><ProductDetail /></Page>} />
+        <Route path="/about" element={<Page><About /></Page>} />
+        <Route path="/kontak" element={<Page><Kontak /></Page>} />
+        <Route path="/auth" element={<Page><Auth /></Page>} />
+        <Route path="/cart" element={<Page><Cart /></Page>} />
+        <Route path="/checkout" element={<Page><Checkout /></Page>} />
+        <Route path="/profile" element={<Page><Profile /></Page>} />
+        <Route path="/admin" element={<Page><Admin /></Page>} />
+        <Route path="/admin-dashboard" element={<Page><StaffProtected><AdminDashboard /></StaffProtected></Page>} />
+        <Route path="/test-admin" element={<Page><TestAdmin /></Page>} />
+        <Route path="/delete-products" element={<Page><DeleteProducts /></Page>} />
+        <Route path="/add-product" element={<Page><AddProductPage /></Page>} />
+        <Route path="/add-admin" element={<Page><AddAdmin /></Page>} />
+        <Route path="/edit-profile" element={<Page><EditProfile /></Page>} />
+        <Route path="*" element={<Page><NotFound /></Page>} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -126,27 +168,7 @@ const App = () => (
         <BrowserRouter>
           {/* Tracker untuk page views */}
           <RouteChangeTracker />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/layanan" element={<Layanan />} />
-            <Route path="/produk" element={<Produk />} />
-            <Route path="/produk/:id" element={<ProductDetail />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/kontak" element={<Kontak />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin-dashboard" element={<StaffProtected><AdminDashboard /></StaffProtected>} />
-            <Route path="/test-admin" element={<TestAdmin />} />
-            <Route path="/delete-products" element={<DeleteProducts />} />
-            <Route path="/add-product" element={<AddProductPage />} />
-            <Route path="/add-admin" element={<AddAdmin />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutesWithAnimations />
         </BrowserRouter>
       </CartProvider>
     </TooltipProvider>

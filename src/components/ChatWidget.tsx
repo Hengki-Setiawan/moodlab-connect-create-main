@@ -63,6 +63,10 @@ import { createChat } from "@n8n/chat";
           header.style.justifyContent = 'center';
           header.style.position = 'relative';
           header.style.textAlign = 'center';
+          // Animasi muncul halus
+          header.style.opacity = '0';
+          header.style.transform = 'translateY(-6px)';
+          header.style.transition = 'opacity 200ms ease, transform 240ms ease';
           const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
           if (title) {
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
@@ -116,6 +120,26 @@ import { createChat } from "@n8n/chat";
           if (subtitle) {
             subtitle.style.display = 'none';
           }
+          // Tambahkan ikon robot svg di header (kanan)
+          let robot = header.querySelector('#ml-header-robot') as HTMLElement | null;
+          if (!robot) {
+            robot = document.createElement('span');
+            robot.id = 'ml-header-robot';
+            robot.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a2 2 0 012 2v1h3a2 2 0 012 2v8a3 3 0 01-3 3H8a3 3 0 01-3-3V7a2 2 0 012-2h3V4a2 2 0 012-2h2zm-5 7a1 1 0 100 2 1 1 0 000-2zm10 0a1 1 0 100 2 1 1 0 000-2zM9 15h6a3 3 0 00-6 0z"/></svg>';
+            Object.assign(robot.style, {
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: '3',
+            } as CSSStyleDeclaration);
+            header.appendChild(robot);
+          }
+          // Trigger animasi setelah gaya terpasang
+          requestAnimationFrame(() => {
+            header!.style.opacity = '1';
+            header!.style.transform = 'translateY(0)';
+          });
         }
         const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
         btns?.forEach((el) => {
@@ -123,6 +147,42 @@ import { createChat } from "@n8n/chat";
           b.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
           b.style.color = '#FFFFFF';
         });
+      };
+
+      // Quick Reply Chips di bawah area pesan untuk opsi klik cepat
+      const mountQuickReplies = (options: { label: string; value: string }[]) => {
+        const root = document.querySelector('#n8n-chat') || document.body;
+        if (!root || document.getElementById('ml-quick-replies')) return;
+        const inputEl = root.querySelector('input[placeholder], textarea[placeholder]') as HTMLInputElement | HTMLTextAreaElement | null;
+        let inputWrap = inputEl?.closest('[class*="footer"],[class*="composer"],[class*="Input"],[class*="input"], form') as HTMLElement | null;
+        const host = (inputWrap?.parentElement as HTMLElement | null)
+          || (root.querySelector('[class*="chat-window"],[class*="window"]') as HTMLElement | null)
+          || root;
+        if (host && getComputedStyle(host).position === 'static') {
+          host.style.position = 'relative';
+        }
+        const container = document.createElement('div');
+        container.id = 'ml-quick-replies';
+        options.forEach((opt) => {
+          const btn = document.createElement('button');
+          btn.className = 'ml-chip';
+          btn.type = 'button';
+          btn.textContent = opt.label;
+          btn.addEventListener('click', () => {
+            const input = root.querySelector('input[placeholder], textarea[placeholder]') as HTMLInputElement | HTMLTextAreaElement | null;
+            if (!input) return;
+            (input as any).value = opt.value;
+            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+            input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', bubbles: true }));
+          });
+          container.appendChild(btn);
+        });
+        if (inputWrap && inputWrap.parentElement) {
+          inputWrap.parentElement.insertBefore(container, inputWrap);
+        } else if (host) {
+          host.appendChild(container);
+        }
       };
 
       // Pasang typing indicator agar muncul SEBELUM balasan bot
@@ -178,6 +238,11 @@ import { createChat } from "@n8n/chat";
           typing.show();
           try {
             const res = await originalFetch(input as any, init as any);
+            // Deteksi error API key (401/403) dan beritahu pengguna
+            if (res && (res.status === 401 || res.status === 403)) {
+              console.warn('[ChatWidget] Kemungkinan error API key (status ', res.status, ').');
+              alert('Chat gagal autentikasi ke n8n. Apakah API key error? Jika ya, tolong isi VITE_N8N_API_KEY di .env dan restart server.');
+            }
             // Jangan langsung hide; biarkan MutationObserver yang mendeteksi balasan.
             // Tambahkan fallback hide agar tidak menggantung jika DOM tidak memicu observer.
             setTimeout(() => { if (typing.active) typing.hide(); }, 5000);
@@ -200,6 +265,11 @@ import { createChat } from "@n8n/chat";
             if (/message-bubble/.test(cls) && /message-in/.test(cls)) {
               typing.hide();
             }
+            // Sembunyikan quick replies setelah user mengirim pesan pertama
+            if (/message-bubble/.test(cls) && /message-out/.test(cls)) {
+              const qr = document.getElementById('ml-quick-replies');
+              if (qr) qr.remove();
+            }
           });
         }
       });
@@ -213,7 +283,15 @@ import { createChat } from "@n8n/chat";
       }, 30000);
 
       // Jalankan setelah render widget
-      requestAnimationFrame(() => applyInlineBranding());
+      requestAnimationFrame(() => {
+        applyInlineBranding();
+        mountQuickReplies([
+          { label: 'Info Harga', value: 'Tanyakan info harga layanan' },
+          { label: 'Cara Pesan', value: 'Bagaimana cara memesan layanan?' },
+          { label: 'Lokasi Layanan', value: 'Di mana lokasi layanan tersedia?' },
+          { label: 'Hubungi CS', value: 'Saya ingin menghubungi customer service' },
+        ]);
+      });
       setTimeout(applyInlineBranding, 500);
       // Cleanup
       window.addEventListener('beforeunload', () => {

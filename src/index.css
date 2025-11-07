@@ -88,6 +88,11 @@ All colors MUST be HSL.
   }
 }
 
+/* Scroll halus untuk navigasi anchor/link */
+@layer base {
+  html { scroll-behavior: smooth; }
+}
+
 @layer utilities {
   .gradient-primary {
     background: linear-gradient(135deg, 
