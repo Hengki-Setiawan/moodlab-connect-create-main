@@ -164,14 +164,13 @@ html.dark {
 
 /* ===== Quick Replies (chips) ===== */
 #ml-quick-replies {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 144px; /* di atas input & typing indicator */
+  /* Letakkan dalam flow layout agar tidak menimpa pesan */
+  position: static;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  z-index: 3;
+  gap: 6px; /* lebih rapat */
+  padding: 6px 0; /* lebih kecil */
+  margin: 6px 16px 0 16px; /* spasi kiri/kanan konsisten dengan konten */
 }
 
 #ml-quick-replies .ml-chip {
@@ -179,9 +178,9 @@ html.dark {
   color: #166534; /* hijau gelap */
   border: 1px solid #86efac; /* hijau muda */
   border-radius: 9999px;
-  padding: 8px 12px;
-  font-size: 13px;
-  line-height: 1;
+  padding: 6px 10px; /* lebih kecil */
+  font-size: 12px; /* lebih kecil */
+  line-height: 1.1;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease;
