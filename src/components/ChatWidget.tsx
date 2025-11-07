@@ -54,12 +54,14 @@ import { createChat } from "@n8n/chat";
         ) as HTMLElement | null;
         if (header) {
           header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
+          header.style.padding = '8px 16px';
           const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
           if (title) {
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
             title.style.fontWeight = '800';
             title.style.letterSpacing = '0.2px';
             title.style.color = '#FFFFFF';
+            title.style.fontSize = '20px';
           }
         }
         const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
@@ -70,9 +72,60 @@ import { createChat } from "@n8n/chat";
         });
       };
 
+      // Pasang typing indicator agar muncul SEBELUM balasan bot
+      const typing = {
+        el: null as HTMLElement | null,
+        show() {
+          if (this.el) return;
+          const container = document.querySelector('#n8n-chat') || document.body;
+          const bubble = document.createElement('div');
+          bubble.id = 'ml-typing-indicator';
+          bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+          container.appendChild(bubble);
+          this.el = bubble;
+        },
+        hide() {
+          if (!this.el) return;
+          this.el.remove();
+          this.el = null;
+        }
+      };
+
+      const root = document.querySelector('#n8n-chat') || document.body;
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          m.addedNodes.forEach((node) => {
+            if (!(node instanceof HTMLElement)) return;
+            const cls = node.className?.toString?.() || '';
+            // Saat user mengirim (message-out) => tampilkan typing
+            if (/message-bubble/.test(cls) && /message-out/.test(cls)) {
+              typing.show();
+            }
+            // Saat balasan masuk (message-in) => sembunyikan typing
+            if (/message-bubble/.test(cls) && /message-in/.test(cls)) {
+              typing.hide();
+            }
+          });
+        }
+      });
+      if (root) {
+        observer.observe(root, { childList: true, subtree: true });
+      }
+
+      // Safety timeout: sembunyikan jika tidak ada balasan lama
+      const timeoutId = setInterval(() => {
+        typing.hide();
+      }, 30000);
+
       // Jalankan setelah render widget
       requestAnimationFrame(() => applyInlineBranding());
       setTimeout(applyInlineBranding, 500);
+      // Cleanup
+      window.addEventListener('beforeunload', () => {
+        typing.hide();
+        observer.disconnect();
+        clearInterval(timeoutId);
+      });
     } catch (error) {
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
     }
