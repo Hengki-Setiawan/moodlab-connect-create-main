@@ -55,6 +55,11 @@ import { createChat } from "@n8n/chat";
         if (header) {
           header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
           header.style.padding = '6px 14px';
+          header.style.display = 'flex';
+          header.style.alignItems = 'center';
+          header.style.justifyContent = 'center';
+          header.style.position = 'relative';
+          header.style.textAlign = 'center';
           const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
           if (title) {
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
@@ -65,21 +70,21 @@ import { createChat } from "@n8n/chat";
             title.style.lineHeight = '1.1';
             title.style.textShadow = '0 1px 2px rgba(0,0,0,0.25)';
             title.style.position = 'relative';
-            title.style.paddingLeft = '28px';
-            // Tambahkan ikon lucu di kiri judul jika belum ada
-            let icon = title.querySelector('#ml-header-icon') as HTMLElement | null;
+            title.style.textAlign = 'center';
+            // Tambahkan ikon lucu di kiri header jika belum ada
+            let icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
             if (!icon) {
               icon = document.createElement('span');
               icon.id = 'ml-header-icon';
               icon.textContent = '✨';
               icon.style.position = 'absolute';
-              icon.style.left = '6px';
+              icon.style.left = '8px';
               icon.style.top = '50%';
               icon.style.transform = 'translateY(-50%)';
               icon.style.fontSize = '18px';
               icon.style.lineHeight = '1';
               icon.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))';
-              title.appendChild(icon);
+              header.appendChild(icon);
             }
           }
         }
