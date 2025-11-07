@@ -33,7 +33,7 @@ import { createChat } from "@n8n/chat";
         mode: "window",
         showWelcomeScreen: false,
         loadPreviousSession: false,
-        initialMessages: ["Halo! 👋", "Ada yang bisa saya bantu?"],
+        initialMessages: ["Halo saya Mody, AI chat bot dari Moodlab 😊", "Ada yang bisa saya bantu?"],
         i18n: {
           en: {
             title: "Moodlab Assistant",
@@ -65,27 +65,27 @@ import { createChat } from "@n8n/chat";
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
             title.style.fontWeight = '800';
             title.style.letterSpacing = '0.3px';
-            // Terapkan gaya gradient seperti logo website
-            title.style.backgroundImage = 'linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)), hsl(var(--gradient-end)))';
-            // @ts-ignore - vendor prefixed properties
-            title.style.webkitBackgroundClip = 'text';
+            // Ubah teks header menjadi putih (fallback inline)
+            title.style.backgroundImage = '';
             // @ts-ignore
-            title.style.webkitTextFillColor = 'transparent';
-            title.style.backgroundClip = 'text';
-            title.style.color = 'transparent';
+            title.style.webkitBackgroundClip = '';
+            // @ts-ignore
+            title.style.webkitTextFillColor = '';
+            title.style.backgroundClip = '';
+            title.style.color = '#FFFFFF';
             title.style.fontSize = '18px';
             title.style.lineHeight = '1.1';
             title.style.position = 'relative';
             title.style.textAlign = 'center';
-            // Perkuat keterbacaan: stroke + shadow
+            // Sedikit shadow untuk keterbacaan
             // @ts-ignore
-            title.style.webkitTextStroke = '0.6px rgba(20,20,20,0.35)';
-            title.style.textShadow = '0 2px 6px rgba(0,0,0,0.35)';
+            title.style.webkitTextStroke = '0';
+            title.style.textShadow = '0 1px 2px rgba(0,0,0,0.25)';
             // Hapus ikon fallback jika ada
             const icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
             if (icon) icon.remove();
           }
-          // Sembunyikan subtitle jika ada
+          // Sembunyikan subtitle (fallback inline)
           const subtitle = header.querySelector('.subtitle, [class*="subtitle"], p') as HTMLElement | null;
           if (subtitle) {
             subtitle.style.display = 'none';
