@@ -77,6 +77,10 @@ import { createChat } from "@n8n/chat";
             title.style.lineHeight = '1.1';
             title.style.position = 'relative';
             title.style.textAlign = 'center';
+            // Perkuat keterbacaan: stroke + shadow
+            // @ts-ignore
+            title.style.webkitTextStroke = '0.6px rgba(20,20,20,0.35)';
+            title.style.textShadow = '0 2px 6px rgba(0,0,0,0.35)';
             // Hapus ikon fallback jika ada
             const icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
             if (icon) icon.remove();

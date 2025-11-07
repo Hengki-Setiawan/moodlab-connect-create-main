@@ -79,6 +79,9 @@ html.dark {
   line-height: 1.1 !important;
   position: relative !important;
   text-align: center !important; /* pastikan teks di tengah */
+  /* Perkuat keterbacaan gradient text di atas background gradient */
+  -webkit-text-stroke: 0.6px rgba(20,20,20,0.35) !important;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35) !important;
 }
 
 /* Sembunyikan subtitle/tulisan kedua di header */
