@@ -54,14 +54,16 @@ import { createChat } from "@n8n/chat";
         ) as HTMLElement | null;
         if (header) {
           header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
-          header.style.padding = '8px 16px';
+          header.style.padding = '6px 14px';
           const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
           if (title) {
             title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
             title.style.fontWeight = '800';
-            title.style.letterSpacing = '0.2px';
+            title.style.letterSpacing = '0.3px';
             title.style.color = '#FFFFFF';
-            title.style.fontSize = '20px';
+            title.style.fontSize = '18px';
+            title.style.lineHeight = '1.1';
+            title.style.textShadow = '0 1px 2px rgba(0,0,0,0.25)';
           }
         }
         const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
