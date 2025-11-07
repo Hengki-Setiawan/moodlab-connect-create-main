@@ -75,20 +75,52 @@ import { createChat } from "@n8n/chat";
       // Pasang typing indicator agar muncul SEBELUM balasan bot
       const typing = {
         el: null as HTMLElement | null,
+        active: false,
         show() {
-          if (this.el) return;
+          if (this.el) { this.active = true; return; }
           const container = document.querySelector('#n8n-chat') || document.body;
           const bubble = document.createElement('div');
           bubble.id = 'ml-typing-indicator';
           bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
           container.appendChild(bubble);
           this.el = bubble;
+          this.active = true;
         },
         hide() {
+          this.active = false;
           if (!this.el) return;
           this.el.remove();
           this.el = null;
         }
+      };
+
+      // Intercept fetch ke webhook n8n untuk menampilkan typing lebih dini
+      const originalFetch = window.fetch.bind(window);
+      const chatPathname = (() => {
+        try { return new URL(webhookUrl!, window.location.origin).pathname; } catch { return webhookUrl!; }
+      })();
+      // @ts-expect-error - override fetch untuk keperluan UI
+      window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const urlStr = (() => {
+          if (typeof input === 'string') return input;
+          if (input instanceof URL) return input.toString();
+          try { return (input as Request).url; } catch { return ''; }
+        })();
+        if (urlStr && urlStr.includes(chatPathname)) {
+          // Tampilkan indikator segera ketika request dikirim
+          typing.show();
+          try {
+            const res = await originalFetch(input as any, init as any);
+            // Jangan langsung hide; biarkan MutationObserver yang mendeteksi balasan.
+            // Tambahkan fallback hide agar tidak menggantung jika DOM tidak memicu observer.
+            setTimeout(() => { if (typing.active) typing.hide(); }, 5000);
+            return res;
+          } catch (err) {
+            typing.hide();
+            throw err;
+          }
+        }
+        return originalFetch(input as any, init as any);
       };
 
       const root = document.querySelector('#n8n-chat') || document.body;
@@ -125,6 +157,9 @@ import { createChat } from "@n8n/chat";
         typing.hide();
         observer.disconnect();
         clearInterval(timeoutId);
+        // Pulihkan fetch asli
+        // @ts-expect-error - restore fetch
+        window.fetch = originalFetch;
       });
     } catch (error) {
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
