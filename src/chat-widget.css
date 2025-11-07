@@ -52,9 +52,20 @@ html.dark {
 }
 
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before {
-  /* Matikan overlay bawaan; jangan tampilkan ikon */
-  background: none !important;
-  content: none !important;
+  /* Tampilkan avatar Mody di header tanpa mengganggu pemusatan teks */
+  content: "" !important;
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  background-image: var(--mody-header-image, url('/mody.png')) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25) !important;
+  z-index: 2 !important;
 }
 
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
@@ -75,6 +86,7 @@ html.dark {
   line-height: 1.1 !important;
   position: relative !important;
   text-align: center !important; /* pastikan teks di tengah */
+  z-index: 3 !important; /* pastikan di atas avatar */
   /* Sedikit shadow untuk keterbacaan di atas background ungu */
   -webkit-text-stroke: 0 !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;

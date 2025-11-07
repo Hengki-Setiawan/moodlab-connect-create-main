@@ -84,6 +84,29 @@ import { createChat } from "@n8n/chat";
             // Hapus ikon fallback jika ada
             const icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
             if (icon) icon.remove();
+            // Tambahkan avatar Mody sebagai fallback inline jika gambar tidak muncul via CSS
+            const existingMody = header.querySelector('#ml-header-mody') as HTMLImageElement | null;
+            if (!existingMody) {
+              const modyImg = document.createElement('img');
+              modyImg.id = 'ml-header-mody';
+              const envUrl = (import.meta.env.VITE_MODY_HEADER_URL as string | undefined) || '/mody.png';
+              modyImg.src = envUrl;
+              modyImg.alt = 'Mody';
+              Object.assign(modyImg.style, {
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '8px',
+                objectFit: 'cover',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                zIndex: '2',
+              } as CSSStyleDeclaration);
+              modyImg.onerror = () => { modyImg.style.display = 'none'; };
+              header.appendChild(modyImg);
+            }
           }
           // Sembunyikan subtitle (fallback inline)
           const subtitle = header.querySelector('.subtitle, [class*="subtitle"], p') as HTMLElement | null;
