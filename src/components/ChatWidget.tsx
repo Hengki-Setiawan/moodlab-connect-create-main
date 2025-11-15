@@ -238,10 +238,18 @@ import { createChat } from "@n8n/chat";
           typing.show();
           try {
             const res = await originalFetch(input as any, init as any);
-            // Deteksi error API key (401/403) dan beritahu pengguna
-            if (res && (res.status === 401 || res.status === 403)) {
-              console.warn('[ChatWidget] Kemungkinan error API key (status ', res.status, ').');
-              alert('Chat gagal autentikasi ke n8n. Apakah API key error? Jika ya, tolong isi VITE_N8N_API_KEY di .env dan restart server.');
+            // Deteksi error umum dan tampilkan petunjuk
+            if (res && !res.ok) {
+              console.warn('[ChatWidget] Webhook error:', res.status, res.statusText);
+              if (res.status === 401 || res.status === 403) {
+                alert('Chat gagal autentikasi ke n8n (status ' + res.status + '). Apakah API key error? Jika ya, tolong isi VITE_N8N_API_KEY di .env dan restart server.');
+              } else if (res.status === 404) {
+                alert('Webhook tidak ditemukan (404). Pastikan workflow n8n aktif dan URL benar.');
+              } else if (res.status === 422) {
+                alert('Webhook menerima body yang tidak sesuai (422). Pastikan node Chat di n8n menerima format dari @n8n/chat.');
+              } else if (res.status >= 500) {
+                alert('Server n8n error (' + res.status + '). Coba cek log workflow.');
+              }
             }
             // Jangan langsung hide; biarkan MutationObserver yang mendeteksi balasan.
             // Tambahkan fallback hide agar tidak menggantung jika DOM tidak memicu observer.
