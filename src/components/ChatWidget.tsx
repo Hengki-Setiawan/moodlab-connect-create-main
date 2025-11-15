@@ -8,7 +8,14 @@ import { createChat } from "@n8n/chat";
    // Saat development, gunakan proxy lokal untuk menghindari CORS
   const isDev = import.meta.env.DEV;
   const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
-  const webhookUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
+  const rawWebhook = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
+  const webhookUrl = (() => {
+    if (!rawWebhook) return undefined as any;
+    const s = String(rawWebhook);
+    return /\/chat(\/?|$)/i.test(s)
+      ? s
+      : (s.endsWith('/') ? `${s}chat` : `${s}/chat`);
+  })();
 
   // State buka/tutup widget mengambang
   const [isOpen, setIsOpen] = useState(false);
