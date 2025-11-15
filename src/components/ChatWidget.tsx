@@ -48,7 +48,7 @@ import { createChat } from "@n8n/chat";
         webhookUrl,
         webhookConfig: {
           method: "POST",
-          headers: apiKey ? { "X-API-Key": apiKey } : {},
+          headers: apiKey ? { "X-N8N-API-KEY": apiKey } : {},
         },
         target: "#moodlab-n8n-chat-container",
         mode: "window",
