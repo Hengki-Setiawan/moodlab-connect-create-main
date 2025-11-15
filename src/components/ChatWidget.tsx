@@ -221,6 +221,16 @@ import { createChat } from "@n8n/chat";
         },
       };
 
+      // Helper: render bubble error ramah dalam jendela chat
+      const renderErrorBubble = (text: string) => {
+        const root = document.querySelector('#n8n-chat') || document.body;
+        const host = (root?.querySelector('[class*="messages"], [class*="Messages"], [class*="body"], [class*="content"], [class*="list"]') as HTMLElement | null) || (root as HTMLElement | null) || document.body;
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble message-in ml-error-bubble';
+        bubble.textContent = text;
+        host?.appendChild(bubble);
+      };
+
       // Intercept fetch ke webhook n8n untuk menampilkan typing lebih dini
       const originalFetch = window.fetch.bind(window);
       const chatPathname = (() => {
@@ -242,13 +252,13 @@ import { createChat } from "@n8n/chat";
             if (res && !res.ok) {
               console.warn('[ChatWidget] Webhook error:', res.status, res.statusText);
               if (res.status === 401 || res.status === 403) {
-                alert('Chat gagal autentikasi ke n8n (status ' + res.status + '). Apakah API key error? Jika ya, tolong isi VITE_N8N_API_KEY di .env dan restart server.');
+                renderErrorBubble('Autentikasi gagal (' + res.status + '). Jika API key error, isi VITE_N8N_API_KEY di .env lalu restart.');
               } else if (res.status === 404) {
-                alert('Webhook tidak ditemukan (404). Pastikan workflow n8n aktif dan URL benar.');
+                renderErrorBubble('Webhook tidak ditemukan (404). Pastikan workflow n8n aktif dan URL benar.');
               } else if (res.status === 422) {
-                alert('Webhook menerima body yang tidak sesuai (422). Pastikan node Chat di n8n menerima format dari @n8n/chat.');
+                renderErrorBubble('Format body tidak sesuai (422). Sesuaikan node Chat agar menerima format dari @n8n/chat.');
               } else if (res.status >= 500) {
-                alert('Server n8n error (' + res.status + '). Coba cek log workflow.');
+                renderErrorBubble('Maaf, server n8n error (' + res.status + '). Coba lagi nanti atau cek log workflow.');
               }
             }
             // Jangan langsung hide; biarkan MutationObserver yang mendeteksi balasan.
