@@ -86,7 +86,9 @@ html.dark {
 
 #ml-chat-widget .ml-widget-body {
   height: calc(100% - 44px);
-  padding: 6px 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
 }
 
 #ml-chat-widget .ml-widget-body iframe {
@@ -100,6 +102,13 @@ html.dark {
 #n8n-chat {
   width: 100% !important;
   height: 100% !important;
+}
+
+#ml-chat-content,
+#moodlab-n8n-chat-container,
+#n8n-chat {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 #ml-chat-widget .ml-widget-fallback {
@@ -246,6 +255,11 @@ html.dark {
   filter: brightness(1.06) !important;
 }
 
+/* Pertegas area composer agar kolom input selalu terlihat */
+#n8n-chat :is([class*="composer"],[class*="footer"],[class*="Input"]) {
+  padding: 8px !important;
+}
+
 /* Sembunyikan “Powered by n8n” dengan selektor yang robust */
 #n8n-chat a[href*="n8n"],
 #n8n-chat :is(div, p, span, small):has(a[href*="n8n"]),
@@ -256,6 +270,9 @@ html.dark {
 #n8n-chat :is(small,div,span,p)[aria-label*="powered" i] {
   display: none !important;
 }
+
+/* Sembunyikan disclaimer kecil yang biasanya menampilkan "Powered by" */
+#n8n-chat small { display: none !important; }
 
 /* Penyesuaian ringan untuk launcher di kontainer unik */
 #moodlab-n8n-chat-container [class*="chat-launcher"] {
