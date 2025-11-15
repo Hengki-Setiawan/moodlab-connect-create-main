@@ -9,13 +9,13 @@ import { createChat } from "@n8n/chat";
    const isDev = import.meta.env.DEV;
    const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
    const rawUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
-  // Selalu gunakan mode Embedded (@n8n/chat) sesuai permintaan (tanpa iframe)
-  // Pastikan endpoint /chat ada di URL
+  // Gunakan mode Embedded (@n8n/chat) DAN endpoint webhook langsung (tanpa /chat)
+  // Beberapa environment sebelumnya memakai suffix /chat untuk Hosted Chat,
+  // di embedded cukup /webhook/<id>. Jika ada /chat di env, kita trim.
   const webhookUrl = (() => {
     if (!rawUrl) return undefined as any;
-    return /\/chat(\/?|$)/.test(String(rawUrl))
-      ? String(rawUrl)
-      : (String(rawUrl).endsWith("/") ? `${String(rawUrl)}chat` : `${String(rawUrl)}/chat`);
+    const urlStr = String(rawUrl);
+    return urlStr.replace(/\/chat\/?$/i, "");
   })();
 
   // State buka/tutup widget mengambang

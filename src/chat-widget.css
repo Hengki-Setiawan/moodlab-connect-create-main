@@ -134,19 +134,18 @@ html.dark {
   to { opacity: 0; transform: translate3d(0, 10px, 0); }
 }
 
-/* Tombol Launcher / Toggle / Close (cakupan luas agar pasti kena) */
-#n8n-chat :is([class*="launcher"],[class*="toggle"],[class*="close"]) {
+/* Sembunyikan launcher/toggle bawaan n8n karena kita sudah punya tombol sendiri */
+#n8n-chat :is([class*="launcher"],[class*="toggle"]) {
+  display: none !important;
+}
+/* Tetap gaya tombol close jika ada di header internal */
+#n8n-chat :is([class*="close"]) {
   background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
   color: #fff !important;
 }
-
-#n8n-chat :is([class*="launcher"],[class*="toggle"],[class*="close"]) svg {
+#n8n-chat :is([class*="close"]) svg {
   color: #fff !important;
   fill: #fff !important;
-}
-
-#n8n-chat [class*="launcher-button"] svg {
-  color: white !important;
 }
 
 /* Header (cakupan luas: header, ChatHeader, header class generic) */
