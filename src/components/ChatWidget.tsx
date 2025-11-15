@@ -21,7 +21,14 @@ import { createChat } from "@n8n/chat";
   const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
   // Jangan tambahkan '/chat' otomatis. Ikuti apa yang diberikan di env.
   const useHostedChat = !!rawUrl && isHostedUrl && !forceEmbedded;
-  const webhookUrl = rawUrl;
+  // Normalisasi URL untuk Embedded: tambahkan '/chat' jika belum ada
+  const webhookUrl = (() => {
+    if (!rawUrl) return undefined as any;
+    if (useHostedChat) return rawUrl; // Hosted pakai URL persis (iframe)
+    // Embedded: pastikan endpoint /chat tersedia
+    if (/\/chat(\/?|$)/.test(String(rawUrl))) return rawUrl;
+    return String(rawUrl).endsWith("/") ? `${String(rawUrl)}chat` : `${String(rawUrl)}/chat`;
+  })();
 
   // Tidak ada state UI untuk versi non-floating
 

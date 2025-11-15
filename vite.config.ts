@@ -20,7 +20,14 @@ export default defineConfig(({ mode }) => {
               target: proxyTarget,
               changeOrigin: true,
               secure: true,
-              rewrite: () => proxyPathname,
+              // Pertahankan suffix path setelah /n8n-chat
+              // Misal: /n8n-chat/chat -> /webhook/<id>/chat
+              rewrite: (path) => {
+                const suffix = path.replace(/^\/n8n-chat/, "");
+                const base = proxyPathname || "";
+                const ensureSlash = base.endsWith("/") ? base.slice(0, -1) : base;
+                return `${ensureSlash}${suffix}` || base;
+              },
             },
           }
         : undefined,
