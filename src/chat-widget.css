@@ -41,7 +41,7 @@ html.dark {
   background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end));
   color: #fff;
   box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-  z-index: 9999;
+  z-index: 9998; /* lebih rendah dari window */
 }
 
 #ml-chat-widget .ml-widget-window {
@@ -55,7 +55,7 @@ html.dark {
   border: 1px solid var(--chat-border);
   box-shadow: 0 16px 36px rgba(0,0,0,0.16);
   overflow: hidden;
-  z-index: 9999;
+  z-index: 10000; /* pastikan di atas launcher */
   will-change: transform, opacity;
 }
 

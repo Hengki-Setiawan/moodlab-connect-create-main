@@ -42,7 +42,7 @@ import { createChat } from "@n8n/chat";
         return;
       }
 
-      createChat({
+      const instance = createChat({
         webhookUrl,
         webhookConfig: {
           method: "POST",
@@ -160,11 +160,35 @@ import { createChat } from "@n8n/chat";
             header!.style.transform = 'translateY(0)';
           });
         }
-        const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"]');
+        const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"],[class*="ChatLauncher"],[class*="WidgetToggle"]');
         btns?.forEach((el) => {
           const b = el as HTMLElement;
-          b.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
-          b.style.color = '#FFFFFF';
+          // Sembunyikan launcher/toggle built-in agar tidak duplikat
+          if (/launcher|toggle|ChatLauncher|WidgetToggle/i.test(b.className)) {
+            b.style.display = 'none';
+          } else {
+            b.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
+            b.style.color = '#FFFFFF';
+          }
+        });
+      };
+
+      // Hapus elemen launcher bawaan n8n jika ada
+      const removeBuiltInLauncher = () => {
+        const root = document.querySelector('#n8n-chat') || document.body;
+        const selectors = [
+          '[class*="launcher"]',
+          '[class*="toggle"]',
+          '[class*="ChatLauncher"]',
+          '[class*="WidgetToggle"]',
+          'button[aria-label*="open" i]',
+          'button[aria-label*="toggle" i]'
+        ];
+        selectors.forEach((sel) => {
+          root?.querySelectorAll(sel).forEach((el) => {
+            const e = el as HTMLElement;
+            e.style.display = 'none';
+          });
         });
       };
 
@@ -322,6 +346,7 @@ import { createChat } from "@n8n/chat";
       // Jalankan setelah render widget
       requestAnimationFrame(() => {
         applyInlineBranding();
+        removeBuiltInLauncher();
         mountQuickReplies([
           { label: 'Info Harga', value: 'Tanyakan info harga layanan' },
           { label: 'Cara Pesan', value: 'Bagaimana cara memesan layanan?' },
@@ -329,7 +354,7 @@ import { createChat } from "@n8n/chat";
           { label: 'Hubungi CS', value: 'Saya ingin menghubungi customer service' },
         ]);
       });
-      setTimeout(applyInlineBranding, 500);
+      setTimeout(() => { applyInlineBranding(); removeBuiltInLauncher(); }, 500);
       // Cleanup
       window.addEventListener('beforeunload', () => {
         typing.destroy();
@@ -354,6 +379,10 @@ import { createChat } from "@n8n/chat";
     } else {
       setIsOpen(true);
     }
+  };
+  const onToggleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.stopPropagation();
+    onToggle();
   };
   // Ukuran bisa disesuaikan via env
   const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || '';
@@ -382,7 +411,8 @@ import { createChat } from "@n8n/chat";
         className="ml-widget-launcher"
         aria-label={isOpen ? "Tutup chatbot" : "Buka chatbot"}
         aria-expanded={isOpen}
-        onClick={onToggle}
+        onClick={onToggleClick}
+        style={{ display: isOpen ? 'none' : undefined, pointerEvents: isOpen ? 'none' as any : 'auto' }}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
