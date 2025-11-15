@@ -12,15 +12,19 @@ import { createChat } from "@n8n/chat";
    const forceEmbedded = (() => {
      const val = import.meta.env.VITE_N8N_FORCE_EMBEDDED as string | undefined;
      if (val === undefined || val === null || val === "") {
-       // Default: paksa Embedded agar UI kembali seperti sebelumnya
-       return true;
+       // Default: TIDAK memaksa Embedded; hormati Hosted agar tidak perlu ubah n8n
+       return false;
      }
      const s = String(val).toLowerCase();
      return s === "true" || s === "1" || s === "yes";
    })();
    const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
-   const webhookUrl = rawUrl ? (forceEmbedded && isHostedUrl ? String(rawUrl).replace(/\/chat(\/?|$)/, "") : rawUrl) : undefined;
-   const useHostedChat = !forceEmbedded && !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
+   const preferHosted = !isDev; // Di produksi, prefer Hosted
+   const hostedUrl = (!forceEmbedded && !!rawUrl)
+     ? (isHostedUrl ? rawUrl : (preferHosted ? String(rawUrl).replace(/\/$/, "") + "/chat" : undefined))
+     : undefined;
+   const useHostedChat = !!hostedUrl;
+   const webhookUrl = hostedUrl ?? (rawUrl ? (forceEmbedded && isHostedUrl ? String(rawUrl).replace(/\/chat(\/?|$)/, "") : rawUrl) : undefined);
 
   useEffect(() => {
     if (!webhookUrl) {
@@ -362,6 +366,11 @@ import { createChat } from "@n8n/chat";
             boxShadow: '0 6px 18px rgba(0,0,0,0.15)'
           }}
         />
+        <div style={{ marginTop: '8px', textAlign: 'center' }}>
+          <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: '#6B46C1', fontWeight: 600 }}>
+            Jika iframe tidak tampil, buka chat di tab baru
+          </a>
+        </div>
       </div>
     );
   }
