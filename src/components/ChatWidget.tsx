@@ -47,6 +47,32 @@ const ChatWidget = () => {
     }
   }, [webhookUrl, isOpen, apiKey]);
 
+  // Sembunyikan pesan error "Error: Unknown error"
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const hideErrorMessages = () => {
+      const messages = document.querySelectorAll('#ml-chat-content [class*="message"], #ml-chat-content [class*="bubble"], #n8n-chat [class*="message"], #n8n-chat [class*="bubble"]');
+      messages.forEach(msg => {
+        if (msg.textContent?.includes('Error: Unknown error')) {
+          (msg as HTMLElement).style.display = 'none';
+        }
+      });
+    };
+
+    // Sembunyikan error yang sudah ada
+    hideErrorMessages();
+    
+    // Observer untuk menyembunyikan error baru
+    const observer = new MutationObserver(hideErrorMessages);
+    const container = document.querySelector('#ml-chat-content');
+    if (container) {
+      observer.observe(container, { childList: true, subtree: true });
+    }
+    
+    return () => observer.disconnect();
+  }, [isOpen]);
+
   const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || "";
   const winH = (import.meta.env.VITE_CHAT_WIDGET_HEIGHT as string | undefined) || "";
 

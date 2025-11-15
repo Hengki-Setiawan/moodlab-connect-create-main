@@ -86,9 +86,9 @@ html.dark {
 
 #ml-chat-widget .ml-widget-body {
   height: 100%;
-  padding: 8px 10px;
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
 #ml-chat-widget .ml-widget-body iframe {
@@ -169,10 +169,14 @@ html.dark {
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header),
 #ml-chat-content :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
   background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
-  min-height: 40px !important;
-  padding: 6px 12px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  padding: 6px 10px !important;
   display: flex !important;
   align-items: center !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
 }
 
 /* Hilangkan dekorasi avatar header internal agar tidak menambah tinggi */
@@ -246,6 +250,10 @@ html.dark {
   border: 1px solid var(--chat-border) !important;
   width: 100% !important;
   min-height: 40px !important;
+  background: var(--chat-background) !important;
+  color: var(--chat-foreground) !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
 }
 #n8n-chat :is(input[placeholder], textarea[placeholder]):focus {
   outline: none !important;
@@ -268,14 +276,44 @@ html.dark {
 /* Pertegas area composer agar kolom input selalu terlihat */
 #n8n-chat :is([class*="composer"],[class*="footer"],[class*="Input"]) {
   padding: 8px !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background: var(--chat-background) !important;
+  border-top: 1px solid var(--chat-border) !important;
+  z-index: 10 !important;
 }
 
 /* Pastikan teks input terlihat jelas juga di kontainer embed */
 #ml-chat-content :is([class*="composer"],[class*="footer"],[class*="Input"]) {
   padding: 8px !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background: var(--chat-background) !important;
+  border-top: 1px solid var(--chat-border) !important;
+  z-index: 10 !important;
 }
 
-/* Sembunyikan “Powered by n8n” dengan selektor yang robust */
+/* Sembunyikan pesan error dengan class tertentu */
+#n8n-chat [class*="error"],
+#ml-chat-content [class*="error"] {
+  display: none !important;
+}
+
+/* Sembunyikan bubble yang mengandung teks error */
+#n8n-chat [class*="message"][class*="error"],
+#n8n-chat [class*="bubble"][class*="error"],
+#ml-chat-content [class*="message"][class*="error"],
+#ml-chat-content [class*="bubble"][class*="error"] {
+  display: none !important;
+}
+
+/* Sembunyikan elemen dengan teks error secara umum */
+#n8n-chat :is([class*="error"], [class*="Error"]),
+#ml-chat-content :is([class*="error"], [class*="Error"]) {
+  display: none !important;
+}
+
+/* Sembunyikan "Powered by n8n" dengan selektor yang robust */
 #n8n-chat a[href*="n8n"],
 #n8n-chat :is(div, p, span, small):has(a[href*="n8n"]),
 #n8n-chat [class*="powered"],
