@@ -47,7 +47,7 @@ html.dark {
 #ml-chat-widget .ml-widget-window {
   position: fixed;
   right: 18px;
-  bottom: 84px;
+  bottom: 24px;
   width: min(392px, calc(100vw - 32px));
   height: 560px;
   border-radius: 16px;
@@ -86,6 +86,7 @@ html.dark {
 
 #ml-chat-widget .ml-widget-body {
   height: calc(100% - 44px);
+  padding: 6px 8px;
 }
 
 #ml-chat-widget .ml-widget-body iframe {
@@ -118,9 +119,9 @@ html.dark {
   #ml-chat-widget .ml-widget-window {
     left: 12px;
     right: 12px;
-    bottom: 12px;
+    bottom: 16px;
     width: auto;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 140px);
   }
   #ml-chat-widget .ml-widget-launcher {
     right: 12px;
@@ -250,8 +251,13 @@ html.dark {
 
 /* Bubble Pesan Keluar (User) */
 #n8n-chat [class*="message-bubble"][class*="message-out"] {
-  background: var(--chat-primary-color) !important;
+  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
   color: var(--chat-primary-foreground) !important;
+}
+
+#n8n-chat [class*="message-bubble"][class*="message-in"] {
+  background: #F8FAFF !important;
+  border: 1px solid #E0E7FF !important;
 }
 
 /* Input field ergonomis */
@@ -266,17 +272,26 @@ html.dark {
   box-shadow: 0 0 0 3px rgba(167,139,250,0.25) !important;
 }
 
+#n8n-chat :is([class*="composer"],[class*="footer"],[class*="Input"]) button {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
+  color: #fff !important;
+  border: none !important;
+}
+#n8n-chat :is([class*="composer"],[class*="footer"],[class*="Input"]) button:hover {
+  filter: brightness(1.06) !important;
+}
+
 /* Sembunyikan “Powered by n8n” dengan selektor yang robust */
-#n8n-chat a[href*="n8n"] {
-  display: none !important;
-}
-#n8n-chat :is(div, p, span):has(a[href*="n8n"]) {
-  display: none !important;
-}
+#n8n-chat a[href*="n8n"],
+#n8n-chat :is(div, p, span, small):has(a[href*="n8n"]),
 #n8n-chat [class*="powered"],
 #n8n-chat [class*="powered-by"],
 #n8n-chat [class*="branding"],
-#n8n-chat [data-testid*="powered"] {
+#n8n-chat [data-testid*="powered"],
+#n8n-chat :is(small,div,span,p)[aria-label*="powered" i] {
   display: none !important;
 }
 
