@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
@@ -18,13 +18,13 @@ import { createChat } from "@n8n/chat";
      const s = String(val).toLowerCase();
      return s === "true" || s === "1" || s === "yes";
    })();
-   const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
-   const preferHosted = !isDev; // Di produksi, prefer Hosted
-   const hostedUrl = (!forceEmbedded && !!rawUrl)
-     ? (isHostedUrl ? rawUrl : (preferHosted ? String(rawUrl).replace(/\/$/, "") + "/chat" : undefined))
-     : undefined;
-   const useHostedChat = !!hostedUrl;
-   const webhookUrl = hostedUrl ?? (rawUrl ? (forceEmbedded && isHostedUrl ? String(rawUrl).replace(/\/chat(\/?|$)/, "") : rawUrl) : undefined);
+  const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
+  // Jangan tambahkan '/chat' otomatis. Ikuti apa yang diberikan di env.
+  const useHostedChat = !!rawUrl && isHostedUrl && !forceEmbedded;
+  const webhookUrl = rawUrl;
+
+  // State buka/tutup widget mengambang
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!webhookUrl) {
@@ -350,32 +350,43 @@ import { createChat } from "@n8n/chat";
     }
   }, [webhookUrl]);
 
-  if (useHostedChat) {
-    const src = webhookUrl;
-    return (
-      <div id="moodlab-n8n-chat-container">
-        <iframe
-          id="n8n-hosted-chat-iframe"
-          title="Moodlab Assistant"
-          src={src}
-          style={{
-            width: '100%',
-            height: '520px',
-            border: 'none',
-            borderRadius: '12px',
-            boxShadow: '0 6px 18px rgba(0,0,0,0.15)'
-          }}
-        />
-        <div style={{ marginTop: '8px', textAlign: 'center' }}>
-          <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: '#6B46C1', fontWeight: 600 }}>
-            Jika iframe tidak tampil, buka chat di tab baru
-          </a>
+  // UI: widget mengambang dengan tombol launcher
+  const src = webhookUrl;
+  return (
+    <div id="ml-chat-widget">
+      {isOpen && (
+        <div className="ml-widget-window" role="dialog" aria-label="Widget Chatbot" aria-modal="false">
+          <div className="ml-widget-header">
+            <span>Moodlab Assistant</span>
+            <button className="ml-widget-close" aria-label="Tutup chat" onClick={() => setIsOpen(false)}>✕</button>
+          </div>
+          <div className="ml-widget-body">
+            {useHostedChat && src ? (
+              <iframe id="n8n-hosted-chat-iframe" title="Moodlab Assistant" src={src} />
+            ) : (
+              <div id="moodlab-n8n-chat-container" />
+            )}
+          </div>
+          {useHostedChat && src && (
+            <div className="ml-widget-fallback">
+              <a href={src} target="_blank" rel="noopener noreferrer">Jika iframe tidak tampil, buka chat di tab baru</a>
+            </div>
+          )}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  return <div id="moodlab-n8n-chat-container" />;
+      <button
+        className="ml-widget-launcher"
+        aria-label={isOpen ? "Tutup chatbot" : "Buka chatbot"}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen(v => !v)}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
+        </svg>
+      </button>
+    </div>
+  );
 };
 
 export default ChatWidget;
