@@ -170,6 +170,11 @@ html.dark {
   display: none !important;
 }
 
+/* Terapkan aturan yang sama untuk kontainer target embed */
+#ml-chat-content :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
+  display: none !important;
+}
+
 /* Hilangkan dekorasi avatar header internal */
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before { display: none !important; }
 
@@ -260,6 +265,11 @@ html.dark {
   padding: 8px !important;
 }
 
+/* Pastikan teks input terlihat jelas juga di kontainer embed */
+#ml-chat-content :is([class*="composer"],[class*="footer"],[class*="Input"]) {
+  padding: 8px !important;
+}
+
 /* Sembunyikan “Powered by n8n” dengan selektor yang robust */
 #n8n-chat a[href*="n8n"],
 #n8n-chat :is(div, p, span, small):has(a[href*="n8n"]),
@@ -273,6 +283,18 @@ html.dark {
 
 /* Sembunyikan disclaimer kecil yang biasanya menampilkan "Powered by" */
 #n8n-chat small { display: none !important; }
+
+/* Sembunyikan powered/branding di kontainer target embed */
+#ml-chat-content a[href*="n8n"],
+#ml-chat-content :is(div, p, span, small):has(a[href*="n8n"]),
+#ml-chat-content [class*="powered"],
+#ml-chat-content [class*="powered-by"],
+#ml-chat-content [class*="branding"],
+#ml-chat-content [data-testid*="powered"],
+#ml-chat-content :is(small,div,span,p)[aria-label*="powered" i],
+#ml-chat-content small {
+  display: none !important;
+}
 
 /* Penyesuaian ringan untuk launcher di kontainer unik */
 #moodlab-n8n-chat-container [class*="chat-launcher"] {
