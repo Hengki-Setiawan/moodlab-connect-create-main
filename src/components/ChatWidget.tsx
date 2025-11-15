@@ -54,7 +54,10 @@ import { createChat } from "@n8n/chat";
         target: "#moodlab-n8n-chat-container",
         mode: "fullscreen",
         showWelcomeScreen: false,
-        loadPreviousSession: false,
+        loadPreviousSession: true,
+        enableStreaming: true,
+        allowFileUploads: true,
+        allowedFilesMimeTypes: 'image/*,application/pdf',
         initialMessages: ["Halo saya Mody, AI chat bot dari Moodlab 😊", "Ada yang bisa saya bantu?"],
         i18n: {
           en: {
@@ -333,6 +336,13 @@ import { createChat } from "@n8n/chat";
             if (/message-bubble/.test(cls) && /message-out/.test(cls)) {
               const qr = document.getElementById('ml-quick-replies');
               if (qr) qr.remove();
+            }
+            // Hilangkan bubble error default yang bertuliskan Unknown error
+            if (/message-bubble/.test(cls)) {
+              const text = (node.textContent || '').trim();
+              if (/^Error:\s*Unknown error/i.test(text)) {
+                node.remove();
+              }
             }
           });
         }

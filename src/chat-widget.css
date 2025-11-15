@@ -2,7 +2,7 @@
 
 /* Variabel Warna Utama */
 :root {
-  --chat-primary-color: #8A2BE2; /* BlueViolet */
+  --chat-primary-color: #7C3AED; 
   --chat-primary-foreground: #FFFFFF;
   --chat-background: #FFFFFF;
   --chat-foreground: #1F2937;
@@ -13,8 +13,8 @@
   /* Font khusus untuk header chatbot */
   --chat-header-font: Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif;
   /* Warna brand gradient (ungu) */
-  --brand-grad-start: #6B46C1;
-  --brand-grad-end: #B794F4;
+  --brand-grad-start: #7C3AED;
+  --brand-grad-end: #3B82F6;
 }
 
 html.dark {
@@ -302,8 +302,8 @@ html.dark {
 
 #ml-quick-replies .ml-chip {
   background: #ffffff;
-  color: #166534; /* hijau gelap */
-  border: 1px solid #86efac; /* hijau muda */
+  color: #3b0764; /* ungu tua selaras brand */
+  border: 1px solid #a78bfa; /* ungu muda selaras brand */
   border-radius: 9999px;
   padding: 6px 10px; /* lebih kecil */
   font-size: 12px; /* lebih kecil */
@@ -316,7 +316,7 @@ html.dark {
 #ml-quick-replies .ml-chip:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  background: #f0fff4; /* hijau sangat muda */
+  background: #ede9fe; /* ungu sangat muda */
 }
 
 /* Bubble error ramah ketika webhook gagal */
