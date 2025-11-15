@@ -54,7 +54,7 @@ html.dark {
   background: var(--chat-background);
   border: 1px solid var(--chat-border);
   box-shadow: 0 16px 36px rgba(0,0,0,0.16);
-  overflow: hidden;
+  overflow: visible;
   z-index: 10000; /* pastikan di atas launcher */
   will-change: transform, opacity;
 }

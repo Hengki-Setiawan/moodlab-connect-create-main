@@ -73,7 +73,7 @@ const ChatWidget = () => {
         htmlInput.style.backgroundColor = 'var(--chat-background) !important';
         htmlInput.style.color = 'var(--chat-foreground) !important';
       });
-
+      
       // Pastikan composer area terlihat
       const composers = document.querySelectorAll('#ml-chat-content [class*="composer"], #ml-chat-content [class*="footer"], #ml-chat-content [class*="Input"], #n8n-chat [class*="composer"], #n8n-chat [class*="footer"], #n8n-chat [class*="Input"]');
       composers.forEach(composer => {
@@ -85,6 +85,25 @@ const ChatWidget = () => {
         htmlComposer.style.bottom = '0 !important';
         htmlComposer.style.backgroundColor = 'var(--chat-background) !important';
         htmlComposer.style.zIndex = '10 !important';
+      });
+
+      const textboxes = document.querySelectorAll('#ml-chat-content [role="textbox"], #n8n-chat [role="textbox"]');
+      textboxes.forEach(tb => {
+        const el = tb as HTMLElement;
+        el.style.display = 'block !important';
+        el.style.visibility = 'visible !important';
+        el.style.opacity = '1 !important';
+        const p1 = el.parentElement as HTMLElement | null;
+        const p2 = p1?.parentElement as HTMLElement | null;
+        [p1, p2].forEach(p => {
+          if (!p) return;
+          p.style.display = 'flex !important';
+          p.style.visibility = 'visible !important';
+          p.style.opacity = '1 !important';
+          p.style.position = 'sticky !important';
+          p.style.bottom = '0 !important';
+          p.style.zIndex = '10 !important';
+        });
       });
 
       // Perbaiki pesan yang mungkin blank
