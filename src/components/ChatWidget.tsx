@@ -26,9 +26,10 @@ import { createChat } from "@n8n/chat";
       return;
     }
 
-    // @ts-expect-error - simple global flag to prevent re-initialization
-    if (window.__mlN8nChatInited) {
-      console.log("[ChatWidget] Skipping initialization: already initialized.");
+    // Cegah init ulang bila konten chat sudah terpasang di container
+    const container = document.querySelector('#moodlab-n8n-chat-container');
+    const alreadyMounted = !!container && !!container.firstElementChild;
+    if (alreadyMounted && !isOpen) {
       return;
     }
 
@@ -67,8 +68,6 @@ import { createChat } from "@n8n/chat";
           },
         },
       });
-      // @ts-expect-error - simple global flag
-      window.__mlN8nChatInited = true;
       console.log("[ChatWidget] n8n chat initialized successfully.");
 
       // Terapkan patch gaya inline sebagai fallback jika CSS override tidak menempel

@@ -156,57 +156,19 @@ html.dark {
   fill: #fff !important;
 }
 
-/* Header (cakupan luas: header, ChatHeader, header class generic) */
+/* Sembunyikan header internal n8n agar tidak ganda (kita pakai header luar) */
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
-  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
-  padding: 6px 14px !important; /* lebih kecil tinggi header */
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important; /* pusatkan konten header */
-  position: relative !important; /* untuk menempatkan ikon absolut */
-  text-align: center !important;
+  display: none !important;
 }
 
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before {
-  /* Tampilkan avatar Mody di header tanpa mengganggu pemusatan teks */
-  content: "" !important;
-  position: absolute !important;
-  left: 12px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 8px !important;
-  background-image: var(--mody-header-image, url('/mody.png')) !important;
-  background-size: cover !important;
-  background-position: center !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25) !important;
-  z-index: 2 !important;
-}
+/* Hilangkan dekorasi avatar header internal */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before { display: none !important; }
 
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
-  /* Ubah teks header menjadi putih */
-  color: #FFFFFF !important;
-  background: none !important;
-  -webkit-background-clip: initial !important;
-  -webkit-text-fill-color: initial !important;
-  background-clip: initial !important;
-}
+/* Pastikan tidak ada teks header internal */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) { display: none !important; }
 
 /* Font header chatbot */
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
-  font-family: var(--chat-header-font) !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.3px !important;
-  font-size: 18px !important; /* lebih kecil ukuran teks header */
-  line-height: 1.1 !important;
-  position: relative !important;
-  text-align: center !important; /* pastikan teks di tengah */
-  z-index: 3 !important; /* pastikan di atas avatar */
-  /* Sedikit shadow untuk keterbacaan di atas background ungu */
-  -webkit-text-stroke: 0 !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
-}
+/* Tidak ada styling header internal karena disembunyikan */
 
 /* Sembunyikan subtitle/tulisan kedua di header */
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) > :is(p, .subtitle, [class*="subtitle"]) {
