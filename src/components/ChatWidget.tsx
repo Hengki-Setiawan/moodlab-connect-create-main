@@ -9,13 +9,14 @@ import { createChat } from "@n8n/chat";
    const isDev = import.meta.env.DEV;
    const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
    const rawUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
-  // Gunakan mode Embedded (@n8n/chat) DAN endpoint webhook langsung (tanpa /chat)
-  // Beberapa environment sebelumnya memakai suffix /chat untuk Hosted Chat,
-  // di embedded cukup /webhook/<id>. Jika ada /chat di env, kita trim.
+  // Pastikan endpoint menyertakan '/chat' karena sebagian besar workflow n8n
+  // menggunakan path tersebut untuk chat webhook. Jika tidak ada, tambahkan.
   const webhookUrl = (() => {
     if (!rawUrl) return undefined as any;
     const urlStr = String(rawUrl);
-    return urlStr.replace(/\/chat\/?$/i, "");
+    return /\/chat(\/?|$)/i.test(urlStr)
+      ? urlStr
+      : (urlStr.endsWith('/') ? `${urlStr}chat` : `${urlStr}/chat`);
   })();
 
   // State buka/tutup widget mengambang
@@ -41,6 +42,7 @@ import { createChat } from "@n8n/chat";
         console.log("[ChatWidget] Widget not open; delaying chat initialization.");
         return;
       }
+      console.log('[ChatWidget] Initializing chat with webhookUrl:', webhookUrl);
 
       const instance = createChat({
         webhookUrl,
@@ -366,6 +368,7 @@ import { createChat } from "@n8n/chat";
       });
     } catch (error) {
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
+      renderErrorBubble('Gagal inisialisasi chat. Periksa URL webhook dan API key. Jika API key error, isi VITE_N8N_API_KEY lalu restart.');
     }
   }, [webhookUrl, isOpen]);
 
