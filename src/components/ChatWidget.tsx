@@ -1,49 +1,28 @@
-
 import { useEffect, useState } from "react";
 import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
 
- const ChatWidget = () => {
-   // Saat development, gunakan proxy lokal untuk menghindari CORS
+const ChatWidget = () => {
   const isDev = import.meta.env.DEV;
   const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
   const rawWebhook = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
   const webhookUrl = (() => {
     if (!rawWebhook) return undefined as any;
     const s = String(rawWebhook);
-    return /\/chat(\/?|$)/i.test(s)
-      ? s
-      : (s.endsWith('/') ? `${s}chat` : `${s}/chat`);
+    return /\/chat(\/?|$)/i.test(s) ? s : (s.endsWith("/") ? `${s}chat` : `${s}/chat`);
   })();
 
-  // State buka/tutup widget mengambang
   const [isOpen, setIsOpen] = useState(false);
+  const [uiError, setUiError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!webhookUrl) {
-      console.warn("[ChatWidget] Missing VITE_N8N_CHAT_URL env var. Chat will not be initialized.");
-      return;
-    }
-
-    // Cegah init ulang bila konten chat sudah terpasang di container
-    const container = document.querySelector('#moodlab-n8n-chat-container');
-    const alreadyMounted = !!container && !!container.firstElementChild;
-    if (alreadyMounted && !isOpen) {
-      return;
-    }
-
-    // Tidak menggunakan Hosted Chat (iframe) sama sekali.
-
+    if (!webhookUrl || !isOpen) return;
     try {
-      // Inisialisasi hanya saat window dibuka agar container ada di DOM
-      if (!isOpen) {
-        console.log("[ChatWidget] Widget not open; delaying chat initialization.");
-        return;
-      }
-      console.log('[ChatWidget] Initializing chat with webhookUrl:', webhookUrl);
-
-      const instance = createChat({
+      const container = document.querySelector("#ml-chat-content");
+      const already = !!container && !!container.firstElementChild;
+      if (already) return;
+      createChat({
         webhookUrl,
         webhookConfig: {
           method: "POST",
@@ -52,385 +31,46 @@ import { createChat } from "@n8n/chat";
             ...(apiKey ? { "X-N8N-API-KEY": apiKey } : {}),
           },
         },
-        target: "#moodlab-n8n-chat-container",
+        target: "#ml-chat-content",
         mode: "fullscreen",
         showWelcomeScreen: false,
         loadPreviousSession: true,
         enableStreaming: true,
         allowFileUploads: true,
-        allowedFilesMimeTypes: 'image/*,application/pdf',
+        allowedFilesMimeTypes: "image/*,application/pdf",
         initialMessages: ["Halo saya Mody, AI chat bot dari Moodlab 😊", "Ada yang bisa saya bantu?"],
-        i18n: {
-          en: {
-            title: "Moodlab Assistant",
-            subtitle: "",
-            inputPlaceholder: "Tulis pertanyaanmu...",
-          },
-        },
+        i18n: { en: { title: "Moodlab Assistant", subtitle: "", inputPlaceholder: "Tulis pertanyaanmu..." } },
       });
-      console.log("[ChatWidget] n8n chat initialized successfully.");
-
-      // Terapkan patch gaya inline sebagai fallback jika CSS override tidak menempel
-      const applyInlineBranding = () => {
-        const root = document.querySelector('#n8n-chat') || document.body;
-        const header = root?.querySelector(
-          '[class*="chat-header"],[class*="ChatHeader"],[class*="header"], header'
-        ) as HTMLElement | null;
-        if (header) {
-          // Set sumber gambar Mody ke variabel CSS agar pseudo-element ::before bisa menampilkan avatar
-          const modyUrl = (import.meta.env.VITE_MODY_HEADER_URL as string | undefined) || '/mody.png';
-          header.style.setProperty('--mody-header-image', `url('${modyUrl}')`);
-          header.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
-          header.style.padding = '6px 14px';
-          header.style.display = 'flex';
-          header.style.alignItems = 'center';
-          header.style.justifyContent = 'center';
-          header.style.position = 'relative';
-          header.style.textAlign = 'center';
-          // Animasi muncul halus
-          header.style.opacity = '0';
-          header.style.transform = 'translateY(-6px)';
-          header.style.transition = 'opacity 200ms ease, transform 240ms ease';
-          const title = header.querySelector('h1,h2,h3,.title') as HTMLElement | null;
-          if (title) {
-            title.style.fontFamily = 'Inter, Segoe UI, system-ui, -apple-system, Roboto, Arial, sans-serif';
-            title.style.fontWeight = '800';
-            title.style.letterSpacing = '0.3px';
-            // Ubah teks header menjadi putih (fallback inline)
-            title.style.backgroundImage = '';
-            // @ts-ignore
-            title.style.webkitBackgroundClip = '';
-            // @ts-ignore
-            title.style.webkitTextFillColor = '';
-            title.style.backgroundClip = '';
-            title.style.color = '#FFFFFF';
-            title.style.fontSize = '18px';
-            title.style.lineHeight = '1.1';
-            title.style.position = 'relative';
-            title.style.textAlign = 'center';
-            // Sedikit shadow untuk keterbacaan
-            // @ts-ignore
-            title.style.webkitTextStroke = '0';
-            title.style.textShadow = '0 1px 2px rgba(0,0,0,0.25)';
-            // Hapus ikon fallback jika ada
-            const icon = header.querySelector('#ml-header-icon') as HTMLElement | null;
-            if (icon) icon.remove();
-            // Tambahkan avatar Mody sebagai fallback inline jika gambar tidak muncul via CSS
-            const existingMody = header.querySelector('#ml-header-mody') as HTMLImageElement | null;
-            if (!existingMody) {
-              const modyImg = document.createElement('img');
-              modyImg.id = 'ml-header-mody';
-              const envUrl = (import.meta.env.VITE_MODY_HEADER_URL as string | undefined) || '/mody.png';
-              modyImg.src = envUrl;
-              modyImg.alt = 'Mody';
-              Object.assign(modyImg.style, {
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '28px',
-                height: '28px',
-                borderRadius: '8px',
-                objectFit: 'cover',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-                zIndex: '2',
-              } as CSSStyleDeclaration);
-              modyImg.onerror = () => { modyImg.style.display = 'none'; };
-              header.appendChild(modyImg);
-            }
-          }
-          // Sembunyikan subtitle (fallback inline)
-          const subtitle = header.querySelector('.subtitle, [class*="subtitle"], p') as HTMLElement | null;
-          if (subtitle) {
-            subtitle.style.display = 'none';
-          }
-          // Tambahkan ikon robot svg di header (kanan)
-          let robot = header.querySelector('#ml-header-robot') as HTMLElement | null;
-          if (!robot) {
-            robot = document.createElement('span');
-            robot.id = 'ml-header-robot';
-            robot.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a2 2 0 012 2v1h3a2 2 0 012 2v8a3 3 0 01-3 3H8a3 3 0 01-3-3V7a2 2 0 012-2h3V4a2 2 0 012-2h2zm-5 7a1 1 0 100 2 1 1 0 000-2zm10 0a1 1 0 100 2 1 1 0 000-2zM9 15h6a3 3 0 00-6 0z"/></svg>';
-            Object.assign(robot.style, {
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: '3',
-            } as CSSStyleDeclaration);
-            header.appendChild(robot);
-          }
-          // Trigger animasi setelah gaya terpasang
-          requestAnimationFrame(() => {
-            header!.style.opacity = '1';
-            header!.style.transform = 'translateY(0)';
-          });
-        }
-        const btns = root?.querySelectorAll('[class*="launcher"],[class*="toggle"],[class*="close"],[class*="ChatLauncher"],[class*="WidgetToggle"]');
-        btns?.forEach((el) => {
-          const b = el as HTMLElement;
-          // Sembunyikan launcher/toggle built-in agar tidak duplikat
-          if (/launcher|toggle|ChatLauncher|WidgetToggle/i.test(b.className)) {
-            b.style.display = 'none';
-          } else {
-            b.style.backgroundImage = 'linear-gradient(135deg, #6B46C1, #B794F4)';
-            b.style.color = '#FFFFFF';
-          }
-        });
-      };
-
-      // Hapus elemen launcher bawaan n8n jika ada
-      const removeBuiltInLauncher = () => {
-        const root = document.querySelector('#n8n-chat') || document.body;
-        const selectors = [
-          '[class*="launcher"]',
-          '[class*="toggle"]',
-          '[class*="ChatLauncher"]',
-          '[class*="WidgetToggle"]',
-          'button[aria-label*="open" i]',
-          'button[aria-label*="toggle" i]'
-        ];
-        selectors.forEach((sel) => {
-          root?.querySelectorAll(sel).forEach((el) => {
-            const e = el as HTMLElement;
-            e.style.display = 'none';
-          });
-        });
-      };
-
-      // Quick Reply Chips di bawah area pesan untuk opsi klik cepat
-      const mountQuickReplies = (options: { label: string; value: string }[]) => {
-        const root = document.querySelector('#n8n-chat') || document.body;
-        if (!root || document.getElementById('ml-quick-replies')) return;
-        const inputEl = root.querySelector('input[placeholder], textarea[placeholder]') as HTMLInputElement | HTMLTextAreaElement | null;
-        let inputWrap = inputEl?.closest('[class*="footer"],[class*="composer"],[class*="Input"],[class*="input"], form') as HTMLElement | null;
-        const host = (inputWrap?.parentElement as HTMLElement | null)
-          || (root.querySelector('[class*="chat-window"],[class*="window"]') as HTMLElement | null)
-          || root;
-        if (host && getComputedStyle(host).position === 'static') {
-          host.style.position = 'relative';
-        }
-        const container = document.createElement('div');
-        container.id = 'ml-quick-replies';
-        options.forEach((opt) => {
-          const btn = document.createElement('button');
-          btn.className = 'ml-chip';
-          btn.type = 'button';
-          btn.textContent = opt.label;
-          btn.addEventListener('click', () => {
-            const input = root.querySelector('input[placeholder], textarea[placeholder]') as HTMLInputElement | HTMLTextAreaElement | null;
-            if (!input) return;
-            (input as any).value = opt.value;
-            input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', bubbles: true }));
-          });
-          container.appendChild(btn);
-        });
-        if (inputWrap && inputWrap.parentElement) {
-          inputWrap.parentElement.insertBefore(container, inputWrap);
-        } else if (host) {
-          host.appendChild(container);
-        }
-      };
-
-      // Pasang typing indicator agar muncul SEBELUM balasan bot
-      const typing = {
-        el: null as HTMLElement | null,
-        active: false,
-        _init() {
-          if (this.el) return;
-          const container = document.querySelector('#n8n-chat') || document.body;
-          const bubble = document.createElement('div');
-          bubble.id = 'ml-typing-indicator';
-          bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-          bubble.style.display = 'none'; // Awalnya disembunyikan
-          container.appendChild(bubble);
-          this.el = bubble;
-        },
-        show() {
-          this._init();
-          if (this.el) {
-            this.el.style.display = 'block';
-            this.active = true;
-          }
-        },
-        hide() {
-          if (this.el) {
-            this.el.style.display = 'none';
-          }
-          this.active = false;
-        },
-        destroy() {
-          this.hide();
-          if (this.el) {
-            this.el.remove();
-            this.el = null;
-          }
-        },
-      };
-
-      // Helper: render bubble error ramah dalam jendela chat
-      const renderErrorBubble = (text: string) => {
-        const root = document.querySelector('#n8n-chat') || document.querySelector('#moodlab-n8n-chat-container') || document.body;
-        const host = (root?.querySelector('[class*="messages"], [class*="Messages"], [class*="body"], [class*="content"], [class*="list"]') as HTMLElement | null) || (root as HTMLElement | null) || document.querySelector('#moodlab-n8n-chat-container') || document.body;
-        const bubble = document.createElement('div');
-        bubble.className = 'message-bubble message-in ml-error-bubble';
-        bubble.textContent = text;
-        host?.appendChild(bubble);
-      };
-
-      // Intercept fetch ke webhook n8n untuk menampilkan typing lebih dini
-      const originalFetch = window.fetch.bind(window);
-      const chatPathname = (() => {
-        try { return new URL(webhookUrl!, window.location.origin).pathname; } catch { return webhookUrl!; }
-      })();
-      // @ts-expect-error - override fetch untuk keperluan UI
-      window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-        const urlStr = (() => {
-          if (typeof input === 'string') return input;
-          if (input instanceof URL) return input.toString();
-          try { return (input as Request).url; } catch { return ''; }
-        })();
-        if (urlStr && urlStr.includes(chatPathname)) {
-          // Tampilkan indikator segera ketika request dikirim
-          typing.show();
-          try {
-            const res = await originalFetch(input as any, init as any);
-            // Deteksi error umum dan tampilkan petunjuk
-            if (res && !res.ok) {
-              console.warn('[ChatWidget] Webhook error:', res.status, res.statusText);
-              if (res.status === 401 || res.status === 403) {
-                renderErrorBubble('Autentikasi gagal (' + res.status + '). Jika API key error, isi VITE_N8N_API_KEY di .env lalu restart.');
-              } else if (res.status === 404) {
-                renderErrorBubble('Webhook tidak ditemukan (404). Pastikan workflow n8n aktif dan URL benar.');
-              } else if (res.status === 422) {
-                renderErrorBubble('Format body tidak sesuai (422). Sesuaikan node Chat agar menerima format dari @n8n/chat.');
-              } else if (res.status >= 500) {
-                renderErrorBubble('Maaf, server n8n error (' + res.status + '). Coba lagi nanti atau cek log workflow.');
-              }
-            }
-            // Jangan langsung hide; biarkan MutationObserver yang mendeteksi balasan.
-            // Tambahkan fallback hide agar tidak menggantung jika DOM tidak memicu observer.
-            setTimeout(() => { if (typing.active) typing.hide(); }, 5000);
-            return res;
-          } catch (err) {
-            typing.hide();
-            throw err;
-          }
-        }
-        return originalFetch(input as any, init as any);
-      };
-
-      const root = document.querySelector('#n8n-chat') || document.body;
-      const observer = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          m.addedNodes.forEach((node) => {
-            if (!(node instanceof HTMLElement)) return;
-            const cls = node.className?.toString?.() || '';
-            // HANYA cek balasan masuk (message-in) untuk menyembunyikan typing
-            if (/message-bubble/.test(cls) && /message-in/.test(cls)) {
-              typing.hide();
-            }
-            // Sembunyikan quick replies setelah user mengirim pesan pertama
-            if (/message-bubble/.test(cls) && /message-out/.test(cls)) {
-              const qr = document.getElementById('ml-quick-replies');
-              if (qr) qr.remove();
-            }
-            // Hilangkan bubble error default yang bertuliskan Unknown error
-            if (/message-bubble/.test(cls)) {
-              const text = (node.textContent || '').trim();
-              if (/^Error:\s*Unknown error/i.test(text)) {
-                node.remove();
-              }
-            }
-          });
-        }
-      });
-      if (root) {
-        observer.observe(root, { childList: true, subtree: true });
-      }
-
-      // Safety timeout: sembunyikan jika tidak ada balasan lama
-      const timeoutId = setInterval(() => {
-        typing.hide();
-      }, 30000);
-
-      // Jalankan setelah render widget
-      requestAnimationFrame(() => {
-        applyInlineBranding();
-        removeBuiltInLauncher();
-        mountQuickReplies([
-          { label: 'Info Harga', value: 'Tanyakan info harga layanan' },
-          { label: 'Cara Pesan', value: 'Bagaimana cara memesan layanan?' },
-          { label: 'Lokasi Layanan', value: 'Di mana lokasi layanan tersedia?' },
-          { label: 'Hubungi CS', value: 'Saya ingin menghubungi customer service' },
-        ]);
-      });
-      setTimeout(() => { applyInlineBranding(); removeBuiltInLauncher(); }, 500);
-      // Cleanup
-      window.addEventListener('beforeunload', () => {
-        typing.destroy();
-        observer.disconnect();
-        clearInterval(timeoutId);
-        // Pulihkan fetch asli
-        // @ts-expect-error - restore fetch
-        window.fetch = originalFetch;
-      });
-    } catch (error) {
-      console.error("[ChatWidget] Failed to initialize n8n chat:", error);
-      renderErrorBubble('Gagal inisialisasi chat. Periksa URL webhook dan API key. Jika API key error, isi VITE_N8N_API_KEY lalu restart.');
+      setUiError(null);
+    } catch {
+      setUiError("Gagal memuat chat. Coba lagi atau cek koneksi.");
     }
-  }, [webhookUrl, isOpen]);
+  }, [webhookUrl, isOpen, apiKey]);
 
-  // UI: widget mengambang dengan tombol launcher
-  // Tambahkan animasi halus saat muncul/menghilang
-  const [isClosing, setIsClosing] = useState(false);
-  const onToggle = () => {
-    if (isOpen) {
-      setIsClosing(true);
-      setTimeout(() => { setIsOpen(false); setIsClosing(false); }, 200);
-    } else {
-      setIsOpen(true);
-    }
-  };
-  const onToggleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
-    e.stopPropagation();
-    onToggle();
-  };
-  // Ukuran bisa disesuaikan via env
-  const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || '';
-  const winH = (import.meta.env.VITE_CHAT_WIDGET_HEIGHT as string | undefined) || '';
+  const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || "";
+  const winH = (import.meta.env.VITE_CHAT_WIDGET_HEIGHT as string | undefined) || "";
+
   return (
     <div id="ml-chat-widget">
-      {(isOpen || isClosing) && (
-        <div
-          className={`ml-widget-window ${isClosing ? 'closing' : 'opening'}`}
-          role="dialog"
-          aria-label="Widget Chatbot"
-          aria-modal="false"
-          style={{ width: winW || undefined, height: winH || undefined }}
-        >
+      {isOpen && (
+        <div className="ml-widget-window" role="dialog" aria-label="Widget Chatbot" aria-modal="false" style={{ width: winW || undefined, height: winH || undefined }}>
           <div className="ml-widget-header">
             <span>Moodlab Assistant</span>
-            <button className="ml-widget-close" aria-label="Tutup chat" onClick={onToggle}>✕</button>
+            <button className="ml-widget-close" aria-label="Tutup chat" onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div className="ml-widget-body">
-            <div id="moodlab-n8n-chat-container" />
+            <div id="ml-chat-content" />
+            {uiError && <div className="ml-error-bubble">{uiError}</div>}
           </div>
         </div>
       )}
-
-      <button
-        className="ml-widget-launcher"
-        aria-label={isOpen ? "Tutup chatbot" : "Buka chatbot"}
-        aria-expanded={isOpen}
-        onClick={onToggleClick}
-        style={{ display: isOpen ? 'none' : undefined, pointerEvents: isOpen ? 'none' as any : 'auto' }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
-        </svg>
-      </button>
+      {!isOpen && (
+        <button className="ml-widget-launcher" aria-label="Buka chatbot" aria-expanded={isOpen} onClick={() => setIsOpen(true)}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
