@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "@n8n/chat/style.css";
 import "@/chat-widget.css";
 import { createChat } from "@n8n/chat";
@@ -9,28 +9,17 @@ import { createChat } from "@n8n/chat";
    const isDev = import.meta.env.DEV;
    const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
    const rawUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
-   const forceEmbedded = (() => {
-     const val = import.meta.env.VITE_N8N_FORCE_EMBEDDED as string | undefined;
-     if (val === undefined || val === null || val === "") {
-       // Default: TIDAK memaksa Embedded; hormati Hosted agar tidak perlu ubah n8n
-       return false;
-     }
-     const s = String(val).toLowerCase();
-     return s === "true" || s === "1" || s === "yes";
-   })();
-  const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
-  // Jangan tambahkan '/chat' otomatis. Ikuti apa yang diberikan di env.
-  const useHostedChat = !!rawUrl && isHostedUrl && !forceEmbedded;
-  // Normalisasi URL untuk Embedded: tambahkan '/chat' jika belum ada
+  // Selalu gunakan mode Embedded (@n8n/chat) sesuai permintaan (tanpa iframe)
+  // Pastikan endpoint /chat ada di URL
   const webhookUrl = (() => {
     if (!rawUrl) return undefined as any;
-    if (useHostedChat) return rawUrl; // Hosted pakai URL persis (iframe)
-    // Embedded: pastikan endpoint /chat tersedia
-    if (/\/chat(\/?|$)/.test(String(rawUrl))) return rawUrl;
-    return String(rawUrl).endsWith("/") ? `${String(rawUrl)}chat` : `${String(rawUrl)}/chat`;
+    return /\/chat(\/?|$)/.test(String(rawUrl))
+      ? String(rawUrl)
+      : (String(rawUrl).endsWith("/") ? `${String(rawUrl)}chat` : `${String(rawUrl)}/chat`);
   })();
 
-  // Tidak ada state UI untuk versi non-floating
+  // State buka/tutup widget mengambang
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!webhookUrl) {
@@ -44,16 +33,15 @@ import { createChat } from "@n8n/chat";
       return;
     }
 
-    // Jika URL mengarah ke halaman Hosted Chat (/chat), kita render via iframe
-    if (useHostedChat) {
-      console.log("[ChatWidget] Using Hosted Chat iframe; skipping @n8n/chat initialization.");
-      // Tandai agar tidak re-init
-      // @ts-expect-error - simple global flag
-      window.__mlN8nChatInited = true;
-      return;
-    }
+    // Tidak menggunakan Hosted Chat (iframe) sama sekali.
 
     try {
+      // Inisialisasi hanya saat window dibuka agar container ada di DOM
+      if (!isOpen) {
+        console.log("[ChatWidget] Widget not open; delaying chat initialization.");
+        return;
+      }
+
       createChat({
         webhookUrl,
         webhookConfig: {
@@ -274,7 +262,7 @@ import { createChat } from "@n8n/chat";
           if (input instanceof URL) return input.toString();
           try { return (input as Request).url; } catch { return ''; }
         })();
-        if (!useHostedChat && urlStr && urlStr.includes(chatPathname)) {
+        if (urlStr && urlStr.includes(chatPathname)) {
           // Tampilkan indikator segera ketika request dikirim
           typing.show();
           try {
@@ -354,36 +342,54 @@ import { createChat } from "@n8n/chat";
     } catch (error) {
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
     }
-  }, [webhookUrl]);
+  }, [webhookUrl, isOpen]);
 
-  // UI sebelumnya: tampilkan iframe Hosted jika URL berakhiran /chat
-  if (useHostedChat) {
-    const src = webhookUrl;
-    return (
-      <div id="moodlab-n8n-chat-container">
-        <iframe
-          id="n8n-hosted-chat-iframe"
-          title="Moodlab Assistant"
-          src={src}
-          style={{
-            width: '100%',
-            height: '520px',
-            border: 'none',
-            borderRadius: '12px',
-            boxShadow: '0 6px 18px rgba(0,0,0,0.15)'
-          }}
-        />
-        <div style={{ marginTop: '8px', textAlign: 'center' }}>
-          <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: '#6B46C1', fontWeight: 600 }}>
-            Jika iframe tidak tampil, buka chat di tab baru
-          </a>
+  // UI: widget mengambang dengan tombol launcher
+  // Tambahkan animasi halus saat muncul/menghilang
+  const [isClosing, setIsClosing] = useState(false);
+  const onToggle = () => {
+    if (isOpen) {
+      setIsClosing(true);
+      setTimeout(() => { setIsOpen(false); setIsClosing(false); }, 200);
+    } else {
+      setIsOpen(true);
+    }
+  };
+  // Ukuran bisa disesuaikan via env
+  const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || '';
+  const winH = (import.meta.env.VITE_CHAT_WIDGET_HEIGHT as string | undefined) || '';
+  return (
+    <div id="ml-chat-widget">
+      {(isOpen || isClosing) && (
+        <div
+          className={`ml-widget-window ${isClosing ? 'closing' : 'opening'}`}
+          role="dialog"
+          aria-label="Widget Chatbot"
+          aria-modal="false"
+          style={{ width: winW || undefined, height: winH || undefined }}
+        >
+          <div className="ml-widget-header">
+            <span>Moodlab Assistant</span>
+            <button className="ml-widget-close" aria-label="Tutup chat" onClick={onToggle}>✕</button>
+          </div>
+          <div className="ml-widget-body">
+            <div id="moodlab-n8n-chat-container" />
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // Jika bukan /chat, gunakan embedded via @n8n/chat
-  return <div id="moodlab-n8n-chat-container" />;
+      <button
+        className="ml-widget-launcher"
+        aria-label={isOpen ? "Tutup chatbot" : "Buka chatbot"}
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
+        </svg>
+      </button>
+    </div>
+  );
 };
 
 export default ChatWidget;

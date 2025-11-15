@@ -56,6 +56,7 @@ html.dark {
   box-shadow: 0 16px 36px rgba(0,0,0,0.16);
   overflow: hidden;
   z-index: 9999;
+  will-change: transform, opacity;
 }
 
 #ml-chat-widget .ml-widget-header {
@@ -118,6 +119,19 @@ html.dark {
     right: 12px;
     bottom: 12px;
   }
+}
+
+/* Animasi buka/tutup yang halus */
+.ml-widget-window.opening { animation: ml-fadeInUp 200ms ease forwards; }
+.ml-widget-window.closing { animation: ml-fadeOutDown 180ms ease forwards; }
+
+@keyframes ml-fadeInUp {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes ml-fadeOutDown {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, 10px, 0); }
 }
 
 /* Tombol Launcher / Toggle / Close (cakupan luas agar pasti kena) */
@@ -232,6 +246,18 @@ html.dark {
 #n8n-chat [class*="message-bubble"][class*="message-out"] {
   background: var(--chat-primary-color) !important;
   color: var(--chat-primary-foreground) !important;
+}
+
+/* Input field ergonomis */
+#n8n-chat :is(input[placeholder], textarea[placeholder]) {
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--chat-border) !important;
+}
+#n8n-chat :is(input[placeholder], textarea[placeholder]):focus {
+  outline: none !important;
+  border-color: #A78BFA !important; /* ungu muda sesuai tema */
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.25) !important;
 }
 
 /* Sembunyikan “Powered by n8n” dengan selektor yang robust */

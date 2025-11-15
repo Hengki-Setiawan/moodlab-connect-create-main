@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CartProvider } from "./contexts/CartContext";
 import { Analytics } from "@vercel/analytics/react";
-import ChatWidget from "./components/ChatWidget";
 import Home from "./pages/Home";
 import Layanan from "./pages/Layanan";
 import Produk from "./pages/Produk";
@@ -163,7 +162,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Analytics />
-        {/* Global Chat Widget terhubung ke n8n melalui VITE_N8N_CHAT_URL */}
+        {/* Widget Chatbot mengambang terhubung ke n8n */}
         <ChatWidget />
         <BrowserRouter>
           {/* Tracker untuk page views */}
@@ -176,3 +175,4 @@ const App = () => (
 );
 
 export default App;
+import ChatWidget from "./components/ChatWidget";
