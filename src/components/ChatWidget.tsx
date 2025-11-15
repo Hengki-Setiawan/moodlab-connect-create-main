@@ -13,6 +13,9 @@ const ChatWidget = () => {
     return /\/chat(\/?|$)/i.test(s) ? s : (s.endsWith("/") ? `${s}chat` : `${s}/chat`);
   })();
 
+  // Log untuk debugging
+  console.log('Environment:', { isDev, apiKey: apiKey ? 'set' : 'not set', rawWebhook, webhookUrl });
+
   const [isOpen, setIsOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
 
@@ -47,30 +50,71 @@ const ChatWidget = () => {
     }
   }, [webhookUrl, isOpen, apiKey]);
 
-  // Sembunyikan pesan error "Error: Unknown error"
+  // Sembunyikan pesan error "Error: Unknown error" dan perbaiki tampilan
   useEffect(() => {
     if (!isOpen) return;
     
-    const hideErrorMessages = () => {
+    const fixChatDisplay = () => {
+      // Sembunyikan pesan error
       const messages = document.querySelectorAll('#ml-chat-content [class*="message"], #ml-chat-content [class*="bubble"], #n8n-chat [class*="message"], #n8n-chat [class*="bubble"]');
       messages.forEach(msg => {
         if (msg.textContent?.includes('Error: Unknown error')) {
           (msg as HTMLElement).style.display = 'none';
         }
       });
+
+      // Pastikan input field selalu terlihat
+      const inputFields = document.querySelectorAll('#ml-chat-content input, #ml-chat-content textarea, #n8n-chat input, #n8n-chat textarea');
+      inputFields.forEach(input => {
+        const htmlInput = input as HTMLElement;
+        htmlInput.style.display = 'block !important';
+        htmlInput.style.visibility = 'visible !important';
+        htmlInput.style.opacity = '1 !important';
+        htmlInput.style.backgroundColor = 'var(--chat-background) !important';
+        htmlInput.style.color = 'var(--chat-foreground) !important';
+      });
+
+      // Pastikan composer area terlihat
+      const composers = document.querySelectorAll('#ml-chat-content [class*="composer"], #ml-chat-content [class*="footer"], #ml-chat-content [class*="Input"], #n8n-chat [class*="composer"], #n8n-chat [class*="footer"], #n8n-chat [class*="Input"]');
+      composers.forEach(composer => {
+        const htmlComposer = composer as HTMLElement;
+        htmlComposer.style.display = 'flex !important';
+        htmlComposer.style.visibility = 'visible !important';
+        htmlComposer.style.opacity = '1 !important';
+        htmlComposer.style.position = 'sticky !important';
+        htmlComposer.style.bottom = '0 !important';
+        htmlComposer.style.backgroundColor = 'var(--chat-background) !important';
+        htmlComposer.style.zIndex = '10 !important';
+      });
+
+      // Perbaiki pesan yang mungkin blank
+      const allMessages = document.querySelectorAll('#ml-chat-content [class*="message"] *, #n8n-chat [class*="message"] *');
+      allMessages.forEach(msg => {
+        const htmlMsg = msg as HTMLElement;
+        if (htmlMsg.style.color === 'transparent' || htmlMsg.style.opacity === '0') {
+          htmlMsg.style.color = 'inherit !important';
+          htmlMsg.style.opacity = '1 !important';
+        }
+      });
     };
 
-    // Sembunyikan error yang sudah ada
-    hideErrorMessages();
+    // Jalankan perbaikan
+    fixChatDisplay();
     
-    // Observer untuk menyembunyikan error baru
-    const observer = new MutationObserver(hideErrorMessages);
+    // Observer untuk memperbaiki elemen baru
+    const observer = new MutationObserver(fixChatDisplay);
     const container = document.querySelector('#ml-chat-content');
     if (container) {
-      observer.observe(container, { childList: true, subtree: true });
+      observer.observe(container, { childList: true, subtree: true, attributes: true });
     }
     
-    return () => observer.disconnect();
+    // Timeout untuk memastikan semua elemen ter-load
+    const timeout = setTimeout(fixChatDisplay, 1000);
+    
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeout);
+    };
   }, [isOpen]);
 
   const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || "";
