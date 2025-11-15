@@ -8,8 +8,19 @@ import { createChat } from "@n8n/chat";
    // Saat development, gunakan proxy lokal untuk menghindari CORS
    const isDev = import.meta.env.DEV;
    const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
-  const webhookUrl = isDev ? "/n8n-chat" : import.meta.env.VITE_N8N_CHAT_URL;
-  const useHostedChat = !!webhookUrl && /\/chat(\/?|$)/.test(String(webhookUrl));
+   const rawUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
+   const forceEmbedded = (() => {
+     const val = import.meta.env.VITE_N8N_FORCE_EMBEDDED as string | undefined;
+     if (val === undefined || val === null || val === "") {
+       // Default: paksa Embedded agar UI kembali seperti sebelumnya
+       return true;
+     }
+     const s = String(val).toLowerCase();
+     return s === "true" || s === "1" || s === "yes";
+   })();
+   const isHostedUrl = !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
+   const webhookUrl = rawUrl ? (forceEmbedded && isHostedUrl ? String(rawUrl).replace(/\/chat(\/?|$)/, "") : rawUrl) : undefined;
+   const useHostedChat = !forceEmbedded && !!rawUrl && /\/chat(\/?|$)/.test(String(rawUrl));
 
   useEffect(() => {
     if (!webhookUrl) {
