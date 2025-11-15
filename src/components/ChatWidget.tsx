@@ -8,7 +8,8 @@ import { createChat } from "@n8n/chat";
    // Saat development, gunakan proxy lokal untuk menghindari CORS
    const isDev = import.meta.env.DEV;
    const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
-   const webhookUrl = isDev ? "/n8n-chat" : import.meta.env.VITE_N8N_CHAT_URL;
+  const webhookUrl = isDev ? "/n8n-chat" : import.meta.env.VITE_N8N_CHAT_URL;
+  const useHostedChat = !!webhookUrl && /\/chat(\/?|$)/.test(String(webhookUrl));
 
   useEffect(() => {
     if (!webhookUrl) {
@@ -22,7 +23,16 @@ import { createChat } from "@n8n/chat";
       return;
     }
 
-     try {
+    // Jika URL mengarah ke halaman Hosted Chat (/chat), kita render via iframe
+    if (useHostedChat) {
+      console.log("[ChatWidget] Using Hosted Chat iframe; skipping @n8n/chat initialization.");
+      // Tandai agar tidak re-init
+      // @ts-expect-error - simple global flag
+      window.__mlN8nChatInited = true;
+      return;
+    }
+
+    try {
       createChat({
         webhookUrl,
         webhookConfig: {
@@ -243,7 +253,7 @@ import { createChat } from "@n8n/chat";
           if (input instanceof URL) return input.toString();
           try { return (input as Request).url; } catch { return ''; }
         })();
-        if (urlStr && urlStr.includes(chatPathname)) {
+        if (!useHostedChat && urlStr && urlStr.includes(chatPathname)) {
           // Tampilkan indikator segera ketika request dikirim
           typing.show();
           try {
@@ -324,6 +334,26 @@ import { createChat } from "@n8n/chat";
       console.error("[ChatWidget] Failed to initialize n8n chat:", error);
     }
   }, [webhookUrl]);
+
+  if (useHostedChat) {
+    const src = webhookUrl;
+    return (
+      <div id="moodlab-n8n-chat-container">
+        <iframe
+          id="n8n-hosted-chat-iframe"
+          title="Moodlab Assistant"
+          src={src}
+          style={{
+            width: '100%',
+            height: '520px',
+            border: 'none',
+            borderRadius: '12px',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.15)'
+          }}
+        />
+      </div>
+    );
+  }
 
   return <div id="moodlab-n8n-chat-container" />;
 };
