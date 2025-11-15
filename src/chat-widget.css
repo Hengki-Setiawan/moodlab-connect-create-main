@@ -244,6 +244,8 @@ html.dark {
   border-radius: 12px !important;
   padding: 10px 12px !important;
   border: 1px solid var(--chat-border) !important;
+  width: 100% !important;
+  min-height: 40px !important;
 }
 #n8n-chat :is(input[placeholder], textarea[placeholder]):focus {
   outline: none !important;
