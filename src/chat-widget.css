@@ -85,7 +85,7 @@ html.dark {
 }
 
 #ml-chat-widget .ml-widget-body {
-  height: calc(100% - 44px);
+  height: 100%;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -165,29 +165,32 @@ html.dark {
   fill: #fff !important;
 }
 
-/* Sembunyikan header internal n8n agar tidak ganda (kita pakai header luar) */
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
-  display: none !important;
-}
-
-/* Terapkan aturan yang sama untuk kontainer target embed */
+/* Tampilkan header internal dengan tinggi yang wajar dan tema brand */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header),
 #ml-chat-content :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) {
-  display: none !important;
+  background: linear-gradient(135deg, var(--brand-grad-start), var(--brand-grad-end)) !important;
+  min-height: 40px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
-/* Hilangkan dekorasi avatar header internal */
+/* Hilangkan dekorasi avatar header internal agar tidak menambah tinggi */
 #n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header)::before { display: none !important; }
 
-/* Pastikan tidak ada teks header internal */
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) { display: none !important; }
+/* Styling teks header internal */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title),
+#ml-chat-content :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) :is(h1,h2,h3,.title) {
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
 
 /* Font header chatbot */
 /* Tidak ada styling header internal karena disembunyikan */
 
-/* Sembunyikan subtitle/tulisan kedua di header */
-#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) > :is(p, .subtitle, [class*="subtitle"]) {
-  display: none !important;
-}
+/* Sembunyikan subtitle agar header lebih ringkas */
+#n8n-chat :is([class*="chat-header"],[class*="ChatHeader"],[class*="header"], header) > :is(p, .subtitle, [class*="subtitle"]) { display: none !important; }
 
 /* ===== Typing Indicator Bubble ===== */
 #n8n-chat { position: relative; }

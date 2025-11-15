@@ -54,13 +54,10 @@ const ChatWidget = () => {
     <div id="ml-chat-widget">
       {isOpen && (
         <div className="ml-widget-window" role="dialog" aria-label="Widget Chatbot" aria-modal="false" style={{ width: winW || undefined, height: winH || undefined }}>
-          <div className="ml-widget-header">
-            <span>Moodlab Assistant</span>
-            <button className="ml-widget-close" aria-label="Tutup chat" onClick={() => setIsOpen(false)}>✕</button>
-          </div>
           <div className="ml-widget-body">
             <div id="ml-chat-content" />
             {uiError && <div className="ml-error-bubble">{uiError}</div>}
+            <button className="ml-widget-close" aria-label="Tutup chat" onClick={() => setIsOpen(false)}>✕</button>
           </div>
         </div>
       )}
