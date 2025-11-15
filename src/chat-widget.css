@@ -94,6 +94,13 @@ html.dark {
   border: none;
 }
 
+/* Pastikan kontainer target n8n mengisi ruang sepenuhnya */
+#moodlab-n8n-chat-container,
+#n8n-chat {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 #ml-chat-widget .ml-widget-fallback {
   position: absolute;
   left: 50%;

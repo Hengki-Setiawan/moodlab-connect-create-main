@@ -6,18 +6,9 @@ import { createChat } from "@n8n/chat";
 
  const ChatWidget = () => {
    // Saat development, gunakan proxy lokal untuk menghindari CORS
-   const isDev = import.meta.env.DEV;
-   const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
-   const rawUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
-  // Pastikan endpoint menyertakan '/chat' karena sebagian besar workflow n8n
-  // menggunakan path tersebut untuk chat webhook. Jika tidak ada, tambahkan.
-  const webhookUrl = (() => {
-    if (!rawUrl) return undefined as any;
-    const urlStr = String(rawUrl);
-    return /\/chat(\/?|$)/i.test(urlStr)
-      ? urlStr
-      : (urlStr.endsWith('/') ? `${urlStr}chat` : `${urlStr}/chat`);
-  })();
+  const isDev = import.meta.env.DEV;
+  const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
+  const webhookUrl = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
 
   // State buka/tutup widget mengambang
   const [isOpen, setIsOpen] = useState(false);
@@ -48,10 +39,13 @@ import { createChat } from "@n8n/chat";
         webhookUrl,
         webhookConfig: {
           method: "POST",
-          headers: apiKey ? { "X-N8N-API-KEY": apiKey } : {},
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey ? { "X-N8N-API-KEY": apiKey } : {}),
+          },
         },
         target: "#moodlab-n8n-chat-container",
-        mode: "window",
+        mode: "fullscreen",
         showWelcomeScreen: false,
         loadPreviousSession: false,
         initialMessages: ["Halo saya Mody, AI chat bot dari Moodlab 😊", "Ada yang bisa saya bantu?"],
@@ -268,8 +262,8 @@ import { createChat } from "@n8n/chat";
 
       // Helper: render bubble error ramah dalam jendela chat
       const renderErrorBubble = (text: string) => {
-        const root = document.querySelector('#n8n-chat') || document.body;
-        const host = (root?.querySelector('[class*="messages"], [class*="Messages"], [class*="body"], [class*="content"], [class*="list"]') as HTMLElement | null) || (root as HTMLElement | null) || document.body;
+        const root = document.querySelector('#n8n-chat') || document.querySelector('#moodlab-n8n-chat-container') || document.body;
+        const host = (root?.querySelector('[class*="messages"], [class*="Messages"], [class*="body"], [class*="content"], [class*="list"]') as HTMLElement | null) || (root as HTMLElement | null) || document.querySelector('#moodlab-n8n-chat-container') || document.body;
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble message-in ml-error-bubble';
         bubble.textContent = text;
