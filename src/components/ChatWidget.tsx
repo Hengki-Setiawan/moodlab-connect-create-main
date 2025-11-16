@@ -34,7 +34,12 @@ const ChatWidget = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat` : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
+  const useProxy = import.meta.env.DEV && !!import.meta.env.VITE_N8N_CHAT_URL;
+  const webhookUrl = useProxy
+    ? '/n8n-chat/chat'
+    : (import.meta.env.VITE_N8N_CHAT_URL
+        ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat`
+        : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat');
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
   const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
   
@@ -101,17 +106,14 @@ const ChatWidget = ({
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
-      // Try standard n8n Hosted Chat payload format first
       let response = await fetch(webhookUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          chatInput: text.trim(),
-          metadata: {
-            sessionId: 'user-session',
-            timestamp: new Date().toISOString(),
-            userId: 'anonymous'
-          }
+          message: text.trim(),
+          sessionId: 'user-session',
+          timestamp: new Date().toISOString(),
+          userId: 'anonymous'
         })
       });
 
@@ -122,9 +124,12 @@ const ChatWidget = ({
             method: 'POST',
             headers,
             body: JSON.stringify({
-              text: text.trim(),
-              sessionId: 'user-session',
-              message: text.trim()
+              chatInput: text.trim(),
+              metadata: {
+                sessionId: 'user-session',
+                timestamp: new Date().toISOString(),
+                userId: 'anonymous'
+              }
             })
           });
         }
@@ -146,6 +151,7 @@ const ChatWidget = ({
       }
 
       const data = await response.json().catch(() => ({ text: 'Maaf, sistem mengirim respons yang tidak terduga.' }));
+      try { console.log('n8n response:', data); } catch {}
       
       // Simulate typing delay for natural feel
       setTimeout(() => {
@@ -165,6 +171,10 @@ const ChatWidget = ({
           botResponse = data.output;
         } else if (data.chatOutput) {
           botResponse = data.chatOutput;
+        } else if (data.answer) {
+          botResponse = data.answer;
+        } else if (Array.isArray(data.replies) && data.replies.length > 0) {
+          botResponse = data.replies[0];
         } else {
           botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
         }
@@ -366,7 +376,7 @@ const ChatWidget = ({
                   className="send-button"
                   aria-label="Kirim pesan"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </form>
             </div>
