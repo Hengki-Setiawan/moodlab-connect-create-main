@@ -35,8 +35,9 @@ const ChatWidget = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const requireAuth = (import.meta.env.VITE_N8N_AUTH_MODE || 'none') !== 'none';
-  const absWebhookUrl = import.meta.env.VITE_N8N_CHAT_URL
-    ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat`
+  const envChatBase = import.meta.env.VITE_N8N_CHAT_URL as string | undefined;
+  const absWebhookUrl = envChatBase
+    ? (envChatBase.replace(/\/$/, '').endsWith('/chat') ? envChatBase.replace(/\/$/, '') : `${envChatBase.replace(/\/$/, '')}/chat`)
     : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
   const proxyWebhookUrl = import.meta.env.DEV ? '/n8n-chat/chat' : absWebhookUrl;
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
