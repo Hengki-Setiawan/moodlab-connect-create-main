@@ -249,7 +249,17 @@ const ChatWidget = ({
             botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
           }
         }
-        botResponse = botResponse.replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/\\r/g, '');
+        const sanitizeText = (raw: string): string => {
+          let s = raw;
+          s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+          s = s.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, ' ');
+          s = s.replace(/\*\*/g, '').replace(/\*/g, '');
+          s = s.replace(/\\(?![nrtu])/g, '');
+          s = s.replace(/[ \t]+/g, ' ');
+          s = s.replace(/\n{3,}/g, '\n\n');
+          return s.trim();
+        };
+        botResponse = sanitizeText(botResponse);
 
         const botMessage: Message = {
           id: `bot-${Date.now()}`,
