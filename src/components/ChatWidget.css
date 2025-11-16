@@ -121,11 +121,11 @@
 .chat-header {
   background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
   color: white;
-  padding: 12px 20px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
+  height: 32px;
   flex-shrink: 0;
 }
 
@@ -136,8 +136,8 @@
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   display: flex;
@@ -150,17 +150,17 @@
 }
 
 .header-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .header-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.8;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .header-actions {
@@ -172,9 +172,9 @@
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -358,34 +358,11 @@
   outline: none;
   font-family: inherit;
   max-height: 100px;
+  padding-right: 8px;
 }
 
 .message-input::placeholder {
   color: #9CA3AF;
-}
-
-.input-actions {
-  display: flex;
-  gap: 4px;
-  padding: 0 8px 8px 0;
-}
-
-.input-button {
-  background: none;
-  border: none;
-  color: #9CA3AF;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.input-button:hover {
-  color: #6B7280;
-  background: #F3F4F6;
 }
 
 .send-button {

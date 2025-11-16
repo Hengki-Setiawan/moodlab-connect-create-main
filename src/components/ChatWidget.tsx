@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Send, MessageCircle, X, Paperclip, User, Bot } from 'lucide-react';
+import { Send, MessageCircle, X, User, Bot } from 'lucide-react';
 import './ChatWidget.css';
 
 interface Message {
@@ -36,6 +36,10 @@ const ChatWidget = ({
 
   const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat` : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
   const apiKey = import.meta.env.VITE_N8N_API_KEY;
+  
+  // Debug logging
+  console.log('Webhook URL:', webhookUrl);
+  console.log('API Key available:', !!apiKey);
 
   // Initialize messages when chat opens
   useEffect(() => {
@@ -80,6 +84,11 @@ const ChatWidget = ({
     setIsTyping(true);
 
     try {
+      // Check if webhook URL is available
+      if (!webhookUrl) {
+        throw new Error('Endpoint webhook tidak dikonfigurasi dengan benar.');
+      }
+      
       // Check if API key is available
       if (!apiKey) {
         throw new Error('API key tidak tersedia. Silakan hubungi administrator.');
@@ -140,17 +149,43 @@ const ChatWidget = ({
 
     } catch (err) {
       setIsTyping(false);
-      setError('Maaf, terjadi kesalahan. Silakan coba lagi.');
       
-      // Add error message
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        text: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+      // Log error for debugging
+      console.error('Chatbot error:', err);
+      
+      // Create user-friendly error message
+      let errorMessage = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('API key')) {
+          errorMessage = 'Terjadi masalah dengan konfigurasi. Silakan hubungi administrator.';
+        } else if (err.message.includes('fetch')) {
+          errorMessage = 'Koneksi bermasalah. Periksa koneksi internet Anda.';
+        } else if (err.message.includes('NetworkError')) {
+          errorMessage = 'Tidak dapat terhubung ke server. Coba lagi nanti.';
+        }
+      }
+      
+      setError(errorMessage);
+      
+      // Fallback response for demo purposes
+      const fallbackResponses = [
+        'Maaf, saya sedang mengalami gangguan koneksi. Silakan coba lagi dalam beberapa saat.',
+        'Saya tidak dapat terhubung ke server saat ini. Mohon coba lagi nanti.',
+        'Terjadi masalah teknis. Tim kami sedang memperbaikinya.'
+      ];
+      
+      const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      
+      // Add fallback message to chat
+      const fallbackBotMessage: Message = {
+        id: `fallback-${Date.now()}`,
+        text: randomFallback,
         sender: 'bot',
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, fallbackBotMessage]);
     }
   };
 
@@ -293,15 +328,6 @@ const ChatWidget = ({
                     disabled={isTyping}
                     rows={1}
                   />
-                  <div className="input-actions">
-                    <button
-                      type="button"
-                      className="input-button"
-                      aria-label="Lampirkan file"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
                 <button
                   type="submit"
