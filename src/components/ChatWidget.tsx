@@ -35,7 +35,8 @@ const ChatWidget = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat` : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
-  const apiKey = import.meta.env.VITE_N8N_API_KEY;
+  const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
+  const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
   
   // Debug logging
   console.log('Webhook URL:', webhookUrl);
@@ -88,36 +89,63 @@ const ChatWidget = ({
       if (!webhookUrl) {
         throw new Error('Endpoint webhook tidak dikonfigurasi dengan benar.');
       }
-      
-      // Check if API key is available
-      if (!apiKey) {
-        throw new Error('API key tidak tersedia. Silakan hubungi administrator.');
+
+      // Build request headers - support both API key and no-auth modes
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Only add auth headers if API key is available
+      if (apiKey) {
+        headers['X-N8N-API-KEY'] = apiKey;
+        headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
-      const response = await fetch(webhookUrl, {
+      // Try standard n8n Hosted Chat payload format first
+      let response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-N8N-API-KEY': apiKey
-        },
+        headers,
         body: JSON.stringify({
-          message: text.trim(),
-          sessionId: 'user-session',
-          timestamp: new Date().toISOString()
+          chatInput: text.trim(),
+          metadata: {
+            sessionId: 'user-session',
+            timestamp: new Date().toISOString(),
+            userId: 'anonymous'
+          }
         })
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('API key tidak valid. Silakan hubungi administrator.');
-        } else if (response.status === 403) {
-          throw new Error('Akses ditolak. Silakan hubungi administrator.');
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // Coba format payload alternatif untuk kompatibilitas
+        if (response.status >= 400 && response.status < 500) {
+          response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              text: text.trim(),
+              sessionId: 'user-session',
+              message: text.trim()
+            })
+          });
+        }
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            const newKey = typeof window !== 'undefined' ? window.prompt('API key bermasalah. Masukkan API key n8n:') : null;
+            if (newKey) {
+              localStorage.setItem('ml_n8n_api_key', newKey);
+              // Retry with new key
+              return sendMessage(text);
+            }
+            const errText = await response.text().catch(() => '');
+            throw new Error(errText || 'API key tidak valid atau akses ditolak.');
+          }
+          const errBody = await response.text().catch(() => '');
+          throw new Error(errBody || `HTTP error! status: ${response.status}`);
         }
       }
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ text: 'Maaf, sistem mengirim respons yang tidak terduga.' }));
       
       // Simulate typing delay for natural feel
       setTimeout(() => {
@@ -133,6 +161,10 @@ const ChatWidget = ({
           botResponse = data.message;
         } else if (data.text) {
           botResponse = data.text;
+        } else if (data.output) {
+          botResponse = data.output;
+        } else if (data.chatOutput) {
+          botResponse = data.chatOutput;
         } else {
           botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
         }
@@ -237,15 +269,14 @@ const ChatWidget = ({
           <div className="chat-window">
             {/* Header */}
             <div className="chat-header">
-              <div className="header-content">
-                <div className="header-icon">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div className="header-text">
-                  <h3 className="header-title">{title}</h3>
-                  <p className="header-subtitle">{subtitle}</p>
-                </div>
+            <div className="header-content">
+              <div className="header-icon">
+                <Bot className="w-4 h-4" />
               </div>
+              <div className="header-text">
+                <h3 className="header-title">{title}</h3>
+              </div>
+            </div>
               <div className="header-actions">
                 <button
                   onClick={() => setIsOpen(false)}
