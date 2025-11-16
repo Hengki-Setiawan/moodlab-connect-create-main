@@ -34,12 +34,10 @@ const ChatWidget = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const useProxy = import.meta.env.DEV && !!import.meta.env.VITE_N8N_CHAT_URL;
-  const webhookUrl = useProxy
-    ? '/n8n-chat/chat'
-    : (import.meta.env.VITE_N8N_CHAT_URL
-        ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat`
-        : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat');
+  const requireAuth = (import.meta.env.VITE_N8N_AUTH_MODE || 'none') !== 'none';
+  const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL
+    ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat`
+    : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
   const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
   
@@ -100,8 +98,8 @@ const ChatWidget = ({
         'Content-Type': 'application/json'
       };
 
-      // Only add auth headers if API key is available
-      if (apiKey) {
+      // Only add auth headers if required
+      if (requireAuth && apiKey) {
         headers['X-N8N-API-KEY'] = apiKey;
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
