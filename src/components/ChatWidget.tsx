@@ -32,14 +32,14 @@ const ChatWidget = ({
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const requireAuth = (import.meta.env.VITE_N8N_AUTH_MODE || 'none') !== 'none';
   const envChatBase = import.meta.env.VITE_N8N_CHAT_URL as string | undefined;
   const absWebhookUrl = envChatBase
     ? (envChatBase.replace(/\/$/, '').endsWith('/chat') ? envChatBase.replace(/\/$/, '') : `${envChatBase.replace(/\/$/, '')}/chat`)
     : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
-  const proxyWebhookUrl = import.meta.env.DEV ? '/n8n-chat/chat' : absWebhookUrl;
+  const proxyWebhookUrl = '/n8n-chat/chat';
   const withAction = (url: string, action: string) => `${url}${url.includes('?') ? '&' : '?'}action=${action}`;
   const sendUrlAbs = withAction(absWebhookUrl, 'sendMessage');
   const sendUrlProxy = withAction(proxyWebhookUrl, 'sendMessage');
@@ -102,7 +102,8 @@ const ChatWidget = ({
 
       // Build request headers - support both API key and no-auth modes
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
       };
 
       // Only add auth headers if required
@@ -131,28 +132,18 @@ const ChatWidget = ({
       };
 
       let response: Response | null = null;
-      // Prioritaskan proxy dev untuk menghindari CORS / sertifikat
       try {
         response = await doPost(sendUrlProxy, true);
       } catch (e1) {
-        try {
-          response = await doPost(sendUrlAbs, true);
-        } catch (e2) {
-          response = null;
-        }
+        response = null;
       }
 
       if (!response.ok) {
-        // Coba format payload alternatif untuk kompatibilitas
         if (response.status >= 400 && response.status < 500) {
           try {
             response = await doPost(sendUrlProxy, false);
           } catch (e3) {
-            try {
-              response = await doPost(sendUrlAbs, false);
-            } catch (e4) {
-              response = null;
-            }
+            response = null;
           }
         }
 
@@ -172,7 +163,7 @@ const ChatWidget = ({
         }
       }
 
-      let data: any = null;
+      let data: unknown = null;
       const ct = response.headers.get('content-type') || '';
       if (ct.includes('text/event-stream') && response.body) {
         const reader = response.body.getReader();
@@ -184,7 +175,7 @@ const ChatWidget = ({
           s += decoder.decode(chunk.value, { stream: true });
         }
         const lines = s.split(/\r?\n/).filter(Boolean);
-        const payloads: any[] = [];
+        const payloads: unknown[] = [];
         for (const line of lines) {
           if (line.startsWith('data:')) {
             const d = line.slice(5).trim();
@@ -193,9 +184,15 @@ const ChatWidget = ({
         }
         data = payloads[payloads.length - 1] || { text: s };
       } else {
-        data = await response.json().catch(() => ({ text: 'Maaf, sistem mengirim respons yang tidak terduga.' }));
+        const clone = response.clone();
+        const txt = await clone.text().catch(() => '');
+        try {
+          data = txt ? JSON.parse(txt) : await response.json();
+        } catch {
+          data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
+        }
       }
-      try { console.log('n8n response:', data); } catch {}
+      console.log('n8n response:', data);
       
       // Simulate typing delay for natural feel
       setTimeout(() => {
@@ -204,23 +201,26 @@ const ChatWidget = ({
         // Handle different response formats from n8n
         let botResponse = '';
         if (typeof data === 'string') {
-          botResponse = data;
-        } else if (data.response) {
-          botResponse = data.response;
-        } else if (data.message) {
-          botResponse = data.message;
-        } else if (data.text) {
-          botResponse = data.text;
-        } else if (data.output) {
-          botResponse = data.output;
-        } else if (data.chatOutput) {
-          botResponse = data.chatOutput;
-        } else if (data.answer) {
-          botResponse = data.answer;
-        } else if (Array.isArray(data.replies) && data.replies.length > 0) {
-          botResponse = data.replies[0];
+          botResponse = data as string;
         } else {
-          botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
+          const d = (data ?? {}) as Record<string, unknown>;
+          if (typeof d.response === 'string') {
+            botResponse = d.response as string;
+          } else if (typeof d.message === 'string') {
+            botResponse = d.message as string;
+          } else if (typeof d.text === 'string') {
+            botResponse = d.text as string;
+          } else if (typeof d.output === 'string') {
+            botResponse = d.output as string;
+          } else if (typeof d.chatOutput === 'string') {
+            botResponse = d.chatOutput as string;
+          } else if (typeof d.answer === 'string') {
+            botResponse = d.answer as string;
+          } else if (Array.isArray(d.replies) && d.replies.length > 0 && typeof d.replies[0] === 'string') {
+            botResponse = d.replies[0] as string;
+          } else {
+            botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
+          }
         }
 
         const botMessage: Message = {
@@ -404,7 +404,7 @@ const ChatWidget = ({
               <form onSubmit={handleSubmit} className="input-container">
                 <div className="input-wrapper">
                   <textarea
-                    ref={inputRef as any}
+                    ref={inputRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
