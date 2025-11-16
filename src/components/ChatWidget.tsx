@@ -35,14 +35,16 @@ const ChatWidget = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const requireAuth = (import.meta.env.VITE_N8N_AUTH_MODE || 'none') !== 'none';
-  const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL
+  const absWebhookUrl = import.meta.env.VITE_N8N_CHAT_URL
     ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat`
     : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
+  const proxyWebhookUrl = import.meta.env.DEV ? '/n8n-chat/chat' : absWebhookUrl;
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
   const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
   
   // Debug logging
-  console.log('Webhook URL:', webhookUrl);
+  console.log('Webhook URL abs:', absWebhookUrl);
+  console.log('Webhook URL proxy:', proxyWebhookUrl);
   console.log('API Key available:', !!apiKey);
 
   // Initialize messages when chat opens
@@ -104,35 +106,51 @@ const ChatWidget = ({
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
-      let response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: text.trim(),
-          sessionId: 'user-session',
-          timestamp: new Date().toISOString(),
-          userId: 'anonymous'
-        })
-      });
+      const doPost = (url: string, usePrimaryPayload: boolean) => {
+        return fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            message: usePrimaryPayload ? text.trim() : undefined,
+            sessionId: 'user-session',
+            timestamp: new Date().toISOString(),
+            userId: 'anonymous',
+            chatInput: usePrimaryPayload ? undefined : text.trim(),
+            metadata: usePrimaryPayload ? undefined : {
+              sessionId: 'user-session',
+              timestamp: new Date().toISOString(),
+              userId: 'anonymous'
+            }
+          })
+        });
+      };
+
+      let response: Response | null = null;
+      try {
+        response = await doPost(absWebhookUrl, true);
+      } catch (e1) {
+        try {
+          response = await doPost(proxyWebhookUrl, true);
+        } catch (e2) {
+          response = null;
+        }
+      }
 
       if (!response.ok) {
         // Coba format payload alternatif untuk kompatibilitas
         if (response.status >= 400 && response.status < 500) {
-          response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              chatInput: text.trim(),
-              metadata: {
-                sessionId: 'user-session',
-                timestamp: new Date().toISOString(),
-                userId: 'anonymous'
-              }
-            })
-          });
+          try {
+            response = await doPost(absWebhookUrl, false);
+          } catch (e3) {
+            try {
+              response = await doPost(proxyWebhookUrl, false);
+            } catch (e4) {
+              response = null;
+            }
+          }
         }
 
-        if (!response.ok) {
+        if (!response || !response.ok) {
           if (response.status === 401 || response.status === 403) {
             const newKey = typeof window !== 'undefined' ? window.prompt('API key bermasalah. Masukkan API key n8n:') : null;
             if (newKey) {
@@ -140,11 +158,11 @@ const ChatWidget = ({
               // Retry with new key
               return sendMessage(text);
             }
-            const errText = await response.text().catch(() => '');
+            const errText = response ? await response.text().catch(() => '') : '';
             throw new Error(errText || 'API key tidak valid atau akses ditolak.');
           }
-          const errBody = await response.text().catch(() => '');
-          throw new Error(errBody || `HTTP error! status: ${response.status}`);
+          const errBody = response ? await response.text().catch(() => '') : '';
+          throw new Error(errBody || (response ? `HTTP error! status: ${response.status}` : 'Network failed'));
         }
       }
 
