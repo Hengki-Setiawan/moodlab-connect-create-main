@@ -171,11 +171,12 @@ const ChatWidget = ({
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let s = '';
-        while (true) {
-          const chunk = await reader.read();
-          if (chunk.done) break;
-          s += decoder.decode(chunk.value, { stream: true });
-        }
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        s += decoder.decode(chunk.value, { stream: true });
+      }
+      s += decoder.decode();
         const normalized = s.replace(/\}\s+\{/g, '}\n{');
         const lines = normalized.split(/\r?\n/).filter(Boolean);
         const payloads: ChatEvent[] = [];
@@ -184,28 +185,37 @@ const ChatWidget = ({
           if (!raw) continue;
           try { payloads.push(JSON.parse(raw) as ChatEvent); } catch { payloads.push({ text: raw }); }
         }
-        const lastItem = [...payloads].reverse().find((p) => p && p.type === 'item');
-        data = lastItem && typeof lastItem.content === 'string'
-          ? { text: lastItem.content }
+      const items = payloads.filter((p) => p && (p as ChatEvent).type === 'item');
+      const joined = items
+        .map((p) => {
+          const ev = p as ChatEvent;
+          return typeof ev.content === 'string' ? ev.content : (typeof ev.text === 'string' ? ev.text : '');
+        })
+        .filter(Boolean)
+        .join('');
+      if (joined) {
+        data = { text: joined };
+      } else {
+        const lastItem = [...payloads].reverse().find((p) => p && (p as ChatEvent).type === 'item') as ChatEvent | undefined;
+        data = lastItem && typeof lastItem!.content === 'string'
+          ? { text: lastItem!.content as string }
           : (payloads[payloads.length - 1] || { text: s });
+      }
       } else {
         const clone = response.clone();
         const txtRaw = await clone.text().catch(() => '');
         const txt = txtRaw.replace(/\}\s+\{/g, '}\n{');
-        let extracted: string | null = null;
-        if (txt && /"type":"item"/.test(txt)) {
-          const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
-          if (matches.length > 0) extracted = matches[matches.length - 1][1];
+      const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
+      const joinedText = matches.map((m) => m[1]).join('');
+      if (joinedText) {
+        data = { text: joinedText };
+      } else {
+        try {
+          data = txt ? JSON.parse(txt) : await response.json();
+        } catch {
+          data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
         }
-        if (extracted) {
-          data = { text: extracted };
-        } else {
-          try {
-            data = txt ? JSON.parse(txt) : await response.json();
-          } catch {
-            data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
-          }
-        }
+      }
       }
       console.log('n8n response:', data);
       
