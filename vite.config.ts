@@ -23,10 +23,14 @@ export default defineConfig(({ mode }) => {
               // Pertahankan suffix path setelah /n8n-chat
               // Misal: /n8n-chat/chat -> /webhook/<id>/chat
               rewrite: (path) => {
-                const suffix = path.replace(/^\/n8n-chat/, "");
+                const suffixRaw = path.replace(/^\/n8n-chat/, "");
                 const base = proxyPathname || "";
-                const ensureSlash = base.endsWith("/") ? base.slice(0, -1) : base;
-                return `${ensureSlash}${suffix}` || base;
+                const baseNorm = base.endsWith("/") ? base.slice(0, -1) : base;
+                const suffixNorm = suffixRaw.startsWith("/") ? suffixRaw : `/${suffixRaw}`;
+                if (baseNorm.endsWith("/chat") && suffixNorm === "/chat") {
+                  return baseNorm; // hindari duplikasi /chat
+                }
+                return `${baseNorm}${suffixNorm}`;
               },
             },
           }

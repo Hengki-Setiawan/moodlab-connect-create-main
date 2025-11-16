@@ -40,12 +40,17 @@ const ChatWidget = ({
     ? (envChatBase.replace(/\/$/, '').endsWith('/chat') ? envChatBase.replace(/\/$/, '') : `${envChatBase.replace(/\/$/, '')}/chat`)
     : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
   const proxyWebhookUrl = import.meta.env.DEV ? '/n8n-chat/chat' : absWebhookUrl;
+  const withAction = (url: string, action: string) => `${url}${url.includes('?') ? '&' : '?'}action=${action}`;
+  const sendUrlAbs = withAction(absWebhookUrl, 'sendMessage');
+  const sendUrlProxy = withAction(proxyWebhookUrl, 'sendMessage');
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
   const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
   
   // Debug logging
   console.log('Webhook URL abs:', absWebhookUrl);
   console.log('Webhook URL proxy:', proxyWebhookUrl);
+  console.log('Send URL abs:', sendUrlAbs);
+  console.log('Send URL proxy:', sendUrlProxy);
   console.log('API Key available:', !!apiKey);
 
   // Initialize messages when chat opens
@@ -112,11 +117,11 @@ const ChatWidget = ({
           method: 'POST',
           headers,
           body: JSON.stringify({
-            message: usePrimaryPayload ? text.trim() : undefined,
+            chatInput: usePrimaryPayload ? text.trim() : undefined,
             sessionId: 'user-session',
             timestamp: new Date().toISOString(),
             userId: 'anonymous',
-            chatInput: usePrimaryPayload ? undefined : text.trim(),
+            message: usePrimaryPayload ? undefined : text.trim(),
             metadata: usePrimaryPayload ? undefined : {
               sessionId: 'user-session',
               timestamp: new Date().toISOString(),
@@ -128,10 +133,10 @@ const ChatWidget = ({
 
       let response: Response | null = null;
       try {
-        response = await doPost(absWebhookUrl, true);
+        response = await doPost(sendUrlAbs, true);
       } catch (e1) {
         try {
-          response = await doPost(proxyWebhookUrl, true);
+          response = await doPost(sendUrlProxy, true);
         } catch (e2) {
           response = null;
         }
@@ -141,10 +146,10 @@ const ChatWidget = ({
         // Coba format payload alternatif untuk kompatibilitas
         if (response.status >= 400 && response.status < 500) {
           try {
-            response = await doPost(absWebhookUrl, false);
+            response = await doPost(sendUrlAbs, false);
           } catch (e3) {
             try {
-              response = await doPost(proxyWebhookUrl, false);
+              response = await doPost(sendUrlProxy, false);
             } catch (e4) {
               response = null;
             }
