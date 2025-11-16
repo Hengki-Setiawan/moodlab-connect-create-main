@@ -96,8 +96,7 @@ const ChatWidget = ({
     setIsTyping(true);
 
     try {
-      // Check if webhook URL is available
-      if (!webhookUrl) {
+      if (!absWebhookUrl) {
         throw new Error('Endpoint webhook tidak dikonfigurasi dengan benar.');
       }
 
@@ -172,7 +171,29 @@ const ChatWidget = ({
         }
       }
 
-      const data = await response.json().catch(() => ({ text: 'Maaf, sistem mengirim respons yang tidak terduga.' }));
+      let data: any = null;
+      const ct = response.headers.get('content-type') || '';
+      if (ct.includes('text/event-stream') && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let s = '';
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          s += decoder.decode(chunk.value, { stream: true });
+        }
+        const lines = s.split(/\r?\n/).filter(Boolean);
+        const payloads: any[] = [];
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const d = line.slice(5).trim();
+            try { payloads.push(JSON.parse(d)); } catch { payloads.push({ text: d }); }
+          }
+        }
+        data = payloads[payloads.length - 1] || { text: s };
+      } else {
+        data = await response.json().catch(() => ({ text: 'Maaf, sistem mengirim respons yang tidak terduga.' }));
+      }
       try { console.log('n8n response:', data); } catch {}
       
       // Simulate typing delay for natural feel
