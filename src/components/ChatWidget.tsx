@@ -131,11 +131,12 @@ const ChatWidget = ({
       };
 
       let response: Response | null = null;
+      // Prioritaskan proxy dev untuk menghindari CORS / sertifikat
       try {
-        response = await doPost(sendUrlAbs, true);
+        response = await doPost(sendUrlProxy, true);
       } catch (e1) {
         try {
-          response = await doPost(sendUrlProxy, true);
+          response = await doPost(sendUrlAbs, true);
         } catch (e2) {
           response = null;
         }
@@ -145,10 +146,10 @@ const ChatWidget = ({
         // Coba format payload alternatif untuk kompatibilitas
         if (response.status >= 400 && response.status < 500) {
           try {
-            response = await doPost(sendUrlAbs, false);
+            response = await doPost(sendUrlProxy, false);
           } catch (e3) {
             try {
-              response = await doPost(sendUrlProxy, false);
+              response = await doPost(sendUrlAbs, false);
             } catch (e4) {
               response = null;
             }
