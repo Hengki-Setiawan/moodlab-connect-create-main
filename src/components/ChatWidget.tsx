@@ -18,6 +18,8 @@ interface ChatWidgetProps {
   initialMessages?: string[];
 }
 
+type ChatEvent = { type?: string; content?: string; text?: string; [k: string]: unknown };
+
 const ChatWidget = ({
   primaryColor = '#7C3AED',
   position = 'bottom-right',
@@ -174,22 +176,35 @@ const ChatWidget = ({
           if (chunk.done) break;
           s += decoder.decode(chunk.value, { stream: true });
         }
-        const lines = s.split(/\r?\n/).filter(Boolean);
-        const payloads: unknown[] = [];
+        const normalized = s.replace(/\}\s+\{/g, '}\n{');
+        const lines = normalized.split(/\r?\n/).filter(Boolean);
+        const payloads: ChatEvent[] = [];
         for (const line of lines) {
-          if (line.startsWith('data:')) {
-            const d = line.slice(5).trim();
-            try { payloads.push(JSON.parse(d)); } catch { payloads.push({ text: d }); }
-          }
+          const raw = line.startsWith('data:') ? line.slice(5).trim() : line.trim();
+          if (!raw) continue;
+          try { payloads.push(JSON.parse(raw) as ChatEvent); } catch { payloads.push({ text: raw }); }
         }
-        data = payloads[payloads.length - 1] || { text: s };
+        const lastItem = [...payloads].reverse().find((p) => p && p.type === 'item');
+        data = lastItem && typeof lastItem.content === 'string'
+          ? { text: lastItem.content }
+          : (payloads[payloads.length - 1] || { text: s });
       } else {
         const clone = response.clone();
-        const txt = await clone.text().catch(() => '');
-        try {
-          data = txt ? JSON.parse(txt) : await response.json();
-        } catch {
-          data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
+        const txtRaw = await clone.text().catch(() => '');
+        const txt = txtRaw.replace(/\}\s+\{/g, '}\n{');
+        let extracted: string | null = null;
+        if (txt && /"type":"item"/.test(txt)) {
+          const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
+          if (matches.length > 0) extracted = matches[matches.length - 1][1];
+        }
+        if (extracted) {
+          data = { text: extracted };
+        } else {
+          try {
+            data = txt ? JSON.parse(txt) : await response.json();
+          } catch {
+            data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
+          }
         }
       }
       console.log('n8n response:', data);
@@ -210,6 +225,8 @@ const ChatWidget = ({
             botResponse = d.message as string;
           } else if (typeof d.text === 'string') {
             botResponse = d.text as string;
+          } else if (typeof d.content === 'string') {
+            botResponse = d.content as string;
           } else if (typeof d.output === 'string') {
             botResponse = d.output as string;
           } else if (typeof d.chatOutput === 'string') {
@@ -222,6 +239,7 @@ const ChatWidget = ({
             botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
           }
         }
+        botResponse = botResponse.replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/\\r/g, '');
 
         const botMessage: Message = {
           id: `bot-${Date.now()}`,
