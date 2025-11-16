@@ -28,6 +28,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProtected } from "@/components/AdminProtected";
 import { StaffProtected } from "@/components/StaffProtected";
+import ChatWidget from "./components/ChatWidget";
 
 
 // Komponen kecil untuk mencatat page view setiap kali rute berubah
@@ -175,4 +176,3 @@ const App = () => (
 );
 
 export default App;
-import ChatWidget from "./components/ChatWidget";

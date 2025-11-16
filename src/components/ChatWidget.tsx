@@ -1,163 +1,322 @@
-import { useEffect, useState } from "react";
-import "@n8n/chat/style.css";
-import "@/chat-widget.css";
-import { createChat } from "@n8n/chat";
+import { useEffect, useState, useRef } from 'react';
+import { Send, MessageCircle, X, Paperclip, User, Bot } from 'lucide-react';
+import './ChatWidget.css';
 
-const ChatWidget = () => {
-  const isDev = import.meta.env.DEV;
-  const apiKey = import.meta.env.VITE_N8N_API_KEY as string | undefined;
-  const rawWebhook = isDev ? "/n8n-chat" : (import.meta.env.VITE_N8N_CHAT_URL as string | undefined);
-  const webhookUrl = (() => {
-    if (!rawWebhook) return undefined as any;
-    const s = String(rawWebhook);
-    return /\/chat(\/?|$)/i.test(s) ? s : (s.endsWith("/") ? `${s}chat` : `${s}/chat`);
-  })();
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
-  // Log untuk debugging
-  console.log('Environment:', { isDev, apiKey: apiKey ? 'set' : 'not set', rawWebhook, webhookUrl });
+interface ChatWidgetProps {
+  primaryColor?: string;
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  title?: string;
+  subtitle?: string;
+  placeholder?: string;
+  initialMessages?: string[];
+}
 
+const ChatWidget = ({
+  primaryColor = '#7C3AED',
+  position = 'bottom-right',
+  title = 'Moodlab Assistant',
+  subtitle = 'AI Chatbot',
+  placeholder = 'Tulis pertanyaanmu...',
+  initialMessages = ['Halo saya Mody, AI chat bot dari Moodlab 😊', 'Ada yang bisa saya bantu?']
+}: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [uiError, setUiError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  const webhookUrl = import.meta.env.VITE_N8N_CHAT_URL ? `${import.meta.env.VITE_N8N_CHAT_URL}/chat` : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
+  const apiKey = import.meta.env.VITE_N8N_API_KEY;
+
+  // Initialize messages when chat opens
   useEffect(() => {
-    if (!webhookUrl || !isOpen) return;
-    try {
-      const container = document.querySelector("#ml-chat-content");
-      const already = !!container && !!container.firstElementChild;
-      if (already) return;
-      createChat({
-        webhookUrl,
-        webhookConfig: {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(apiKey ? { "X-N8N-API-KEY": apiKey } : {}),
-          },
-        },
-        target: "#ml-chat-content",
-        mode: "fullscreen",
-        showWelcomeScreen: false,
-        loadPreviousSession: true,
-        enableStreaming: true,
-        allowFileUploads: true,
-        allowedFilesMimeTypes: "image/*,application/pdf",
-        initialMessages: ["Halo saya Mody, AI chat bot dari Moodlab 😊", "Ada yang bisa saya bantu?"],
-        i18n: { en: { title: "Moodlab Assistant", subtitle: "", inputPlaceholder: "Tulis pertanyaanmu..." } },
-      });
-      setUiError(null);
-    } catch {
-      setUiError("Gagal memuat chat. Coba lagi atau cek koneksi.");
+    if (isOpen && messages.length === 0) {
+      const initialBotMessages: Message[] = initialMessages.map((text, index) => ({
+        id: `bot-${Date.now()}-${index}`,
+        text,
+        sender: 'bot',
+        timestamp: new Date(Date.now() - (initialMessages.length - index) * 1000)
+      }));
+      setMessages(initialBotMessages);
     }
-  }, [webhookUrl, isOpen, apiKey]);
+  }, [isOpen, messages.length, initialMessages]);
 
-  // Sembunyikan pesan error "Error: Unknown error" dan perbaiki tampilan
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (!isOpen) return;
-    
-    const fixChatDisplay = () => {
-      // Sembunyikan pesan error
-      const messages = document.querySelectorAll('#ml-chat-content [class*="message"], #ml-chat-content [class*="bubble"], #n8n-chat [class*="message"], #n8n-chat [class*="bubble"]');
-      messages.forEach(msg => {
-        if (msg.textContent?.includes('Error: Unknown error')) {
-          (msg as HTMLElement).style.display = 'none';
-        }
-      });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-      // Pastikan input field selalu terlihat
-      const inputFields = document.querySelectorAll('#ml-chat-content input, #ml-chat-content textarea, #n8n-chat input, #n8n-chat textarea');
-      inputFields.forEach(input => {
-        const htmlInput = input as HTMLElement;
-        htmlInput.style.display = 'block !important';
-        htmlInput.style.visibility = 'visible !important';
-        htmlInput.style.opacity = '1 !important';
-        htmlInput.style.backgroundColor = 'var(--chat-background) !important';
-        htmlInput.style.color = 'var(--chat-foreground) !important';
-      });
-      
-      // Pastikan composer area terlihat
-      const composers = document.querySelectorAll('#ml-chat-content [class*="composer"], #ml-chat-content [class*="footer"], #ml-chat-content [class*="Input"], #n8n-chat [class*="composer"], #n8n-chat [class*="footer"], #n8n-chat [class*="Input"]');
-      composers.forEach(composer => {
-        const htmlComposer = composer as HTMLElement;
-        htmlComposer.style.display = 'flex !important';
-        htmlComposer.style.visibility = 'visible !important';
-        htmlComposer.style.opacity = '1 !important';
-        htmlComposer.style.position = 'sticky !important';
-        htmlComposer.style.bottom = '0 !important';
-        htmlComposer.style.backgroundColor = 'var(--chat-background) !important';
-        htmlComposer.style.zIndex = '10 !important';
-      });
-
-      const textboxes = document.querySelectorAll('#ml-chat-content [role="textbox"], #n8n-chat [role="textbox"]');
-      textboxes.forEach(tb => {
-        const el = tb as HTMLElement;
-        el.style.display = 'block !important';
-        el.style.visibility = 'visible !important';
-        el.style.opacity = '1 !important';
-        const p1 = el.parentElement as HTMLElement | null;
-        const p2 = p1?.parentElement as HTMLElement | null;
-        [p1, p2].forEach(p => {
-          if (!p) return;
-          p.style.display = 'flex !important';
-          p.style.visibility = 'visible !important';
-          p.style.opacity = '1 !important';
-          p.style.position = 'sticky !important';
-          p.style.bottom = '0 !important';
-          p.style.zIndex = '10 !important';
-        });
-      });
-
-      // Perbaiki pesan yang mungkin blank
-      const allMessages = document.querySelectorAll('#ml-chat-content [class*="message"] *, #n8n-chat [class*="message"] *');
-      allMessages.forEach(msg => {
-        const htmlMsg = msg as HTMLElement;
-        if (htmlMsg.style.color === 'transparent' || htmlMsg.style.opacity === '0') {
-          htmlMsg.style.color = 'inherit !important';
-          htmlMsg.style.opacity = '1 !important';
-        }
-      });
-    };
-
-    // Jalankan perbaikan
-    fixChatDisplay();
-    
-    // Observer untuk memperbaiki elemen baru
-    const observer = new MutationObserver(fixChatDisplay);
-    const container = document.querySelector('#ml-chat-content');
-    if (container) {
-      observer.observe(container, { childList: true, subtree: true, attributes: true });
+  // Focus input when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
-    
-    // Timeout untuk memastikan semua elemen ter-load
-    const timeout = setTimeout(fixChatDisplay, 1000);
-    
-    return () => {
-      observer.disconnect();
-      clearTimeout(timeout);
-    };
   }, [isOpen]);
 
-  const winW = (import.meta.env.VITE_CHAT_WIDGET_WIDTH as string | undefined) || "";
-  const winH = (import.meta.env.VITE_CHAT_WIDGET_HEIGHT as string | undefined) || "";
+  const sendMessage = async (text: string) => {
+    if (!text.trim()) return;
+
+    // Add user message
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      text: text.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setError(null);
+
+    // Show typing indicator
+    setIsTyping(true);
+
+    try {
+      // Check if API key is available
+      if (!apiKey) {
+        throw new Error('API key tidak tersedia. Silakan hubungi administrator.');
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': apiKey
+        },
+        body: JSON.stringify({
+          message: text.trim(),
+          sessionId: 'user-session',
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('API key tidak valid. Silakan hubungi administrator.');
+        } else if (response.status === 403) {
+          throw new Error('Akses ditolak. Silakan hubungi administrator.');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      
+      // Simulate typing delay for natural feel
+      setTimeout(() => {
+        setIsTyping(false);
+        
+        // Handle different response formats from n8n
+        let botResponse = '';
+        if (typeof data === 'string') {
+          botResponse = data;
+        } else if (data.response) {
+          botResponse = data.response;
+        } else if (data.message) {
+          botResponse = data.message;
+        } else if (data.text) {
+          botResponse = data.text;
+        } else {
+          botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
+        }
+
+        const botMessage: Message = {
+          id: `bot-${Date.now()}`,
+          text: botResponse,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, botMessage]);
+      }, 1000);
+
+    } catch (err) {
+      setIsTyping(false);
+      setError('Maaf, terjadi kesalahan. Silakan coba lagi.');
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        text: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(inputText);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputText);
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const positionStyles = {
+    'bottom-right': { bottom: '24px', right: '24px' },
+    'bottom-left': { bottom: '24px', left: '24px' },
+    'top-right': { top: '24px', right: '24px' },
+    'top-left': { top: '24px', left: '24px' }
+  };
 
   return (
-    <div id="ml-chat-widget">
+    <>
+      {/* Floating Action Button */}
+      {!isOpen && (
+        <div className={`chat-widget-container ${position}`}>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="chat-button"
+            aria-label="Buka chat"
+          >
+            <MessageCircle />
+            <span className="notification-badge">1</span>
+          </button>
+        </div>
+      )}
+
+      {/* Chat Window */}
       {isOpen && (
-        <div className="ml-widget-window" role="dialog" aria-label="Widget Chatbot" aria-modal="false" style={{ width: winW || undefined, height: winH || undefined }}>
-          <div className="ml-widget-body">
-            <div id="ml-chat-content" />
-            {uiError && <div className="ml-error-bubble">{uiError}</div>}
-            <button className="ml-widget-close" aria-label="Tutup chat" onClick={() => setIsOpen(false)}>✕</button>
+        <div className={`chat-widget-container ${position}`}>
+          <div className="chat-window">
+            {/* Header */}
+            <div className="chat-header">
+              <div className="header-content">
+                <div className="header-icon">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div className="header-text">
+                  <h3 className="header-title">{title}</h3>
+                  <p className="header-subtitle">{subtitle}</p>
+                </div>
+              </div>
+              <div className="header-actions">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="header-button"
+                  aria-label="Tutup chat"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="messages-area">
+              <div className="messages-list">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message ${message.sender}`}
+                  >
+                    <div className="message-avatar">
+                      {message.sender === 'user' ? (
+                        <User className="w-4 h-4" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="message-content">
+                      <p>{message.text}</p>
+                      <div className="message-time">
+                        {formatTime(message.timestamp)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <div className="message bot">
+                    <div className="message-avatar">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div className="typing-indicator">
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Error Message */}
+              {error && (
+                <div className="error-state">
+                  <div className="error-icon">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="error-message">{error}</div>
+                  <button className="retry-button" onClick={() => setError(null)}>
+                    Coba Lagi
+                  </button>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="input-area">
+              <form onSubmit={handleSubmit} className="input-container">
+                <div className="input-wrapper">
+                  <textarea
+                    ref={inputRef as any}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={placeholder}
+                    className="message-input"
+                    disabled={isTyping}
+                    rows={1}
+                  />
+                  <div className="input-actions">
+                    <button
+                      type="button"
+                      className="input-button"
+                      aria-label="Lampirkan file"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || isTyping}
+                  className="send-button"
+                  aria-label="Kirim pesan"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
-      {!isOpen && (
-        <button className="ml-widget-launcher" aria-label="Buka chatbot" aria-expanded={isOpen} onClick={() => setIsOpen(true)}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 5a3 3 0 013-3h10a3 3 0 013 3v9a3 3 0 01-3 3H11l-4 4v-4H7a3 3 0 01-3-3V5z" fill="white"/>
-          </svg>
-        </button>
-      )}
-    </div>
+    </>
   );
 };
 
