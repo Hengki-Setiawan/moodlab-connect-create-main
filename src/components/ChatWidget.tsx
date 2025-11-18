@@ -134,22 +134,29 @@ const ChatWidget = ({
       };
 
       let response: Response | null = null;
+      const primaryUrl = import.meta.env.PROD ? sendUrlAbs : sendUrlProxy;
       try {
-        response = await doPost(sendUrlProxy, true);
+        response = await doPost(primaryUrl, true);
       } catch (e1) {
         response = null;
       }
 
       if (!response.ok) {
-        if (response.status >= 400 && response.status < 500) {
+        if (response && response.status >= 400 && response.status < 500) {
           try {
-            response = await doPost(sendUrlProxy, false);
+            response = await doPost(primaryUrl, false);
           } catch (e3) {
             response = null;
           }
         }
 
         if (!response || !response.ok) {
+          // Fallback: coba endpoint absolut jika proxy gagal (produksi) atau sebaliknya
+          const altUrl = primaryUrl === sendUrlProxy ? sendUrlAbs : sendUrlProxy;
+          try {
+            response = await doPost(altUrl, true);
+          } catch {}
+          if (!response || !response.ok) {
           if (response.status === 401 || response.status === 403) {
             const newKey = typeof window !== 'undefined' ? window.prompt('API key bermasalah. Masukkan API key n8n:') : null;
             if (newKey) {
@@ -162,6 +169,7 @@ const ChatWidget = ({
           }
           const errBody = response ? await response.text().catch(() => '') : '';
           throw new Error(errBody || (response ? `HTTP error! status: ${response.status}` : 'Network failed'));
+          }
         }
       }
 
