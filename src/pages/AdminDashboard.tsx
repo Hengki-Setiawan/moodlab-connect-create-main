@@ -79,6 +79,9 @@ const AdminDashboard = () => {
 const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string; file_url?: string; benefits?: string[] }>(
   { name: '', description: '', price: 0, type: '', category: '', image_url: '', file_url: '', benefits: [] }
 );
+  const [isProductModalOpen, setIsProductModalOpen] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [savingProduct, setSavingProduct] = useState<boolean>(false);
 const [imageFile, setImageFile] = useState<File | null>(null);
 const [imagePreview, setImagePreview] = useState<string | null>(null);
 // Picker Storage untuk file digital
@@ -431,7 +434,15 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
         .from("page_contents")
         .select("page, content")
         .in("page", ["home", "about"]);
-      if (error) throw error;
+      if (error) {
+        const msg = String((error as any)?.message || "").toLowerCase();
+        const code = (error as any)?.code || "";
+        if (code === 'PGRST205' || msg.includes('page_contents')) {
+          console.warn('Page contents table not found, skipping load.');
+          return;
+        }
+        throw error;
+      }
       (data || []).forEach((row: { page: string; content: any }) => {
         if (row.page === "home") {
           setHomeContent({
@@ -459,7 +470,15 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       const { error } = await supabaseAdmin
         .from("page_contents")
         .upsert({ page: "home", content: homeContent });
-      if (error) throw error;
+      if (error) {
+        const msg = String((error as any)?.message || "").toLowerCase();
+        const code = (error as any)?.code || "";
+        if (code === 'PGRST205' || msg.includes('page_contents')) {
+          console.warn('Page contents table not found, skipping save.');
+          return;
+        }
+        throw error;
+      }
     } catch (err) {
       console.error("Error saveHomeContent:", err);
     }
@@ -470,7 +489,15 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       const { error } = await supabaseAdmin
         .from("page_contents")
         .upsert({ page: "about", content: aboutContent });
-      if (error) throw error;
+      if (error) {
+        const msg = String((error as any)?.message || "").toLowerCase();
+        const code = (error as any)?.code || "";
+        if (code === 'PGRST205' || msg.includes('page_contents')) {
+          console.warn('Page contents table not found, skipping save.');
+          return;
+        }
+        throw error;
+      }
     } catch (err) {
       console.error("Error saveAboutContent:", err);
     }
