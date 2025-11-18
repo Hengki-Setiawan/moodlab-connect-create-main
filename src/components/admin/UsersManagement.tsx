@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -35,6 +37,7 @@ interface UserCombined {
 }
 
 const UsersManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserCombined[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
@@ -164,15 +167,24 @@ const UsersManagement = () => {
         toast.error("Pengguna tidak memiliki email valid");
         return;
       }
-      const res: any = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: user.email });
+      const redirectTo = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
+      const res: any = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: user.email, options: { redirectTo } });
       if (res?.error) throw res.error;
-      const url: string | undefined = res?.data?.action_link;
+      const url: string | undefined = res?.data?.properties?.action_link || res?.data?.action_link;
+      const hashedToken: string | undefined = res?.data?.properties?.hashed_token;
+      if (hashedToken) {
+        const { error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: hashedToken });
+        if (error) throw error;
+        toast.success('Berhasil masuk sebagai pengguna');
+        navigate('/profile');
+        return;
+      }
       if (!url) throw new Error('action_link tidak tersedia');
       window.open(url, '_blank');
       toast.success('Membuka sesi sebagai pengguna di tab baru');
-    } catch (err) {
+    } catch (err: any) {
       console.error('impersonateUser error:', err);
-      toast.error('Gagal membuka sesi pengguna');
+      toast.error(`Gagal membuka sesi pengguna${err?.message ? `: ${err.message}` : ''}`);
     } finally {
       setSavingId(null);
     }

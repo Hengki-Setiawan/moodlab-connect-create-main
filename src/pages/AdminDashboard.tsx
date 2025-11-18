@@ -14,6 +14,7 @@ import { supabaseAdmin } from "@/integrations/supabase/admin";
 import { uploadImage } from "@/integrations/supabase/storage";
 import UsersManagement from "@/components/admin/UsersManagement";
 import ServicesManagement from "@/components/admin/ServicesManagement";
+import EditProductModal from "@/components/admin/EditProductModal";
 
 interface User {
   id: string;
@@ -562,43 +563,8 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
   );
 
   const startEditProduct = (p: Product) => {
-    setEditingProductId(p.id);
-    setEditingData({ name: p.name ?? '', description: p.description ?? '', price: p.price ?? 0, type: p.type ?? '', category: p.category ?? '', image_url: p.image_url ?? undefined, file_url: p.file_url ?? '', benefits: p.benefits ?? [] });
-    setImageFile(null);
-    setImagePreview(p.image_url ?? null);
-
-    // Set default picker Storage
-    setDigitalBucket('Produk Digital');
-    setDigitalFolder('uploads');
-    // Tampilkan nama file dari file_url jika ada
-    try {
-      if (p.file_url) {
-        const url = new URL(p.file_url);
-        const segments = url.pathname.split('/').filter(Boolean);
-        const last = segments[segments.length - 1];
-        setDigitalSelectedName(last || null);
-      } else {
-        setDigitalSelectedName(null);
-      }
-    } catch {
-      setDigitalSelectedName(null);
-    }
-    // Muat daftar file dari Storage
-    (async () => {
-      try {
-        setDigitalLoading(true);
-        const { data, error } = await supabaseAdmin
-          .storage
-          .from(digitalBucket)
-          .list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
-        if (error) throw error;
-        setDigitalFiles((data || []).map((d: any) => d.name));
-      } catch (err) {
-        console.error('Error memuat file digital:', err);
-      } finally {
-        setDigitalLoading(false);
-      }
-    })();
+    setSelectedProduct(p);
+    setIsProductModalOpen(true);
   };
 
   // Muat ulang daftar file digital dari Storage saat mengedit produk
@@ -620,8 +586,8 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
-    setImageFile(null);
-    setImagePreview(null);
+    setIsProductModalOpen(false);
+    setSelectedProduct(null);
   };
 
   const saveEditProduct = async () => {
@@ -647,6 +613,34 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       setImagePreview(null);
     } catch (err) {
       console.error('Gagal menyimpan perubahan produk:', err);
+    }
+  };
+
+  const saveProductModal = async (updated: Partial<Product>) => {
+    try {
+      setSavingProduct(true);
+      const payload: any = {
+        name: updated.name ?? selectedProduct?.name ?? '',
+        description: updated.description ?? selectedProduct?.description ?? '',
+        price: updated.price ?? selectedProduct?.price ?? 0,
+        type: updated.type ?? selectedProduct?.type ?? '',
+        category: updated.category ?? selectedProduct?.category ?? '',
+        image_url: updated.image_url ?? selectedProduct?.image_url ?? null,
+        file_url: updated.file_url ?? selectedProduct?.file_url ?? null,
+        benefits: updated.benefits ?? selectedProduct?.benefits ?? [],
+      };
+      const { error } = await supabaseAdmin
+        .from('products')
+        .update(payload)
+        .eq('id', updated.id);
+      if (error) throw error;
+      setIsProductModalOpen(false);
+      setSelectedProduct(null);
+      await fetchData();
+    } catch (err) {
+      console.error('saveProductModal error:', err);
+    } finally {
+      setSavingProduct(false);
     }
   };
 
@@ -1040,6 +1034,15 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
               </div>
             </div>
           </TabsContent>
+
+          {/* Edit Produk Modal */}
+          <EditProductModal
+            isOpen={isProductModalOpen}
+            onClose={() => { setIsProductModalOpen(false); setSelectedProduct(null); }}
+            product={selectedProduct}
+            onSave={saveProductModal}
+            loading={savingProduct}
+          />
 
           <TabsContent value="orders">
             <div className="flex justify-between items-center mb-6">
