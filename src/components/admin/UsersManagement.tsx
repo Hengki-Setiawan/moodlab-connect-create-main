@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { EditUserModal } from "./EditUserModal";
 
 interface RoleRow {
   user_id: string;
@@ -39,6 +40,10 @@ const UsersManagement = () => {
   const [search, setSearch] = useState<string>("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserCombined | null>(null);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -89,37 +94,48 @@ const UsersManagement = () => {
     loadUsers();
   }, []);
 
-  const saveProfile = async (user: UserCombined, next: Partial<ProfileRow>) => {
-    try {
-      setSavingId(user.id);
-      const payload = {
-        id: user.id,
-        full_name: next.full_name ?? user.profile?.full_name ?? null,
-        phone: next.phone ?? user.profile?.phone ?? null,
-      };
-      const { error } = await supabaseAdmin.from("profiles").upsert(payload);
-      if (error) throw error;
-      toast.success("Profil berhasil disimpan");
-      await loadUsers();
-    } catch (err) {
-      console.error("saveProfile error:", err);
-      toast.error("Gagal menyimpan profil");
-    } finally {
-      setSavingId(null);
-    }
+  // Modal functions
+  const openModal = (user: UserCombined | null = null) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
   };
 
-  const setRole = async (userId: string, role: RoleRow["role"]) => {
+  const closeModal = () => {
+    setSelectedUser(null);
+    setIsModalOpen(false);
+  };
+
+  const saveUser = async (userData: Partial<UserCombined>) => {
     try {
-      setSavingId(userId);
-      await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
-      if (error) throw error;
-      toast.success("Role pengguna diperbarui");
+      setSavingId(selectedUser?.id || '');
+      
+      // Update profile
+      if (userData.profile) {
+        const payload = {
+          id: selectedUser?.id,
+          full_name: userData.profile.full_name ?? selectedUser?.profile?.full_name ?? null,
+          phone: userData.profile.phone ?? selectedUser?.profile?.phone ?? null,
+        };
+        const { error } = await supabaseAdmin.from("profiles").upsert(payload);
+        if (error) throw error;
+      }
+      
+      // Update role
+      if (userData.role) {
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", selectedUser?.id);
+        const { error } = await supabaseAdmin.from("user_roles").insert({ 
+          user_id: selectedUser?.id, 
+          role: userData.role 
+        });
+        if (error) throw error;
+      }
+      
+      toast.success("Data pengguna berhasil disimpan");
+      closeModal();
       await loadUsers();
     } catch (err) {
-      console.error("setRole error:", err);
-      toast.error("Gagal memperbarui role");
+      console.error("saveUser error:", err);
+      toast.error("Gagal menyimpan data pengguna");
     } finally {
       setSavingId(null);
     }
@@ -141,10 +157,31 @@ const UsersManagement = () => {
     }
   };
 
+  const impersonateUser = async (user: UserCombined) => {
+    try {
+      setSavingId(user.id);
+      if (!user.email) {
+        toast.error("Pengguna tidak memiliki email valid");
+        return;
+      }
+      const res: any = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: user.email });
+      if (res?.error) throw res.error;
+      const url: string | undefined = res?.data?.action_link;
+      if (!url) throw new Error('action_link tidak tersedia');
+      window.open(url, '_blank');
+      toast.success('Membuka sesi sebagai pengguna di tab baru');
+    } catch (err) {
+      console.error('impersonateUser error:', err);
+      toast.error('Gagal membuka sesi pengguna');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   return (
-    <div>
+    <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Manajemen Akun Pengunjung</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Manajemen Akun Pengunjung</h2>
         <div className="flex gap-2">
           <Input
             placeholder="Cari email / nama / no. HP"
@@ -176,47 +213,55 @@ const UsersManagement = () => {
                 </tr>
               ) : (
                 filtered.map((u) => (
-                  <tr key={u.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{u.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Input
-                        defaultValue={u.profile?.full_name || ""}
-                        onBlur={(e) => {
-                          const v = e.target.value;
-                          if (v !== (u.profile?.full_name || "")) {
-                            saveProfile(u, { full_name: v });
-                          }
-                        }}
-                      />
+                  <tr key={u.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{u.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {u.profile?.full_name || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {u.profile?.phone || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Input
-                        defaultValue={u.profile?.phone || ""}
-                        onBlur={(e) => {
-                          const v = e.target.value;
-                          if (v !== (u.profile?.phone || "")) {
-                            saveProfile(u, { phone: v });
-                          }
-                        }}
-                      />
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        u.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        u.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {u.role || 'user'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Select value={u.role || "user"} onValueChange={(val) => setRole(u.id, val as RoleRow["role"]) }>
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue placeholder="Pilih Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="moderator">Moderator</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("id-ID") : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button variant="destructive" size="sm" onClick={() => deleteUser(u.id)} disabled={deletingId === u.id}>Hapus</Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openModal(u)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => impersonateUser(u)}
+                          disabled={savingId === u.id}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Masuk sebagai
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteUser(u.id)}
+                          disabled={deletingId === u.id}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Hapus
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -225,6 +270,15 @@ const UsersManagement = () => {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <EditUserModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        user={selectedUser}
+        onSave={saveUser}
+        loading={!!savingId}
+      />
     </div>
   );
 };
