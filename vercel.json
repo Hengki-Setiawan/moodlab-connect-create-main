@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/n8n-chat/(.*)", "destination": "https://gwu0a4k-n8n.bocindonesia.com/webhook/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -134,7 +134,7 @@ const ChatWidget = ({
       };
 
       let response: Response | null = null;
-      const primaryUrl = import.meta.env.PROD ? sendUrlAbs : sendUrlProxy;
+      const primaryUrl = sendUrlProxy;
       try {
         response = await doPost(primaryUrl, true);
       } catch (e1) {
