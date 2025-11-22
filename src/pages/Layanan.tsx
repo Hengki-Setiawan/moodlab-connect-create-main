@@ -92,7 +92,7 @@ const Layanan = () => {
             'Memaksimalkan website sebagai marketing funnel'
           ],
           category: 'consultation',
-          color_class: 'secondary',
+          color_class: 'primary',
           is_active: true
         },
         {
@@ -107,7 +107,7 @@ const Layanan = () => {
             'Produksi video singkat untuk media sosial'
           ],
           category: 'agency',
-          color_class: 'accent',
+          color_class: 'primary',
           is_active: true
         },
         {
@@ -281,9 +281,9 @@ const Layanan = () => {
                 {consultationServices.map((service) => {
                   const IconComponent = getIcon(service.icon);
                   return (
-                    <Card key={service.id} className={`border-2 transition-all hover:shadow-lg ${getColorClass(service.color_class)}`}>
+                    <Card key={service.id} className={`border-2 transition-all hover:shadow-lg border-primary hover:border-primary text-primary`}>
                       <CardHeader>
-                        <IconComponent className={`h-12 w-12 mb-4 ${service.color_class === 'primary' ? 'text-primary' : service.color_class === 'secondary' ? 'text-secondary' : 'text-accent'}`} />
+                        <IconComponent className={`h-12 w-12 mb-4 text-primary`} />
                         <CardTitle className="text-2xl">{service.title}</CardTitle>
                         <CardDescription className="text-base">
                           {service.description}
@@ -293,17 +293,16 @@ const Layanan = () => {
                         <ul className="space-y-3 mb-6 text-sm">
                           {service.features.map((feature, index) => (
                             <li key={index} className="flex items-start">
-                              <span className={`h-1.5 w-1.5 rounded-full mr-2 mt-2 flex-shrink-0 ${service.color_class === 'primary' ? 'bg-primary' : service.color_class === 'secondary' ? 'bg-secondary' : 'bg-accent'}`}></span>
+                              <span className={`h-1.5 w-1.5 rounded-full mr-2 mt-2 flex-shrink-0 bg-primary`}></span>
                               <span>{feature}</span>
                             </li>
                           ))}
                         </ul>
-                        <div className="flex items-center justify-between">
-                          <p className="text-lg font-semibold">Hubungi Kami</p>
+                        <div className="flex items-center justify-start">
                           <Button 
                             onClick={() => handleConsultationClick(service.title)}
-                            className={getButtonClass(service.color_class)}
-                            variant={service.color_class === 'secondary' ? 'secondary' : 'default'}
+                            className={`gradient-primary h-12 px-6`}
+                            variant="default"
                           >
                             Konsultasi
                           </Button>
@@ -324,9 +323,9 @@ const Layanan = () => {
                 {agencyServices.map((service) => {
                   const IconComponent = getIcon(service.icon);
                   return (
-                    <Card key={service.id} className={`border-2 transition-all hover:shadow-lg ${getColorClass(service.color_class)}`}>
+                    <Card key={service.id} className={`border-2 transition-all hover:shadow-lg border-primary hover:border-primary text-primary`}>
                       <CardHeader>
-                        <IconComponent className={`h-12 w-12 mb-4 ${service.color_class === 'primary' ? 'text-primary' : service.color_class === 'secondary' ? 'text-secondary' : 'text-accent'}`} />
+                        <IconComponent className={`h-12 w-12 mb-4 text-primary`} />
                         <CardTitle className="text-2xl">{service.title}</CardTitle>
                         <CardDescription className="text-base">
                           {service.description}
@@ -336,17 +335,16 @@ const Layanan = () => {
                         <ul className="space-y-3 mb-6 text-sm">
                           {service.features.map((feature, index) => (
                             <li key={index} className="flex items-start">
-                              <span className={`h-1.5 w-1.5 rounded-full mr-2 mt-2 flex-shrink-0 ${service.color_class === 'primary' ? 'bg-primary' : service.color_class === 'secondary' ? 'bg-secondary' : 'bg-accent'}`}></span>
+                              <span className={`h-1.5 w-1.5 rounded-full mr-2 mt-2 flex-shrink-0 bg-primary`}></span>
                               <span>{feature}</span>
                             </li>
                           ))}
                         </ul>
-                        <div className="flex items-center justify-between">
-                          <p className="text-lg font-semibold">Hubungi Kami</p>
+                        <div className="flex items-center justify-start">
                           <Button 
                             onClick={() => handleConsultationClick(service.title)}
-                            className={getButtonClass(service.color_class)}
-                            variant={service.color_class === 'secondary' ? 'secondary' : 'default'}
+                            className={`gradient-primary h-12 px-6`}
+                            variant="default"
                           >
                             Konsultasi
                           </Button>

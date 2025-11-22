@@ -36,6 +36,11 @@ const RouteChangeTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Auto scroll ke atas saat perpindahan page
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  useEffect(() => {
     const track = async () => {
       // Guard: nonaktifkan tracking jika flag env tidak diaktifkan atau API key/url tidak tersedia
       const enableViews = String(import.meta.env.VITE_ENABLE_PAGE_VIEWS ?? 'false') === 'true';

@@ -153,11 +153,11 @@ const Kontak = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-secondary transition-colors">
+              <Card className="border-2 hover:border-primary transition-colors">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="p-3 rounded-lg bg-secondary/10">
-                      <Instagram className="h-6 w-6 text-secondary" />
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <Instagram className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Instagram</h3>
@@ -165,7 +165,7 @@ const Kontak = () => {
                         href="https://instagram.com/moodlab.id1"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-secondary transition-colors"
+                        className="text-muted-foreground hover:text-primary transition-colors"
                       >
                         @moodlab.id1
                       </a>
@@ -174,11 +174,11 @@ const Kontak = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-accent transition-colors">
+              <Card className="border-2 hover:border-primary transition-colors">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="p-3 rounded-lg bg-accent/10">
-                      <Phone className="h-6 w-6 text-accent" />
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <Phone className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">WhatsApp</h3>
@@ -186,7 +186,7 @@ const Kontak = () => {
                         href="https://wa.me/6281341277339"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-accent transition-colors"
+                        className="text-muted-foreground hover:text-primary transition-colors"
                       >
                         081341277339
                       </a>
