@@ -96,7 +96,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Produk' : 'Tambah Produk'}</DialogTitle>
           <DialogDescription>Lengkapi informasi produk dan simpan perubahan.</DialogDescription>
