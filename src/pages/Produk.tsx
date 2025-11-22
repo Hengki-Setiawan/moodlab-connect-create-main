@@ -242,8 +242,8 @@ const Produk = () => {
                       <CardHeader>
                         <CardTitle className="text-xl">{product.name}</CardTitle>
                         <div className="flex items-center justify-between pt-4">
-                          <span className="text-2xl font-bold text-primary">
-                            Rp {product.price?.toLocaleString("id-ID")}
+                          <span className="text-2xl font-bold text-primary whitespace-nowrap">
+                            {formatPrice(product.price ?? 0)}
                           </span>
                           <div className="flex gap-2">
                             <Button
@@ -302,8 +302,8 @@ const Produk = () => {
                       <CardHeader>
                         <CardTitle className="text-xl">{product.name}</CardTitle>
                         <div className="flex items-center justify-between pt-4">
-                          <span className="text-2xl font-bold text-primary">
-                            Rp {product.price?.toLocaleString("id-ID")}
+                          <span className="text-2xl font-bold text-primary whitespace-nowrap">
+                            {formatPrice(product.price ?? 0)}
                           </span>
                           <div className="flex gap-2">
                             <Button
