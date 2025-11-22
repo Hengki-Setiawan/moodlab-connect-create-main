@@ -79,9 +79,6 @@ const AdminDashboard = () => {
 const [editingData, setEditingData] = useState<{ name: string; description: string; price: number; type: string; category: string; image_url?: string; file_url?: string; benefits?: string[] }>(
   { name: '', description: '', price: 0, type: '', category: '', image_url: '', file_url: '', benefits: [] }
 );
-  const [isProductModalOpen, setIsProductModalOpen] = useState<boolean>(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [savingProduct, setSavingProduct] = useState<boolean>(false);
 const [imageFile, setImageFile] = useState<File | null>(null);
 const [imagePreview, setImagePreview] = useState<string | null>(null);
 // Picker Storage untuk file digital
@@ -99,6 +96,10 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
   const [loadingPages, setLoadingPages] = useState(false);
   // Sinkronisasi tab dengan query param ?tab=
   const [tab, setTab] = useState<string>(new URLSearchParams(location.search).get('tab') || 'products');
+  // State untuk modal edit produk
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
   useEffect(() => {
     const t = new URLSearchParams(location.search).get('tab');
     if (t && t !== tab) setTab(t);
@@ -336,16 +337,35 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
         .from("page_views")
         .select("*");
 
+      // Coba gunakan kolom viewed_at, jika tidak ada gunakan created_at
       const now = new Date();
+      let timeColumn = 'viewed_at';
+      
+      // Cek apakah kolom viewed_at ada dengan mencoba query kecil
+      try {
+        const { error: testError } = await supabaseAdmin
+          .from("page_views")
+          .select("viewed_at")
+          .limit(1);
+        
+        if (testError && testError.code === '42703') {
+          // Kolom viewed_at tidak ada, gunakan created_at
+          timeColumn = 'created_at';
+        }
+      } catch (testErr) {
+        // Jika error, gunakan created_at sebagai fallback
+        timeColumn = 'created_at';
+      }
+
       // Terapkan filter tanggal berdasarkan pilihan
       if (dateRange === '7d') {
         const from = new Date();
         from.setDate(now.getDate() - 6); // 7 hari termasuk hari ini
-        query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', now.toISOString());
+        query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, now.toISOString());
       } else if (dateRange === '30d') {
         const from = new Date();
         from.setDate(now.getDate() - 29); // 30 hari termasuk hari ini
-        query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', now.toISOString());
+        query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, now.toISOString());
       } else if (dateRange === 'custom') {
         if (customStart && customEnd) {
           const from = new Date(customStart);
@@ -353,12 +373,12 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
           // inklusif sampai akhir hari end
           const endOfDay = new Date(to.getTime());
           endOfDay.setHours(23, 59, 59, 999);
-          query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', endOfDay.toISOString());
+          query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, endOfDay.toISOString());
         }
       }
 
       const { data, error } = await query
-        .order("viewed_at", { ascending: false })
+        .order(timeColumn, { ascending: false })
         .limit(2000);
 
       if (error) throw error;
@@ -369,7 +389,10 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       const uniqueSet = new Set<string>();
 
       (data || []).forEach((v: any) => {
-        const day = new Date(v.viewed_at).toISOString().slice(0, 10);
+        const timestamp = v[timeColumn];
+        if (!timestamp) return;
+        
+        const day = new Date(timestamp).toISOString().slice(0, 10);
         byDay.set(day, (byDay.get(day) || 0) + 1);
 
         const p = v.path || "/";
@@ -430,19 +453,27 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
   const loadPageContents = async () => {
     try {
       setLoadingPages(true);
+      // Coba ambil data dari page_contents
       const { data, error } = await supabase
         .from("page_contents")
         .select("page, content")
         .in("page", ["home", "about"]);
+      
       if (error) {
-        const msg = String((error as any)?.message || "").toLowerCase();
-        const code = (error as any)?.code || "";
-        if (code === 'PGRST205' || msg.includes('page_contents')) {
-          console.warn('Page contents table not found, skipping load.');
-          return;
-        }
-        throw error;
+        // Jika tabel tidak ada, gunakan nilai default
+        console.warn("Tabel page_contents tidak ditemukan, menggunakan nilai default");
+        setHomeContent({
+          hero_badge: "Selamat Datang di Moodlab",
+          hero_title: "Konsultasi Psikologi Profesional",
+          hero_subtitle: "Dukungan mental health untuk kesejahteraan Anda",
+        });
+        setAboutContent({
+          hero_title: "Tentang Moodlab",
+          hero_subtitle: "Platform konsultasi psikologi yang dapat diandalkan",
+        });
+        return;
       }
+      
       (data || []).forEach((row: { page: string; content: any }) => {
         if (row.page === "home") {
           setHomeContent({
@@ -453,7 +484,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
         }
         if (row.page === "about") {
           setAboutContent({
-            hero_title: row.content?.hero_title || "",
+            hero_title: row.content?.hero_subtitle || "",
             hero_subtitle: row.content?.hero_subtitle || "",
           });
         }
@@ -470,15 +501,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       const { error } = await supabaseAdmin
         .from("page_contents")
         .upsert({ page: "home", content: homeContent });
-      if (error) {
-        const msg = String((error as any)?.message || "").toLowerCase();
-        const code = (error as any)?.code || "";
-        if (code === 'PGRST205' || msg.includes('page_contents')) {
-          console.warn('Page contents table not found, skipping save.');
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
     } catch (err) {
       console.error("Error saveHomeContent:", err);
     }
@@ -489,15 +512,7 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
       const { error } = await supabaseAdmin
         .from("page_contents")
         .upsert({ page: "about", content: aboutContent });
-      if (error) {
-        const msg = String((error as any)?.message || "").toLowerCase();
-        const code = (error as any)?.code || "";
-        if (code === 'PGRST205' || msg.includes('page_contents')) {
-          console.warn('Page contents table not found, skipping save.');
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
     } catch (err) {
       console.error("Error saveAboutContent:", err);
     }
@@ -510,30 +525,45 @@ const [digitalSelectedName, setDigitalSelectedName] = useState<string | null>(nu
         .from('page_views')
         .select('*');
 
+      // Cek kolom waktu yang tersedia
+      let timeColumn = 'viewed_at';
+      try {
+        const { error: testError } = await supabaseAdmin
+          .from("page_views")
+          .select("viewed_at")
+          .limit(1);
+        
+        if (testError && testError.code === '42703') {
+          timeColumn = 'created_at';
+        }
+      } catch (testErr) {
+        timeColumn = 'created_at';
+      }
+
       const now = new Date();
       if (dateRange === '7d') {
         const from = new Date();
         from.setDate(now.getDate() - 6);
-        query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', now.toISOString());
+        query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, now.toISOString());
       } else if (dateRange === '30d') {
         const from = new Date();
         from.setDate(now.getDate() - 29);
-        query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', now.toISOString());
+        query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, now.toISOString());
       } else if (dateRange === 'custom') {
         if (customStart && customEnd) {
           const from = new Date(customStart);
           const to = new Date(customEnd);
           const endOfDay = new Date(to.getTime());
           endOfDay.setHours(23, 59, 59, 999);
-          query = query.gte('viewed_at', from.toISOString()).lte('viewed_at', endOfDay.toISOString());
+          query = query.gte(timeColumn, from.toISOString()).lte(timeColumn, endOfDay.toISOString());
         }
       }
 
-      const { data, error } = await query.order('viewed_at', { ascending: true }).limit(10000);
+      const { data, error } = await query.order(timeColumn, { ascending: true }).limit(10000);
       if (error) throw error;
 
       const rows = (data || []) as any[];
-      const headers = ['id', 'path', 'user_id', 'visitor_id', 'session_id', 'referrer', 'user_agent', 'viewed_at', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+      const headers = ['id', 'path', 'user_id', 'visitor_id', 'session_id', 'referrer', 'user_agent', timeColumn, 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
       const csv = [
         headers.join(','),
         ...rows.map(r => headers.map(h => {
