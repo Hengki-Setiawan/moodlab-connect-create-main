@@ -52,7 +52,7 @@ const Produk = () => {
       setIsLoading(false);
     }
   };
-  
+
   const openProductDetail = (product: Product) => {
     window.location.href = `/produk/${product.id}`;
   };
@@ -108,7 +108,7 @@ const Produk = () => {
       const t = (p.type || '').toLowerCase();
       if (t.includes('redesign')) set.add('redesigns');
     });
-    const defaults = ['design','business','technology','education','marketing','redesigns'];
+    const defaults = ['design', 'business', 'technology', 'education', 'marketing', 'redesigns'];
     return Array.from(new Set([...defaults, ...Array.from(set)]));
   }, [templates]);
 
@@ -118,7 +118,7 @@ const Produk = () => {
       const c = (p.category || '').toLowerCase();
       if (c) set.add(c);
     });
-    const defaults = ['education','business','marketing','technology','other'];
+    const defaults = ['education', 'business', 'marketing', 'technology', 'other'];
     return Array.from(new Set([...defaults, ...Array.from(set)]));
   }, [ebooks]);
 
@@ -145,18 +145,30 @@ const Produk = () => {
           </div>
 
           {/* Pencarian */}
-          <div className="max-w-3xl mx-auto mb-6">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Cari produk (nama, deskripsi, kategori)"
-                className="flex-1 border rounded px-4 py-2"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Button onClick={() => {/* filter berbasis client, tidak perlu aksi */}}>
-                Search
-              </Button>
+          <div className="max-w-3xl mx-auto mb-12">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
+              <div className="relative flex items-center bg-white dark:bg-gray-900 rounded-full p-1 shadow-lg">
+                <div className="pl-3 md:pl-4 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari produk..."
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 dark:text-gray-100 placeholder-gray-400 px-3 md:px-4 py-2 md:py-3 text-sm md:text-lg outline-none w-full min-w-0"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button
+                  onClick={() => {/* filter berbasis client */ }}
+                  className="rounded-full px-4 md:px-8 h-9 md:h-12 gradient-primary hover:opacity-90 transition-opacity text-xs md:text-base whitespace-nowrap"
+                >
+                  <span className="hidden md:inline">Search</span>
+                  <span className="md:hidden">Cari</span>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -164,21 +176,19 @@ const Produk = () => {
             <div className="bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab("template")}
-                className={`px-6 py-2 rounded-md transition-all ${
-                  activeTab === "template"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-6 py-2 rounded-md transition-all ${activeTab === "template"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Template
               </button>
               <button
                 onClick={() => setActiveTab("ebook")}
-                className={`px-6 py-2 rounded-md transition-all ${
-                  activeTab === "ebook"
-                    ? "bg-background shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-6 py-2 rounded-md transition-all ${activeTab === "ebook"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 E-book
               </button>
@@ -193,9 +203,8 @@ const Produk = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                className={`px-3 py-1 rounded-full border text-sm ${
-                  activeCategory === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-background'
-                }`}
+                className={`px-3 py-1 rounded-full border text-sm ${activeCategory === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-background'
+                  }`}
               >
                 {cat}
               </button>

@@ -10,9 +10,12 @@ const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 // WARNING: Only use this client on the server or in protected admin routes
 // Never expose this client to regular users
 
+// Fallback to prevent crash if key is missing (e.g. in development without full env)
+const adminKey = SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || "fallback-key";
+
 export const supabaseAdmin = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
+  adminKey,
   {
     auth: {
       autoRefreshToken: false,
@@ -29,12 +32,12 @@ export async function adminCreateRecord(table: string, data: any) {
     .from(table)
     .insert(data)
     .select();
-  
+
   if (error) {
     console.error(`Error creating record in ${table}:`, error);
     throw error;
   }
-  
+
   return result;
 }
 
@@ -45,12 +48,12 @@ export async function adminUpdateRecord(table: string, id: string, data: any) {
     .update(data)
     .eq('id', id)
     .select();
-  
+
   if (error) {
     console.error(`Error updating record in ${table}:`, error);
     throw error;
   }
-  
+
   return result;
 }
 
@@ -60,12 +63,12 @@ export async function adminDeleteRecord(table: string, id: string) {
     .from(table)
     .delete()
     .eq('id', id);
-  
+
   if (error) {
     console.error(`Error deleting record from ${table}:`, error);
     throw error;
   }
-  
+
   return true;
 }
 
@@ -74,11 +77,11 @@ export async function adminGetAllRecords(table: string) {
   const { data, error } = await supabaseAdmin
     .from(table)
     .select('*');
-  
+
   if (error) {
     console.error(`Error fetching records from ${table}:`, error);
     throw error;
   }
-  
+
   return data;
 }

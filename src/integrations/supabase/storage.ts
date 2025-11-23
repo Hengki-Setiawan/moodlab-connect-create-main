@@ -8,15 +8,15 @@ import { supabaseAdmin } from './admin';
  * @param {string} folder - Nama folder di dalam bucket (default: 'products')
  * @returns {Promise<{path: string, url: string} | null>} - Path dan URL gambar jika berhasil, null jika gagal
  */
-export const uploadImage = async (file, bucket = 'Gambar', folder = 'products') => {
+export const uploadImage = async (file, bucket = 'Gambar', folder = 'products', customFileName = null) => {
   try {
     if (!file) return null;
-    
-    // Membuat nama file yang unik dengan timestamp
+
+    // Membuat nama file yang unik dengan timestamp jika tidak ada customFileName
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const fileName = customFileName || `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
-    
+
     // Upload file ke Supabase Storage (gunakan service role untuk kemudahan)
     const { data, error } = await supabaseAdmin
       .storage
@@ -25,15 +25,15 @@ export const uploadImage = async (file, bucket = 'Gambar', folder = 'products') 
         cacheControl: '3600',
         upsert: false
       });
-    
+
     if (error) throw error;
-    
+
     // Mendapatkan URL publik dari file yang diupload
     const { data: urlData } = supabaseAdmin
       .storage
       .from(bucket)
       .getPublicUrl(data.path);
-    
+
     return {
       path: data.path,
       url: urlData.publicUrl
@@ -53,14 +53,14 @@ export const uploadImage = async (file, bucket = 'Gambar', folder = 'products') 
 export const deleteImage = async (path, bucket = 'Gambar') => {
   try {
     if (!path) return false;
-    
+
     const { error } = await supabaseAdmin
       .storage
       .from(bucket)
       .remove([path]);
-    
+
     if (error) throw error;
-    
+
     return true;
   } catch (error) {
     console.error('Error deleting image:', error);
@@ -77,12 +77,12 @@ export const deleteImage = async (path, bucket = 'Gambar') => {
 export const getImageUrl = (path, bucket = 'Gambar') => {
   try {
     if (!path) return null;
-    
+
     const { data } = supabase
       .storage
       .from(bucket)
       .getPublicUrl(path);
-    
+
     return data.publicUrl;
   } catch (error) {
     console.error('Error getting image URL:', error);
