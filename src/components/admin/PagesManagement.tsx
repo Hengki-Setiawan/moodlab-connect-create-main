@@ -56,7 +56,7 @@ const PagesManagement = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Manajemen Halaman</h2>
+                <h2 className="text-2xl font-bold text-foreground">Manajemen Halaman</h2>
                 <Button variant="outline" onClick={() => toast.info("Fitur tambah halaman akan segera hadir")}>
                     Tambah Halaman
                 </Button>
@@ -93,8 +93,8 @@ const PagesManagement = () => {
                             ) : (
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1">
-                                        <p className="font-medium text-sm">Title: <span className="font-normal text-gray-600">{page.title}</span></p>
-                                        <p className="font-medium text-sm">Description: <span className="font-normal text-gray-600">{page.description}</span></p>
+                                        <p className="font-medium text-sm text-foreground">Title: <span className="font-normal text-muted-foreground">{page.title}</span></p>
+                                        <p className="font-medium text-sm text-foreground">Description: <span className="font-normal text-muted-foreground">{page.description}</span></p>
                                     </div>
                                     <Button variant="ghost" size="sm" onClick={() => handleEdit(page)}>Edit</Button>
                                 </div>

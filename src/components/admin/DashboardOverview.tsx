@@ -85,9 +85,9 @@ const DashboardOverview = ({ stats, analytics, recentActivity = [] }: DashboardO
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Chart Section */}
-                <Card className="lg:col-span-2 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-lg">
+                <Card className="lg:col-span-2 bg-white dark:bg-card border-gray-100 dark:border-border shadow-lg">
                     <CardHeader>
-                        <CardTitle className="text-gray-800 dark:text-gray-100">Statistik Pengunjung (7 Hari Terakhir)</CardTitle>
+                        <CardTitle className="text-gray-800 dark:text-foreground">Statistik Pengunjung (7 Hari Terakhir)</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px] w-full">
@@ -112,20 +112,20 @@ const DashboardOverview = ({ stats, analytics, recentActivity = [] }: DashboardO
                 </Card>
 
                 {/* Recent Activity Feed */}
-                <Card className="bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-lg">
+                <Card className="bg-white dark:bg-card border-gray-100 dark:border-border shadow-lg">
                     <CardHeader>
-                        <CardTitle className="text-gray-800 dark:text-gray-100">Aktivitas Terbaru</CardTitle>
+                        <CardTitle className="text-gray-800 dark:text-foreground">Aktivitas Terbaru</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
                             {recentActivity.length > 0 ? (
                                 recentActivity.map((activity) => (
-                                    <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                                    <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-border last:border-0 last:pb-0">
                                         <div className="h-2 w-2 mt-2 rounded-full bg-blue-500 shrink-0" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{activity.action}</p>
+                                            <p className="text-sm font-medium text-gray-800 dark:text-foreground">{activity.action}</p>
                                             <p className="text-xs text-muted-foreground">{activity.details}</p>
-                                            <p className="text-[10px] text-gray-400 mt-1">
+                                            <p className="text-[10px] text-muted-foreground mt-1">
                                                 {safeFormat(activity.timestamp, 'dd MMM HH:mm')}
                                             </p>
                                         </div>
