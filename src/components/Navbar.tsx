@@ -103,7 +103,7 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Button className="w-full" onClick={() => { navigate(isAdmin ? "/admin-dashboard" : "/profile"); setIsOpen(false); }}>Profile</Button>
-                  <Button variant="outline" className="w-full" onClick={() => { 
+                  <Button variant="outline" className="w-full" onClick={() => {
                     supabase.auth.signOut();
                     navigate("/");
                     setIsOpen(false);

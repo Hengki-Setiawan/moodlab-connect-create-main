@@ -6,13 +6,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { MotionSection } from "@/components/MotionSection";
 
 const Home = () => {
   const [content, setContent] = useState<{ hero_badge?: string; hero_title?: string; hero_subtitle?: string }>({});
 
   useEffect(() => {
     const fetchContent = async () => {
-      const { data } = await supabase.from('page_contents').select('content').eq('page','home').maybeSingle();
+      const { data } = await supabase.from('page_contents').select('content').eq('page', 'home').maybeSingle();
       setContent(data?.content || {});
     };
     fetchContent();
@@ -21,15 +22,12 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      
+
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <MotionSection className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center space-x-2 bg-muted px-4 py-2 rounded-full mb-4">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{content.hero_badge || "Agensi Pemasaran Digital untuk Gen Z"}</span>
-            </div>
+
             {content.hero_title ? (
               <h1 className="text-5xl md:text-7xl font-bold leading-tight">{content.hero_title}</h1>
             ) : (
@@ -41,27 +39,27 @@ const Home = () => {
             )}
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               {content.hero_subtitle || (
-                <>Kami memahami "mood" audiens Gen Z Anda. Moodlab hadir untuk membangun konten yang relevan, 
-                autentik, dan mengubah engagement menjadi loyalitas pelanggan jangka panjang.</>
+                <>Kami memahami "mood" audiens Gen Z Anda. Moodlab hadir untuk membangun konten yang relevan,
+                  autentik, dan mengubah engagement menjadi loyalitas pelanggan jangka panjang.</>
               )}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button size="lg" asChild className="gradient-primary animate-gradient">
+              <Button size="lg" asChild className="gradient-primary animate-gradient hover:scale-105 transition-transform">
                 <Link to="/layanan">
                   Lihat Layanan
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button size="lg" variant="outline" asChild className="hover:scale-105 transition-transform">
                 <Link to="/produk">Jelajahi Produk Digital</Link>
               </Button>
             </div>
           </div>
         </div>
-      </section>
+      </MotionSection>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      <MotionSection className="py-20 px-4 bg-muted/30" delay={0.2}>
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -71,9 +69,9 @@ const Home = () => {
               Kami fokus pada data, tren, dan konten autentik untuk membangun merek yang kuat di era digital
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="border-2 hover:border-primary transition-colors">
+            <Card className="border-2 hover:border-primary transition-all duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader>
                 <Target className="h-10 w-10 text-primary mb-2" />
                 <CardTitle>Analisis Data</CardTitle>
@@ -85,7 +83,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:border-secondary transition-colors">
+            <Card className="border-2 hover:border-secondary transition-all duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader>
                 <TrendingUp className="h-10 w-10 text-secondary mb-2" />
                 <CardTitle>Adaptasi Tren</CardTitle>
@@ -97,7 +95,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:border-accent transition-colors">
+            <Card className="border-2 hover:border-accent transition-all duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader>
                 <Sparkles className="h-10 w-10 text-accent mb-2" />
                 <CardTitle>Konten Autentik</CardTitle>
@@ -109,7 +107,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:border-primary transition-colors">
+            <Card className="border-2 hover:border-primary transition-all duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader>
                 <Users className="h-10 w-10 text-primary mb-2" />
                 <CardTitle>Fokus Komunitas</CardTitle>
@@ -122,10 +120,10 @@ const Home = () => {
             </Card>
           </div>
         </div>
-      </section>
+      </MotionSection>
 
       {/* Services Preview */}
-      <section className="py-20 px-4">
+      <MotionSection className="py-20 px-4" delay={0.2}>
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Layanan Kami</h2>
@@ -133,9 +131,9 @@ const Home = () => {
               Dari konsultasi hingga eksekusi penuh, kami siap membantu bisnis Anda tumbuh
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-8">
-            <Card className="border-2 hover:shadow-lg transition-shadow">
+            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
               <CardHeader>
                 <CardTitle className="text-2xl">Konsultasi Pemasaran</CardTitle>
                 <CardDescription>
@@ -159,7 +157,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:shadow-lg transition-shadow">
+            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
               <CardHeader>
                 <CardTitle className="text-2xl">Kerjasama Agensi</CardTitle>
                 <CardDescription>
@@ -184,10 +182,10 @@ const Home = () => {
             </Card>
           </div>
         </div>
-      </section>
+      </MotionSection>
 
       {/* Products Preview */}
-      <section className="py-20 px-4 bg-muted/30">
+      <MotionSection className="py-20 px-4 bg-muted/30" delay={0.2}>
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Produk Digital</h2>
@@ -195,9 +193,9 @@ const Home = () => {
               Template dan e-book siap pakai untuk mempercepat pertumbuhan bisnis Anda
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105">
               <CardHeader>
                 <CardTitle>Template Konten</CardTitle>
                 <CardDescription>
@@ -212,7 +210,7 @@ const Home = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105">
               <CardHeader>
                 <CardTitle>E-book</CardTitle>
                 <CardDescription>
@@ -227,15 +225,15 @@ const Home = () => {
               </CardContent>
             </Card>
 
-{/* Kartu 'Paket Bundling' dihapus sesuai permintaan */}
+            {/* Kartu 'Paket Bundling' dihapus sesuai permintaan */}
           </div>
         </div>
-      </section>
+      </MotionSection>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <MotionSection className="py-20 px-4" delay={0.2}>
         <div className="container mx-auto max-w-4xl">
-          <div className="gradient-primary animate-gradient rounded-2xl p-12 text-center text-primary-foreground">
+          <div className="gradient-primary animate-gradient rounded-2xl p-12 text-center text-primary-foreground shadow-2xl">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Siap Mengubah Brand Anda?
             </h2>
@@ -243,16 +241,16 @@ const Home = () => {
               Mulai perjalanan Anda bersama Moodlab hari ini dan lihat perbedaannya
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" asChild>
+              <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-2 border-white text-white hover:bg-white hover:text-primary hover:scale-105 transition-all" asChild>
                 <Link to="/kontak">Hubungi Kami</Link>
               </Button>
-              <Button size="lg" variant="outline" className="bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
+              <Button size="lg" variant="outline" className="bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary hover:scale-105 transition-transform" asChild>
                 <Link to="/about">Tentang Kami</Link>
               </Button>
             </div>
           </div>
         </div>
-      </section>
+      </MotionSection>
 
       {/* Footer */}
       <Footer />

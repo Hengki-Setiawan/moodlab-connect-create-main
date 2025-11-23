@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { Send, MessageCircle, X, User, Bot } from 'lucide-react';
+import { Send, MessageCircle, X, User, Bot, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './ChatWidget.css';
+import ModyAvatar from '@/assets/mody-avatar.png';
 
 interface Message {
   id: string;
@@ -18,7 +20,7 @@ interface ChatWidgetProps {
   initialMessages?: string[];
 }
 
-type ChatEvent = { type?: string; content?: string; text?: string; [k: string]: unknown };
+type ChatEvent = { type?: string; content?: string; text?: string;[k: string]: unknown };
 
 const ChatWidget = ({
   primaryColor = '#7C3AED',
@@ -43,17 +45,9 @@ const ChatWidget = ({
     : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
   const proxyWebhookUrl = '/n8n-chat/chat';
   const withAction = (url: string, action: string) => `${url}${url.includes('?') ? '&' : '?'}action=${action}`;
-  const sendUrlAbs = withAction(absWebhookUrl, 'sendMessage');
   const sendUrlProxy = withAction(proxyWebhookUrl, 'sendMessage');
   const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
   const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
-  
-  // Debug logging
-  console.log('Webhook URL abs:', absWebhookUrl);
-  console.log('Webhook URL proxy:', proxyWebhookUrl);
-  console.log('Send URL abs:', sendUrlAbs);
-  console.log('Send URL proxy:', sendUrlProxy);
-  console.log('API Key available:', !!apiKey);
 
   // Initialize messages when chat opens
   useEffect(() => {
@@ -134,34 +128,26 @@ const ChatWidget = ({
       };
 
       let response: Response | null = null;
-      const primaryUrl = sendUrlProxy;
       try {
-        response = await doPost(primaryUrl, true);
+        response = await doPost(sendUrlProxy, true);
       } catch (e1) {
         response = null;
       }
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         if (response && response.status >= 400 && response.status < 500) {
           try {
-            response = await doPost(primaryUrl, false);
+            response = await doPost(sendUrlProxy, false);
           } catch (e3) {
             response = null;
           }
         }
 
         if (!response || !response.ok) {
-          // Fallback: coba endpoint absolut jika proxy gagal (produksi) atau sebaliknya
-          const altUrl = primaryUrl === sendUrlProxy ? sendUrlAbs : sendUrlProxy;
-          try {
-            response = await doPost(altUrl, true);
-          } catch {}
-          if (!response || !response.ok) {
-          if (response.status === 401 || response.status === 403) {
+          if (response && (response.status === 401 || response.status === 403)) {
             const newKey = typeof window !== 'undefined' ? window.prompt('API key bermasalah. Masukkan API key n8n:') : null;
             if (newKey) {
               localStorage.setItem('ml_n8n_api_key', newKey);
-              // Retry with new key
               return sendMessage(text);
             }
             const errText = response ? await response.text().catch(() => '') : '';
@@ -169,7 +155,6 @@ const ChatWidget = ({
           }
           const errBody = response ? await response.text().catch(() => '') : '';
           throw new Error(errBody || (response ? `HTTP error! status: ${response.status}` : 'Network failed'));
-          }
         }
       }
 
@@ -179,12 +164,12 @@ const ChatWidget = ({
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let s = '';
-      while (true) {
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        s += decoder.decode(chunk.value, { stream: true });
-      }
-      s += decoder.decode();
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          s += decoder.decode(chunk.value, { stream: true });
+        }
+        s += decoder.decode();
         const normalized = s.replace(/\}\s+\{/g, '}\n{');
         const lines = normalized.split(/\r?\n/).filter(Boolean);
         const payloads: ChatEvent[] = [];
@@ -193,69 +178,58 @@ const ChatWidget = ({
           if (!raw) continue;
           try { payloads.push(JSON.parse(raw) as ChatEvent); } catch { payloads.push({ text: raw }); }
         }
-      const items = payloads.filter((p) => p && (p as ChatEvent).type === 'item');
-      const joined = items
-        .map((p) => {
-          const ev = p as ChatEvent;
-          return typeof ev.content === 'string' ? ev.content : (typeof ev.text === 'string' ? ev.text : '');
-        })
-        .filter(Boolean)
-        .join('');
-      if (joined) {
-        data = { text: joined };
-      } else {
-        const lastItem = [...payloads].reverse().find((p) => p && (p as ChatEvent).type === 'item') as ChatEvent | undefined;
-        data = lastItem && typeof lastItem!.content === 'string'
-          ? { text: lastItem!.content as string }
-          : (payloads[payloads.length - 1] || { text: s });
-      }
+        const items = payloads.filter((p) => p && (p as ChatEvent).type === 'item');
+        const joined = items
+          .map((p) => {
+            const ev = p as ChatEvent;
+            return typeof ev.content === 'string' ? ev.content : (typeof ev.text === 'string' ? ev.text : '');
+          })
+          .filter(Boolean)
+          .join('');
+        if (joined) {
+          data = { text: joined };
+        } else {
+          const lastItem = [...payloads].reverse().find((p) => p && (p as ChatEvent).type === 'item') as ChatEvent | undefined;
+          data = lastItem && typeof lastItem!.content === 'string'
+            ? { text: lastItem!.content as string }
+            : (payloads[payloads.length - 1] || { text: s });
+        }
       } else {
         const clone = response.clone();
         const txtRaw = await clone.text().catch(() => '');
         const txt = txtRaw.replace(/\}\s+\{/g, '}\n{');
-      const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
-      const joinedText = matches.map((m) => m[1]).join('');
-      if (joinedText) {
-        data = { text: joinedText };
-      } else {
-        try {
-          data = txt ? JSON.parse(txt) : await response.json();
-        } catch {
-          data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
+        const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
+        const joinedText = matches.map((m) => m[1]).join('');
+        if (joinedText) {
+          data = { text: joinedText };
+        } else {
+          try {
+            data = txt ? JSON.parse(txt) : await response.json();
+          } catch {
+            data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
+          }
         }
       }
-      }
-      console.log('n8n response:', data);
-      
+
       // Simulate typing delay for natural feel
       setTimeout(() => {
         setIsTyping(false);
-        
+
         // Handle different response formats from n8n
         let botResponse = '';
         if (typeof data === 'string') {
           botResponse = data as string;
         } else {
           const d = (data ?? {}) as Record<string, unknown>;
-          if (typeof d.response === 'string') {
-            botResponse = d.response as string;
-          } else if (typeof d.message === 'string') {
-            botResponse = d.message as string;
-          } else if (typeof d.text === 'string') {
-            botResponse = d.text as string;
-          } else if (typeof d.content === 'string') {
-            botResponse = d.content as string;
-          } else if (typeof d.output === 'string') {
-            botResponse = d.output as string;
-          } else if (typeof d.chatOutput === 'string') {
-            botResponse = d.chatOutput as string;
-          } else if (typeof d.answer === 'string') {
-            botResponse = d.answer as string;
-          } else if (Array.isArray(d.replies) && d.replies.length > 0 && typeof d.replies[0] === 'string') {
-            botResponse = d.replies[0] as string;
-          } else {
-            botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
-          }
+          if (typeof d.response === 'string') botResponse = d.response;
+          else if (typeof d.message === 'string') botResponse = d.message;
+          else if (typeof d.text === 'string') botResponse = d.text;
+          else if (typeof d.content === 'string') botResponse = d.content;
+          else if (typeof d.output === 'string') botResponse = d.output;
+          else if (typeof d.chatOutput === 'string') botResponse = d.chatOutput;
+          else if (typeof d.answer === 'string') botResponse = d.answer;
+          else if (Array.isArray(d.replies) && d.replies.length > 0 && typeof d.replies[0] === 'string') botResponse = d.replies[0];
+          else botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
         }
         const sanitizeText = (raw: string): string => {
           let s = raw;
@@ -275,48 +249,34 @@ const ChatWidget = ({
           sender: 'bot',
           timestamp: new Date()
         };
-        
+
         setMessages(prev => [...prev, botMessage]);
       }, 1000);
 
     } catch (err) {
       setIsTyping(false);
-      
-      // Log error for debugging
       console.error('Chatbot error:', err);
-      
-      // Create user-friendly error message
       let errorMessage = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
-      
       if (err instanceof Error) {
-        if (err.message.includes('API key')) {
-          errorMessage = 'Terjadi masalah dengan konfigurasi. Silakan hubungi administrator.';
-        } else if (err.message.includes('fetch')) {
-          errorMessage = 'Koneksi bermasalah. Periksa koneksi internet Anda.';
-        } else if (err.message.includes('NetworkError')) {
-          errorMessage = 'Tidak dapat terhubung ke server. Coba lagi nanti.';
-        }
+        if (err.message.includes('API key')) errorMessage = 'Terjadi masalah dengan konfigurasi. Silakan hubungi administrator.';
+        else if (err.message.includes('fetch')) errorMessage = 'Koneksi bermasalah. Periksa koneksi internet Anda.';
+        else if (err.message.includes('NetworkError')) errorMessage = 'Tidak dapat terhubung ke server. Coba lagi nanti.';
       }
-      
       setError(errorMessage);
-      
-      // Fallback response for demo purposes
+
       const fallbackResponses = [
         'Maaf, saya sedang mengalami gangguan koneksi. Silakan coba lagi dalam beberapa saat.',
         'Saya tidak dapat terhubung ke server saat ini. Mohon coba lagi nanti.',
         'Terjadi masalah teknis. Tim kami sedang memperbaikinya.'
       ];
-      
       const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-      
-      // Add fallback message to chat
+
       const fallbackBotMessage: Message = {
         id: `fallback-${Date.now()}`,
         text: randomFallback,
         sender: 'bot',
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, fallbackBotMessage]);
     }
   };
@@ -334,145 +294,185 @@ const ChatWidget = ({
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('id-ID', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const positionStyles = {
-    'bottom-right': { bottom: '24px', right: '24px' },
-    'bottom-left': { bottom: '24px', left: '24px' },
-    'top-right': { top: '24px', right: '24px' },
-    'top-left': { top: '24px', left: '24px' }
+  const positionClasses = {
+    'bottom-right': 'bottom-6 right-6',
+    'bottom-left': 'bottom-6 left-6',
+    'top-right': 'top-6 right-6',
+    'top-left': 'top-6 left-6'
   };
 
   return (
     <>
-      {/* Floating Action Button */}
-      {!isOpen && (
-        <div className={`chat-widget-container ${position}`}>
-          <button
-            onClick={() => setIsOpen(true)}
-            className="chat-button"
-            aria-label="Buka chat"
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className={`fixed z-50 ${positionClasses[position]}`}
           >
-            <MessageCircle />
-            <span className="notification-badge">1</span>
-          </button>
-        </div>
-      )}
+            <button
+              onClick={() => setIsOpen(true)}
+              className="relative group flex items-center justify-center w-14 h-14 rounded-full gradient-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              aria-label="Buka chat"
+            >
+              <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
+              <MessageCircle className="w-7 h-7 text-white relative z-10" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white z-20">
+                1
+              </span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Chat Window */}
-      {isOpen && (
-        <div className={`chat-widget-container ${position}`}>
-          <div className="chat-window">
-            {/* Header */}
-            <div className="chat-header">
-            <div className="header-content">
-              <div className="header-icon">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div className="header-text">
-                <h3 className="header-title">{title}</h3>
-              </div>
-            </div>
-              <div className="header-actions">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={`fixed z-50 ${positionClasses[position]} w-[90vw] sm:w-[380px] h-[600px] max-h-[80vh]`}
+          >
+            <div className="flex flex-col h-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 gradient-primary text-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-full overflow-hidden border-2 border-white/50 shadow-lg">
+                    <img src={ModyAvatar} alt="Mody" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">{title}</h3>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <span className="text-xs opacity-90">Online</span>
+                    </div>
+                  </div>
+                </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="header-button"
-                  aria-label="Tutup chat"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            {/* Messages Area */}
-            <div className="messages-area">
-              <div className="messages-list">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                 {messages.map((message) => (
-                  <div
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     key={message.id}
-                    className={`message ${message.sender}`}
+                    className={`flex gap-3 ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}
                   >
-                    <div className="message-avatar">
-                      {message.sender === 'user' ? (
-                        <User className="w-4 h-4" />
-                      ) : (
-                        <Bot className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="message-content">
-                      <p>{message.text}</p>
-                      <div className="message-time">
+                    {message.sender === 'user' ? (
+                      <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0 bg-white">
+                        <img src={ModyAvatar} alt="Mody" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className={`max-w-[80%] ${message.sender === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
+                      <div className={`p-3 rounded-2xl text-sm ${message.sender === 'user'
+                        ? 'gradient-primary text-white rounded-tr-sm shadow-md'
+                        : 'bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-tl-sm shadow-sm'
+                        }`}>
+                        {message.text}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground mt-1 px-1">
                         {formatTime(message.timestamp)}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0 bg-white">
+                      <img src={ModyAvatar} alt="Mody" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-100 dark:border-gray-700 p-4 rounded-2xl rounded-tl-sm shadow-sm">
+                      <div className="flex gap-1">
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                          className="w-2 h-2 bg-primary/40 rounded-full"
+                        />
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                          className="w-2 h-2 bg-primary/40 rounded-full"
+                        />
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                          className="w-2 h-2 bg-primary/40 rounded-full"
+                        />
                       </div>
                     </div>
-                  </div>
-                ))}
-                
-                {/* Typing Indicator */}
-                {isTyping && (
-                  <div className="message bot">
-                    <div className="message-avatar">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="typing-indicator">
-                      <div className="typing-dot"></div>
-                      <div className="typing-dot"></div>
-                      <div className="typing-dot"></div>
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
-              </div>
-              
-              {/* Error Message */}
-              {error && (
-                <div className="error-state">
-                  <div className="error-icon">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="error-message">{error}</div>
-                  <button className="retry-button" onClick={() => setError(null)}>
-                    Coba Lagi
-                  </button>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
 
-            {/* Input Area */}
-            <div className="input-area">
-              <form onSubmit={handleSubmit} className="input-container">
-                <div className="input-wrapper">
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center justify-center p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-xl text-center"
+                  >
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</p>
+                    <button
+                      onClick={() => setError(null)}
+                      className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-3 py-1 rounded-full hover:bg-red-200 transition-colors"
+                    >
+                      Coba Lagi
+                    </button>
+                  </motion.div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800">
+                <form onSubmit={handleSubmit} className="relative flex items-center gap-2">
                   <textarea
                     ref={inputRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={placeholder}
-                    className="message-input"
+                    className="w-full pl-4 pr-12 py-3 bg-white dark:bg-gray-800 border-none ring-1 ring-gray-200 dark:ring-gray-700 rounded-full focus:ring-2 focus:ring-primary/50 resize-none text-sm shadow-sm scrollbar-hide"
                     disabled={isTyping}
                     rows={1}
+                    style={{ minHeight: '44px', maxHeight: '100px' }}
                   />
-                </div>
-                <button
-                  type="submit"
-                  disabled={!inputText.trim() || isTyping}
-                  className="send-button"
-                  aria-label="Kirim pesan"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() || isTyping}
+                    className="absolute right-2 p-2 gradient-primary rounded-full text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

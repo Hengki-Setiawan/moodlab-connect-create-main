@@ -190,7 +190,7 @@ const ServicesManagement = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Layanan" : "Tambah Layanan"}</DialogTitle>
             <DialogDescription>Lengkapi informasi layanan dan simpan perubahan.</DialogDescription>

@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/accordion";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import ModyAvatar from "@/assets/mody-avatar.png";
+import { motion } from "framer-motion";
 
 const About = () => {
   const [content, setContent] = useState<{ hero_title?: string; hero_subtitle?: string }>({});
@@ -38,7 +40,7 @@ const About = () => {
 
   useEffect(() => {
     const fetchContent = async () => {
-      const { data } = await supabase.from('page_contents').select('content').eq('page','about').maybeSingle();
+      const { data } = await (supabase as any).from('page_contents').select('content').eq('page', 'about').maybeSingle();
       setContent(data?.content || {});
     };
     fetchContent();
@@ -70,13 +72,13 @@ const About = () => {
               <CardContent className="p-8 md:p-12">
                 <h2 className="text-3xl font-bold mb-6">Siapa Kami</h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
-                  Moodlab hadir untuk menjawab tantangan yang dihadapi oleh banyak merek, terutama UMKM, 
-                  dalam mengubah popularitas sesaat menjadi loyalitas pelanggan Gen Z. Kami memahami "mood" 
-                  audiens kami, dan kami menggunakan pemahaman ini untuk menghasilkan konten yang terasa personal, 
+                  Moodlab hadir untuk menjawab tantangan yang dihadapi oleh banyak merek, terutama UMKM,
+                  dalam mengubah popularitas sesaat menjadi loyalitas pelanggan Gen Z. Kami memahami "mood"
+                  audiens kami, dan kami menggunakan pemahaman ini untuk menghasilkan konten yang terasa personal,
                   relevan, dan menghubungkan merek Anda dengan audiens secara autentik.
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-lg mt-4">
-                  Dengan keahlian yang kami asah dalam industri kuliner, kami fokus membangun merek yang kuat 
+                  Dengan keahlian yang kami asah dalam industri kuliner, kami fokus membangun merek yang kuat
                   dan bukan sekadar menjual produk.
                 </p>
               </CardContent>
@@ -90,7 +92,7 @@ const About = () => {
                 <Target className="h-12 w-12 text-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-4">Visi</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Menjadi mitra utama bagi UMKM yang ingin tumbuh dengan membangun relevansi budaya yang kuat 
+                  Menjadi mitra utama bagi UMKM yang ingin tumbuh dengan membangun relevansi budaya yang kuat
                   di tengah generasi digital.
                 </p>
               </CardContent>
@@ -161,13 +163,127 @@ const About = () => {
           {/* Portfolio Section - Placeholder */}
           <div className="mb-20">
             <h2 className="text-3xl font-bold mb-8 text-center">Portofolio</h2>
-            <Card className="border-2">
-              <CardContent className="p-12 text-center">
-                <p className="text-muted-foreground">
-                  Kami telah menangani berbagai proyek, mulai dari pembuatan konten yang relevan hingga 
-                  pengelolaan kampanye pemasaran digital untuk klien kami. Hubungi kami untuk melihat 
-                  portofolio lengkap kami.
-                </p>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Project 1 */}
+              <Card className="overflow-hidden border-2 hover:border-primary transition-colors">
+                <div className="h-48 overflow-hidden">
+                  <img
+                    src="/portfolio-gen-z.png"
+                    alt="Campaign Viral Gen Z Vibes"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-xl mb-2">Campaign Viral "Gen Z Vibes"</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Meningkatkan engagement rate sebesar 300% melalui konten TikTok yang relatable.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">Social Media</span>
+                    <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">Viral Marketing</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Project 2 */}
+              <Card className="overflow-hidden border-2 hover:border-secondary transition-colors">
+                <div className="h-48 overflow-hidden">
+                  <img
+                    src="/portfolio-kopi-senja.png"
+                    alt="Rebranding Kopi Senja"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-xl mb-2">Rebranding "Kopi Senja"</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Meremajakan identitas visual brand untuk menarik segmen pasar yang lebih muda.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">Branding</span>
+                    <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">Design</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Project 3 */}
+              <Card className="overflow-hidden border-2 hover:border-accent transition-colors">
+                <div className="h-48 overflow-hidden">
+                  <img
+                    src="/portfolio-influencer.png"
+                    alt="Influencer Activation"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-xl mb-2">Influencer Activation</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Kolaborasi dengan 50+ mikro-influencer untuk peluncuran produk gadget terbaru.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-accent/10 text-accent text-xs px-2 py-1 rounded-full">Influencer</span>
+                    <span className="bg-accent/10 text-accent text-xs px-2 py-1 rounded-full">Campaign</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Meet Mody Section */}
+          <div className="mb-20">
+            <h2 className="text-3xl font-bold mb-8 text-center">Kenalan dengan <span className="gradient-text">Mody</span></h2>
+            <Card className="border-2 overflow-hidden">
+              <CardContent className="p-8 md:p-12">
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="flex justify-center"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                      <motion.img
+                        src={ModyAvatar}
+                        alt="Mody - AI Assistant"
+                        className="relative w-64 h-64 md:w-80 md:h-80 object-cover rounded-full border-4 border-white shadow-2xl"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      />
+                    </div>
+                  </motion.div>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl md:text-3xl font-bold">
+                      Hai! Saya <span className="gradient-text">Mody</span> 👋
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed text-lg">
+                      Saya adalah AI chatbot assistant dari Moodlab yang siap membantu Anda 24/7!
+                      Dengan pemahaman mendalam tentang digital marketing dan branding, saya di sini
+                      untuk menjawab pertanyaan Anda tentang layanan kami, memberikan rekomendasi,
+                      dan membantu Anda menemukan solusi terbaik untuk bisnis Anda.
+                    </p>
+                    <div className="space-y-2">
+                      <p className="text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary font-bold">💬</span>
+                        <span>Tanya saya apa saja tentang Moodlab</span>
+                      </p>
+                      <p className="text-muted-foreground flex items-start gap-2">
+                        <span className="text-secondary font-bold">🎯</span>
+                        <span>Dapatkan rekomendasi strategi digital marketing</span>
+                      </p>
+                      <p className="text-muted-foreground flex items-start gap-2">
+                        <span className="text-accent font-bold">✨</span>
+                        <span>Konsultasi gratis untuk kebutuhan bisnis Anda</span>
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <p className="text-sm text-muted-foreground italic">
+                        Klik chat widget di pojok kanan bawah untuk mulai berbincang dengan saya!
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

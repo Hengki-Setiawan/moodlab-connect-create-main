@@ -43,7 +43,7 @@ const UsersManagement = () => {
   const [search, setSearch] = useState<string>("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserCombined | null>(null);
@@ -111,28 +111,30 @@ const UsersManagement = () => {
   const saveUser = async (userData: Partial<UserCombined>) => {
     try {
       setSavingId(selectedUser?.id || '');
-      
-      // Update profile
-      if (userData.profile) {
-        const payload = {
-          id: selectedUser?.id,
-          full_name: userData.profile.full_name ?? selectedUser?.profile?.full_name ?? null,
-          phone: userData.profile.phone ?? selectedUser?.profile?.phone ?? null,
-        };
-        const { error } = await supabaseAdmin.from("profiles").upsert(payload);
-        if (error) throw error;
-      }
-      
+
+      // Update profile - handle both nested and flat structure
+      const fullName = (userData as any).full_name ?? userData.profile?.full_name ?? selectedUser?.profile?.full_name ?? null;
+      const phone = (userData as any).phone ?? userData.profile?.phone ?? selectedUser?.profile?.phone ?? null;
+
+      const profilePayload = {
+        id: selectedUser?.id,
+        full_name: fullName,
+        phone: phone,
+      };
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profilePayload);
+      if (profileError) throw profileError;
+
       // Update role
-      if (userData.role) {
+      const role = userData.role ?? (userData as any).role;
+      if (role) {
         await supabaseAdmin.from("user_roles").delete().eq("user_id", selectedUser?.id);
-        const { error } = await supabaseAdmin.from("user_roles").insert({ 
-          user_id: selectedUser?.id, 
-          role: userData.role 
+        const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+          user_id: selectedUser?.id,
+          role: role
         });
-        if (error) throw error;
+        if (roleError) throw roleError;
       }
-      
+
       toast.success("Data pengguna berhasil disimpan");
       closeModal();
       await loadUsers();
@@ -234,11 +236,10 @@ const UsersManagement = () => {
                       {u.profile?.phone || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        u.role === 'admin' ? 'bg-red-100 text-red-800' :
-                        u.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${u.role === 'admin' ? 'bg-red-100 text-red-800' :
+                          u.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                        }`}>
                         {u.role || 'user'}
                       </span>
                     </td>
