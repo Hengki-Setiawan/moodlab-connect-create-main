@@ -41,6 +41,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     category: '',
     image_url: '',
     file_url: '',
+    stock: '',
     benefitsInput: '',
   });
 
@@ -50,6 +51,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         name: product.name || '',
         description: product.description || '',
         price: (product.price ?? 0).toString(),
+        stock: (product.stock ?? 0).toString(),
         type: product.type || '',
         category: product.category || '',
         image_url: product.image_url || '',
@@ -68,7 +70,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +80,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       id: product.id,
       name: formData.name,
       price: Number(formData.price) || 0,
+      stock: Number(formData.stock) || 0,
       description: formData.description,
       category: formData.category,
       type: formData.type,
@@ -101,102 +104,116 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
           <DialogTitle>{product ? 'Edit Produk' : 'Tambah Produk'}</DialogTitle>
           <DialogDescription>Lengkapi informasi produk dan simpan perubahan.</DialogDescription>
         </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nama Produk</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Harga (Rp)</Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+                min="0"
+                step="0.01"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stok</Label>
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                value={formData.stock}
+                onChange={handleInputChange}
+                required
+                min="0"
+                className="w-full"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Produk</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
+            <Label htmlFor="description">Deskripsi</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
               onChange={handleInputChange}
-              required
+              rows={3}
               className="w-full"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="price">Harga (Rp)</Label>
-            <Input
-              id="price"
-              name="price"
-              type="number"
-              value={formData.price}
-              onChange={handleInputChange}
-              required
-              min="0"
-              step="0.01"
-              className="w-full"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Tipe Produk</Label>
+              <Select value={formData.type} onValueChange={(value) => handleSelectChange('type', value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="template">Template</SelectItem>
+                  <SelectItem value="digital">Digital</SelectItem>
+                  <SelectItem value="service">Service</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Kategori</Label>
+              <Input id="category" name="category" value={formData.category} onChange={handleInputChange} className="w-full" />
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Deskripsi</Label>
-          <Textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows={3}
-            className="w-full"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipe Produk</Label>
-            <Select value={formData.type} onValueChange={(value) => handleSelectChange('type', value)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih tipe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="template">Template</SelectItem>
-                <SelectItem value="digital">Digital</SelectItem>
-                <SelectItem value="service">Service</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="image_url">URL Gambar</Label>
+              <Input id="image_url" name="image_url" value={formData.image_url} onChange={handleInputChange} placeholder="https://…" className="w-full" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="file_url">URL File Digital</Label>
+              <Input id="file_url" name="file_url" value={formData.file_url} onChange={handleInputChange} placeholder="https://…" className="w-full" />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Kategori</Label>
-            <Input id="category" name="category" value={formData.category} onChange={handleInputChange} className="w-full" />
+            <Label>Benefit (satu per baris)</Label>
+            <Textarea name="benefitsInput" value={formData.benefitsInput} onChange={handleInputChange} rows={4} />
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="image_url">URL Gambar</Label>
-            <Input id="image_url" name="image_url" value={formData.image_url} onChange={handleInputChange} placeholder="https://…" className="w-full" />
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? 'Menyimpan...' : 'Simpan Produk'}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="file_url">URL File Digital</Label>
-            <Input id="file_url" name="file_url" value={formData.file_url} onChange={handleInputChange} placeholder="https://…" className="w-full" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Benefit (satu per baris)</Label>
-          <Textarea name="benefitsInput" value={formData.benefitsInput} onChange={handleInputChange} rows={4} />
-        </div>
-
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Batal
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? 'Menyimpan...' : 'Simpan Produk'}
-          </Button>
-        </div>
-      </form>
+        </form>
       </DialogContent>
     </Dialog>
   );
