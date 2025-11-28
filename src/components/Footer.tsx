@@ -1,23 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
 import logo from "@/assets/logo.png";
 import ModyAvatar from "@/assets/mody-avatar.png";
-import { toast } from 'sonner';
+
 
 export function Footer() {
-  const [email, setEmail] = useState('');
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    // TODO: Integrate with actual newsletter service
-    toast.success('Terima kasih! Anda akan menerima update dari kami.');
-    setEmail('');
-  };
 
   const socialLinks = [
     { icon: Instagram, href: 'https://instagram.com/moodlab.idn', label: 'Instagram', color: 'hover:text-pink-500' },
@@ -141,32 +131,7 @@ export function Footer() {
 
           {/* Newsletter & Mody */}
           <div className="space-y-6">
-            {/* Newsletter */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="h-1 w-8 bg-gradient-to-r from-accent to-primary rounded-full"></span>
-                Newsletter
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Dapatkan update terbaru dan tips digital marketing langsung ke email Anda!
-              </p>
-              <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                <Input
-                  type="email"
-                  placeholder="Email Anda"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                />
-                <Button
-                  type="submit"
-                  className="w-full gradient-primary text-white hover:opacity-90 transition-opacity"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Subscribe
-                </Button>
-              </form>
-            </div>
+
 
             {/* Mody CTA */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
@@ -195,14 +160,7 @@ export function Footer() {
             <p className="text-sm text-muted-foreground text-center md:text-left">
               © {new Date().getFullYear()} MoodLab. Hak Cipta Dilindungi.
             </p>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link to="/privacy" className="hover:text-primary transition-colors">
-                Kebijakan Privasi
-              </Link>
-              <Link to="/terms" className="hover:text-primary transition-colors">
-                Syarat & Ketentuan
-              </Link>
-            </div>
+
           </div>
         </div>
       </div>
