@@ -108,7 +108,7 @@ export default function AdminProductManager() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk (Updated)</h1>
         <Button onClick={() => openModal()} className="bg-blue-600 hover:bg-blue-700">
           <span className="mr-2">+</span> Tambah Produk
         </Button>
