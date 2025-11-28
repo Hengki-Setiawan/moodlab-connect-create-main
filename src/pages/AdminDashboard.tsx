@@ -438,7 +438,7 @@ const AdminDashboard = () => {
       <div className="md:ml-64 transition-all duration-300">
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200/50">
-          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="container mx-auto px-6 py-4 flex justify-between items-center pl-16 md:pl-6">
             <h1 className="text-xl font-semibold capitalize text-gray-800">
               {tab === 'overview' ? 'Dashboard Overview' : tab}
             </h1>
