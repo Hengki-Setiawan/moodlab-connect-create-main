@@ -73,9 +73,9 @@ const OrdersManagement = ({ orders, onOrderUpdated }: OrdersManagementProps) => 
 
     return (
         <div className="space-y-4">
-            <div className="bg-white/50 backdrop-blur-sm rounded-lg border shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-card/60 backdrop-blur-sm rounded-lg border dark:border-border shadow-sm overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-gray-50/50">
+                    <TableHeader className="bg-gray-50/80 dark:bg-muted/40">
                         <TableRow>
                             <TableHead>Order ID</TableHead>
                             <TableHead>Tanggal</TableHead>
@@ -93,8 +93,8 @@ const OrdersManagement = ({ orders, onOrderUpdated }: OrdersManagementProps) => 
                             </TableRow>
                         ) : (
                             orders.map((order) => (
-                                <TableRow key={order.id} className="hover:bg-white/40 transition-colors">
-                                    <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}...</TableCell>
+                                <TableRow key={order.id} className="hover:bg-white/60 dark:hover:bg-muted/60 transition-colors">
+                                    <TableCell className="font-mono text-xs text-foreground">{order.id.slice(0, 8)}...</TableCell>
                                     <TableCell>
                                         {format(new Date(order.created_at), 'dd MMM yyyy', { locale: id })}
                                     </TableCell>
@@ -122,7 +122,7 @@ const OrdersManagement = ({ orders, onOrderUpdated }: OrdersManagementProps) => 
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => openDetail(order)}
-                                            className="hover:bg-blue-50 hover:text-blue-600"
+                                            className="hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
                                         >
                                             <Eye className="h-4 w-4 mr-1" /> Detail
                                         </Button>

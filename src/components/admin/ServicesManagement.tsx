@@ -149,29 +149,29 @@ const ServicesManagement = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-card rounded-lg shadow dark:shadow-lg border dark:border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-muted/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ikon</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktif</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Judul</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kategori</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ikon</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aktif</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-border">
               {services.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Belum ada layanan</td>
+                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-muted-foreground">Belum ada layanan</td>
                 </tr>
               ) : (
                 services.map((s) => (
-                  <tr key={s.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{s.title}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{s.category}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{s.icon}</td>
+                  <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-muted/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{s.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm capitalize text-foreground">{s.category}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{s.icon}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <Button variant={s.is_active ? "default" : "secondary"} size="sm" onClick={() => s.id && toggleActive(s.id, s.is_active)}>
                         {s.is_active ? "Aktif" : "Nonaktif"}

@@ -96,9 +96,9 @@ const EditProfile = () => {
       if (error) throw error;
       toast.success("Profil berhasil diperbarui");
       navigate("/profile");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error("Gagal memperbarui profil");
+      toast.error(`Gagal memperbarui profil: ${error.message || "Terjadi kesalahan"}`);
     } finally {
       setIsSaving(false);
     }

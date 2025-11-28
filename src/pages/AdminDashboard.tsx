@@ -365,12 +365,12 @@ const AdminDashboard = () => {
         return <ServicesManagement />;
       case 'storage':
         return (
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg p-6 shadow-sm border">
+          <div className="bg-white dark:bg-card/60 backdrop-blur-sm rounded-lg p-6 shadow-sm border dark:border-border">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">File Storage</h2>
+              <h2 className="text-xl font-bold text-foreground">File Storage</h2>
               <div className="flex gap-2">
                 <select
-                  className="border rounded px-3 py-1 bg-white"
+                  className="border dark:border-border rounded px-3 py-1 bg-white dark:bg-muted text-foreground"
                   value={selectedBucket}
                   onChange={(e) => setSelectedBucket(e.target.value)}
                 >
@@ -392,13 +392,13 @@ const AdminDashboard = () => {
             </div>
 
             {loadingStorage ? (
-              <div className="text-center py-8">Loading files...</div>
+              <div className="text-center py-8 text-muted-foreground">Loading files...</div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {storageFiles.length === 0 && <p className="col-span-full text-center text-gray-500">Folder kosong</p>}
+                {storageFiles.length === 0 && <p className="col-span-full text-center text-muted-foreground">Folder kosong</p>}
                 {storageFiles.map((file, idx) => (
-                  <div key={idx} className="group relative border rounded-lg p-4 hover:bg-white/80 transition-all">
-                    <div className="aspect-square bg-gray-100 rounded mb-2 flex items-center justify-center overflow-hidden">
+                  <div key={idx} className="group relative border dark:border-border rounded-lg p-4 hover:bg-white/80 dark:hover:bg-muted/50 transition-all">
+                    <div className="aspect-square bg-gray-100 dark:bg-muted rounded mb-2 flex items-center justify-center overflow-hidden">
                       {file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                         <img
                           src={supabaseAdmin.storage.from(selectedBucket).getPublicUrl(`${currentPath ? currentPath + '/' : ''}${file.name}`).data.publicUrl}
@@ -409,7 +409,7 @@ const AdminDashboard = () => {
                         <span className="text-2xl text-gray-400">📄</span>
                       )}
                     </div>
-                    <p className="text-xs truncate font-medium" title={file.name}>{file.name}</p>
+                    <p className="text-xs truncate font-medium text-foreground" title={file.name}>{file.name}</p>
                     <button
                       onClick={() => removeFile(file.name)}
                       className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
@@ -438,7 +438,7 @@ const AdminDashboard = () => {
       <div className="md:ml-64 transition-all duration-300">
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200/50">
-          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="container mx-auto px-6 py-4 flex justify-between items-center pl-16 md:pl-6">
             <h1 className="text-xl font-semibold capitalize text-gray-800">
               {tab === 'overview' ? 'Dashboard Overview' : tab}
             </h1>

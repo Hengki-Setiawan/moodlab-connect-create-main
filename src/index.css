@@ -20,7 +20,7 @@ All colors MUST be HSL.
     /* Purple from logo */
     --primary: 270 70% 60%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Blue from logo */
     --secondary: 200 80% 60%;
     --secondary-foreground: 0 0% 100%;
@@ -48,33 +48,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 270 20% 8%;
-    --foreground: 0 0% 98%;
+    --background: 270 15% 12%;
+    --foreground: 0 0% 95%;
 
-    --card: 270 20% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 270 15% 16%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 270 20% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 270 15% 16%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 270 70% 60%;
+    --primary: 270 70% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 80% 60%;
+    --secondary: 200 80% 65%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 270 20% 20%;
-    --muted-foreground: 270 10% 70%;
+    --muted: 270 15% 22%;
+    --muted-foreground: 270 8% 75%;
 
-    --accent: 320 80% 65%;
+    --accent: 320 80% 70%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 50%;
+    --destructive: 0 62.8% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 20% 20%;
-    --input: 270 20% 20%;
-    --ring: 270 70% 60%;
+    --border: 270 15% 25%;
+    --input: 270 15% 25%;
+    --ring: 270 70% 65%;
   }
 }
 
@@ -90,24 +90,24 @@ All colors MUST be HSL.
 
 /* Scroll halus untuk navigasi anchor/link */
 @layer base {
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer utilities {
   .gradient-primary {
-    background: linear-gradient(135deg, 
-      hsl(var(--gradient-start)), 
-      hsl(var(--gradient-mid)), 
-      hsl(var(--gradient-end))
-    );
+    background: linear-gradient(135deg,
+        hsl(var(--gradient-start)),
+        hsl(var(--gradient-mid)),
+        hsl(var(--gradient-end)));
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, 
-      hsl(var(--gradient-start)), 
-      hsl(var(--gradient-mid)), 
-      hsl(var(--gradient-end))
-    );
+    background: linear-gradient(135deg,
+        hsl(var(--gradient-start)),
+        hsl(var(--gradient-mid)),
+        hsl(var(--gradient-end)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -119,7 +119,14 @@ All colors MUST be HSL.
   }
 
   @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
   }
 }

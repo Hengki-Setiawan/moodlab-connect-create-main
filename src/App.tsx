@@ -164,7 +164,7 @@ const AppRoutesWithAnimations = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme" attribute="class">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme" attribute="class">
       <TooltipProvider>
         <CartProvider>
           <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">

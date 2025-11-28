@@ -22,7 +22,7 @@ export default function AdminProductManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -36,7 +36,7 @@ export default function AdminProductManager() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await adminGetAllRecords('products');
+      const data = await adminGetAllRecords('products') as unknown as Product[];
       setProducts(data);
       setError(null);
     } catch (err) {
@@ -62,7 +62,7 @@ export default function AdminProductManager() {
   const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
       setLoading(true);
-      
+
       if (selectedProduct) {
         // Update existing product
         await adminUpdateRecord('products', selectedProduct.id, productData);
@@ -70,13 +70,13 @@ export default function AdminProductManager() {
         // Create new product
         await adminCreateRecord('products', productData);
       }
-      
+
       closeModal();
       loadProducts();
-      
-    } catch (err) {
+
+    } catch (err: any) {
       console.error('Error saving product:', err);
-      setError('Gagal menyimpan produk. Silakan coba lagi.');
+      setError(`Gagal menyimpan produk: ${err.message || "Terjadi kesalahan"}`);
     } finally {
       setLoading(false);
     }
@@ -108,18 +108,18 @@ export default function AdminProductManager() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk (Updated)</h1>
         <Button onClick={() => openModal()} className="bg-blue-600 hover:bg-blue-700">
           <span className="mr-2">+</span> Tambah Produk
         </Button>
       </div>
-      
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {/* Search Bar */}
       <div className="mb-6">
         <Input
@@ -130,7 +130,7 @@ export default function AdminProductManager() {
           className="w-full max-w-md"
         />
       </div>
-      
+
       {/* Products Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -185,13 +185,12 @@ export default function AdminProductManager() {
                       {product.stock || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.type === 'digital' ? 'bg-blue-100 text-blue-800' :
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.type === 'digital' ? 'bg-blue-100 text-blue-800' :
                         product.type === 'service' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                          'bg-gray-100 text-gray-800'
+                        }`}>
                         {product.type === 'digital' ? 'Digital' :
-                         product.type === 'service' ? 'Jasa' : 'Fisik'}
+                          product.type === 'service' ? 'Jasa' : 'Fisik'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -221,7 +220,7 @@ export default function AdminProductManager() {
           </table>
         </div>
       </div>
-      
+
       {/* Edit Modal */}
       <EditProductModal
         isOpen={isModalOpen}
