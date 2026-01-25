@@ -1,0 +1,12 @@
+/* Chat Widget Styles */
+/* Most styles have been moved to Tailwind classes in ChatWidget.tsx */
+
+/* Scrollbar Styling */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

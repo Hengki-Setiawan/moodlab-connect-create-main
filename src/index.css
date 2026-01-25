@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 270 15% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 270 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 15% 15%;
+
+    /* Purple from logo */
+    --primary: 270 70% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Blue from logo */
+    --secondary: 200 80% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 270 10% 96%;
+    --muted-foreground: 270 10% 40%;
+
+    /* Pink from logo */
+    --accent: 320 80% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 270 10% 90%;
+    --input: 270 10% 90%;
+    --ring: 270 70% 60%;
+
+    --radius: 0.75rem;
+
+    /* Gradient colors */
+    --gradient-start: 200 80% 60%;
+    --gradient-mid: 270 70% 60%;
+    --gradient-end: 320 80% 65%;
+  }
+
+  .dark {
+    --background: 270 15% 12%;
+    --foreground: 0 0% 95%;
+
+    --card: 270 15% 16%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 270 15% 16%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 270 70% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 80% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 270 15% 22%;
+    --muted-foreground: 270 8% 75%;
+
+    --accent: 320 80% 70%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 270 15% 25%;
+    --input: 270 15% 25%;
+    --ring: 270 70% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Scroll halus untuk navigasi anchor/link */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg,
+        hsl(var(--gradient-start)),
+        hsl(var(--gradient-mid)),
+        hsl(var(--gradient-end)));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg,
+        hsl(var(--gradient-start)),
+        hsl(var(--gradient-mid)),
+        hsl(var(--gradient-end)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
