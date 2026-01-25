@@ -66,13 +66,30 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // 2. Extract product IDs (convert string to number for Turso if needed)
-      const productIds = cartData.map(item => parseInt(item.product_id));
+      const productIds = cartData
+        .map(item => parseInt(item.product_id))
+        .filter(id => !isNaN(id));
 
-      // 3. Fetch product details from Turso
-      const productsData = await db
-        .select()
-        .from(products)
-        .where(inArray(products.id, productIds));
+      if (productIds.length === 0) {
+        setCartItems([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Fetch product details from Turso with error handling
+      let productsData: any[] = [];
+      try {
+        productsData = await db
+          .select()
+          .from(products)
+          .where(inArray(products.id, productIds));
+      } catch (tursoError) {
+        console.error("Turso fetch error:", tursoError);
+        // Continue with empty products, cart will show but without product details
+        setCartItems([]);
+        setIsLoading(false);
+        return;
+      }
 
       // 4. Merge data
       const mergedItems: CartItem[] = cartData.map(item => {
@@ -89,7 +106,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price: product.price,
             image_url: product.image_url,
             type: product.type,
-            file_url: null // We don't store file_url in public product table usually, or it's protected
+            file_url: product.file_url || null
           }
         };
       }).filter(Boolean) as CartItem[];
@@ -97,7 +114,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setCartItems(mergedItems);
     } catch (error) {
       console.error("Error fetching cart:", error);
-      toast.error("Gagal memuat keranjang");
+      // Don't show toast for auth-related errors (user not logged in)
+      setCartItems([]);
     } finally {
       setIsLoading(false);
     }
