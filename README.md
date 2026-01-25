@@ -1,73 +1,49 @@
-# Welcome to your Lovable project
+# Moodlab Website
 
-## Project info
+Website resmi Moodlab, sebuah agensi pemasaran digital yang berfokus pada Gen Z dan UMKM Indonesia.
 
-**URL**: https://lovable.dev/projects/297ab24a-c028-430b-befb-5da42e3a73a4
+## Tentang Pembuat
 
-## How can I edit this code?
+Project ini dibuat dan dikembangkan sepenuhnya oleh:
 
-There are several ways of editing your application.
+**Nama**: Hengki Setiawan  
+**Universitas**: Universitas Negeri Makassar  
+**Jurusan**: Bisnis Digital
 
-**Use Lovable**
+## Deskripsi Project
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/297ab24a-c028-430b-befb-5da42e3a73a4) and start prompting.
+Moodlab hadir untuk menjawab tantangan yang dihadapi oleh banyak merek, terutama UMKM, dalam mengubah popularitas sesaat menjadi loyalitas pelanggan Gen Z. Website ini dibangun dengan teknologi modern untuk memberikan pengalaman pengguna yang terbaik.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Teknologi yang Digunakan
 
-**Use your preferred IDE**
+Project ini dibangun menggunakan stack teknologi berikut:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Vite**: Build tool yang super cepat.
+- **React**: Library JavaScript untuk membangun antarmuka pengguna.
+- **TypeScript**: Superset JavaScript dengan tipe data statis.
+- **Tailwind CSS**: Framework CSS utility-first untuk styling yang cepat.
+- **shadcn/ui**: Koleksi komponen UI yang reusable dan aksesibel.
+- **Supabase**: Backend-as-a-Service untuk database dan autentikasi.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Cara Menjalankan Project
 
-Follow these steps:
+1.  Clone repository ini:
+    ```bash
+    git clone https://github.com/Hengki-Setiawan/Moodlab-Website.git
+    ```
+2.  Masuk ke direktori project:
+    ```bash
+    cd Moodlab-Website
+    ```
+3.  Install dependencies:
+    ```bash
+    npm install
+    ```
+4.  Jalankan server development:
+    ```bash
+    npm run dev
+    ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Lisensi
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/297ab24a-c028-430b-befb-5da42e3a73a4) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Hak Cipta © 2026 Hengki Setiawan. Seluruh hak cipta dilindungi.

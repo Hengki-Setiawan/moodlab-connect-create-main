@@ -85,6 +85,27 @@ const About = () => {
             </Card>
           </div>
 
+          {/* Meet the Creator */}
+          <div className="mb-20">
+            <Card className="border-2 bg-muted/30">
+              <CardContent className="p-8 md:p-12 text-center">
+                <h2 className="text-3xl font-bold mb-6">Tentang Pembuat</h2>
+                <div className="max-w-2xl mx-auto">
+                  <p className="text-muted-foreground leading-relaxed text-lg mb-4">
+                    Website ini dibuat dan dikembangkan sepenuhnya oleh:
+                  </p>
+                  <h3 className="text-2xl font-bold gradient-text mb-2">Hengki Setiawan</h3>
+                  <p className="text-lg font-medium mb-1">Mahasiswa Universitas Negeri Makassar</p>
+                  <p className="text-muted-foreground">Jurusan Bisnis Digital</p>
+                  <p className="text-muted-foreground mt-6 leading-relaxed">
+                    Project ini merupakan wujud dedikasi dalam menggabungkan teknologi dan bisnis digital
+                    untuk menciptakan solusi yang relevan bagi kebutuhan pasar saat ini.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Vision & Mission */}
           <div className="grid md:grid-cols-2 gap-8 mb-20">
             <Card className="border-2 hover:border-primary transition-colors">
