@@ -135,24 +135,29 @@ const Profile = () => {
     setOrders((data || []) as Order[]);
 
     // Fetch product names from Turso for these orders
-    const orderItems = (data || []).flatMap((o: any) => o.order_items);
-    const productIds = orderItems.map((i: any) => parseInt(i.product_id)).filter((id: number) => !isNaN(id));
+    try {
+      const orderItems = (data || []).flatMap((o: any) => o.order_items || []);
+      const productIds = orderItems.map((i: any) => parseInt(i.product_id)).filter((id: number) => !isNaN(id));
 
-    if (productIds.length > 0) {
-      const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+      if (productIds.length > 0) {
+        const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
-      // Update orders with product names
-      const updatedOrders = (data || []).map((order: any) => ({
-        ...order,
-        order_items: order.order_items.map((item: any) => {
-          const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
-          return {
-            ...item,
-            product: { name: p?.name || "Produk tidak ditemukan" }
-          };
-        })
-      }));
-      setOrders(updatedOrders);
+        // Update orders with product names
+        const updatedOrders = (data || []).map((order: any) => ({
+          ...order,
+          order_items: (order.order_items || []).map((item: any) => {
+            const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+            return {
+              ...item,
+              product: { name: p?.name || "Produk tidak ditemukan" }
+            };
+          })
+        }));
+        setOrders(updatedOrders);
+      }
+    } catch (tursoError) {
+      console.error("Turso error in fetchOrders:", tursoError);
+      // Continue with orders without product names
     }
   };
 
@@ -189,33 +194,38 @@ const Profile = () => {
     const productIds = items.map(i => parseInt(i.product_id)).filter(id => !isNaN(id));
 
     if (productIds.length > 0) {
-      const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+      try {
+        const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
-      const mergedItems = items.map(item => {
-        const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
-        if (!p) return null;
+        const mergedItems = items.map(item => {
+          const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+          if (!p) return null;
 
-        return {
-          ...item,
-          product: {
-            id: p.id.toString(),
-            name: p.name,
-            description: p.description || "",
-            file_url: p.file_url || null,
-            image_url: p.image_url || null,
-            category: p.category || ""
+          return {
+            ...item,
+            product: {
+              id: p.id.toString(),
+              name: p.name,
+              description: p.description || "",
+              file_url: p.file_url || null,
+              image_url: p.image_url || null,
+              category: p.category || ""
+            }
+          };
+        }).filter(Boolean);
+
+        // Hilangkan duplikasi berdasarkan product.id
+        const uniqueByProduct = new Map<string, any>();
+        for (const item of mergedItems) {
+          if (item && item.product.id) {
+            uniqueByProduct.set(item.product.id, item);
           }
-        };
-      }).filter(Boolean);
-
-      // Hilangkan duplikasi berdasarkan product.id
-      const uniqueByProduct = new Map<string, any>();
-      for (const item of mergedItems) {
-        if (item && item.product.id) {
-          uniqueByProduct.set(item.product.id, item);
         }
+        setPurchasedProducts(Array.from(uniqueByProduct.values()) as PurchasedProduct[]);
+      } catch (tursoError) {
+        console.error("Turso error in fetchPurchasedProducts:", tursoError);
+        setPurchasedProducts([]);
       }
-      setPurchasedProducts(Array.from(uniqueByProduct.values()) as PurchasedProduct[]);
     } else {
       setPurchasedProducts([]);
     }
