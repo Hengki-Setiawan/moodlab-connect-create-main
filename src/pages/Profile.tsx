@@ -12,6 +12,9 @@ import { Download, Package, Trash, AlertCircle, User, Mail, Calendar, Phone, Log
 import { useTheme } from "next-themes";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
+import { db } from "@/lib/turso";
+import { products } from "@/db/schema";
+import { inArray } from "drizzle-orm";
 
 interface Profile {
   full_name: string;
@@ -30,7 +33,8 @@ interface Order {
   created_at: string;
   order_items: {
     quantity: number;
-    product: {
+    product_id: string;
+    product?: {
       name: string;
     };
   }[];
@@ -117,7 +121,7 @@ const Profile = () => {
         created_at,
         order_items (
           quantity,
-          product:products (name)
+          product_id
         )
       `)
       .eq("user_id", userId)
@@ -129,6 +133,27 @@ const Profile = () => {
     }
 
     setOrders((data || []) as Order[]);
+
+    // Fetch product names from Turso for these orders
+    const orderItems = (data || []).flatMap((o: any) => o.order_items);
+    const productIds = orderItems.map((i: any) => parseInt(i.product_id)).filter((id: number) => !isNaN(id));
+
+    if (productIds.length > 0) {
+      const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+
+      // Update orders with product names
+      const updatedOrders = (data || []).map((order: any) => ({
+        ...order,
+        order_items: order.order_items.map((item: any) => {
+          const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+          return {
+            ...item,
+            product: { name: p?.name || "Produk tidak ditemukan" }
+          };
+        })
+      }));
+      setOrders(updatedOrders);
+    }
   };
 
   const fetchPurchasedProducts = async (userId: string) => {
@@ -141,14 +166,7 @@ const Profile = () => {
         order_items (
           id,
           quantity,
-          product:products (
-            id,
-            name,
-            description,
-            file_url,
-            image_url,
-            category
-          )
+          product_id
         )
       `)
       .eq("user_id", userId)
@@ -164,26 +182,43 @@ const Profile = () => {
       (order.order_items || []).map((oi: any) => ({
         id: oi.id,
         accessed_at: order.created_at,
-        product: {
-          id: oi.product?.id ?? "",
-          name: oi.product?.name ?? "",
-          description: oi.product?.description ?? "",
-          file_url: oi.product?.file_url ?? null,
-          image_url: oi.product?.image_url ?? null,
-          category: oi.product?.category ?? ""
-        }
+        product_id: oi.product_id
       }))
     );
 
-    // Hilangkan duplikasi berdasarkan product.id
-    const uniqueByProduct = new Map<string, any>();
-    for (const item of items) {
-      if (item.product.id) {
-        uniqueByProduct.set(item.product.id, item);
+    const productIds = items.map(i => parseInt(i.product_id)).filter(id => !isNaN(id));
+
+    if (productIds.length > 0) {
+      const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+
+      const mergedItems = items.map(item => {
+        const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+        if (!p) return null;
+
+        return {
+          ...item,
+          product: {
+            id: p.id.toString(),
+            name: p.name,
+            description: p.description || "",
+            file_url: p.file_url || null,
+            image_url: p.image_url || null,
+            category: p.category || ""
+          }
+        };
+      }).filter(Boolean);
+
+      // Hilangkan duplikasi berdasarkan product.id
+      const uniqueByProduct = new Map<string, any>();
+      for (const item of mergedItems) {
+        if (item && item.product.id) {
+          uniqueByProduct.set(item.product.id, item);
+        }
       }
+      setPurchasedProducts(Array.from(uniqueByProduct.values()) as PurchasedProduct[]);
+    } else {
+      setPurchasedProducts([]);
     }
-    const transformedData = Array.from(uniqueByProduct.values());
-    setPurchasedProducts(transformedData as PurchasedProduct[]);
   };
 
   const hideProductFromList = async (productId: string) => {

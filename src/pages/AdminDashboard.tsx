@@ -14,6 +14,9 @@ import ConsultationsManagement from "@/components/admin/ConsultationsManagement"
 import AnalyticsView from "@/components/admin/AnalyticsView";
 import PagesManagement from "@/components/admin/PagesManagement";
 import { uploadImage } from "@/integrations/supabase/storage";
+import { db } from "@/lib/turso";
+import { products as productsSchema } from "@/db/schema";
+import { desc } from "drizzle-orm";
 
 // Import other necessary components for different tabs if needed
 // For now, we'll keep the inline implementations for simple tabs or move them later
@@ -25,16 +28,16 @@ interface User {
 }
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
-  type: string;
-  category: string;
+  type: string | null;
+  category: string | null;
   image_url?: string | null;
   file_url?: string | null;
-  benefits?: string[] | null;
-  created_at: string;
+  benefits?: string | null;
+  created_at: Date | null;
 }
 
 interface Order {
@@ -113,10 +116,13 @@ const AdminDashboard = () => {
         .limit(5);
 
       // Fetch latest products
-      const { data: latestProducts } = await supabaseAdmin
-        .from('products')
-        .select('id, created_at, name')
-        .order('created_at', { ascending: false })
+      const latestProducts = await db.select({
+        id: productsSchema.id,
+        created_at: productsSchema.created_at,
+        name: productsSchema.name
+      })
+        .from(productsSchema)
+        .orderBy(desc(productsSchema.created_at))
         .limit(5);
 
       // Fetch latest users
@@ -193,11 +199,21 @@ const AdminDashboard = () => {
     try {
       setIsLoading(true);
 
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setProducts(productsData || []);
+      const productsData = await db.select().from(productsSchema).orderBy(desc(productsSchema.created_at));
+
+      // Map Turso data to Product interface
+      const mappedProducts: Product[] = productsData.map(p => ({
+        ...p,
+        description: p.description || null,
+        type: p.type || "template",
+        category: p.category || "general",
+        image_url: p.image_url || null,
+        file_url: p.file_url || null,
+        benefits: p.benefits || null,
+        created_at: p.created_at || null
+      }));
+
+      setProducts(mappedProducts);
 
       const { data: ordersData } = await supabaseAdmin
         .from('orders')

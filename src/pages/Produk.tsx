@@ -5,15 +5,18 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailPopup from "@/components/ProductDetailPopup";
 import { getImageUrl } from "@/integrations/supabase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
+import ProductSkeleton from "@/components/ProductSkeleton";
+import { db } from "@/lib/turso";
+import { products as productsSchema } from "@/db/schema";
+import { desc } from "drizzle-orm";
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
@@ -39,13 +42,18 @@ const Produk = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id,name,description,price,type,category,image_url,created_at")
-        .order("created_at", { ascending: false });
+      // Fetch from Turso
+      const data = await db.select().from(productsSchema).orderBy(desc(productsSchema.created_at));
 
-      if (error) throw error;
-      setProducts((data || []) as Product[]);
+      // Map Turso data to Product interface (ensure types match)
+      const mappedProducts: Product[] = data.map(p => ({
+        ...p,
+        type: (p.type || "template") as "template" | "ebook" | "service", // Default fallback
+        category: p.category || "general",
+        image_url: p.image_url || null
+      }));
+
+      setProducts(mappedProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -66,7 +74,7 @@ const Produk = () => {
   };
 
   const handleAddToCart = async (product: Product) => {
-    await addToCart(product.id);
+    await addToCart(product.id.toString());
   };
 
   const templates = products.filter(product => {

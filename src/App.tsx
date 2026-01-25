@@ -7,29 +7,35 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AnimatePresence, motion } from "framer-motion";
 import { CartProvider } from "./contexts/CartContext";
 import { Analytics } from "@vercel/analytics/react";
-import Home from "./pages/Home";
-import Layanan from "./pages/Layanan";
-import Produk from "./pages/Produk";
-import ProductDetail from "./pages/ProductDetail";
-import About from "./pages/About";
-import Kontak from "./pages/Kontak";
-import Auth from "./pages/Auth";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import AdminDashboard from "./pages/AdminDashboard";
-import TestAdmin from "./pages/test-admin";
-import DeleteProducts from "./pages/delete-products";
-import AddProductPage from "./pages/add-product";
-import AddAdmin from "./pages/add-admin";
-import EditProfile from "./pages/edit-profile";
-import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
+import { HelmetProvider } from "react-helmet-async";
+import { Suspense, lazy, useEffect } from "react";
+import Loading from "./components/Loading";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { initGA, trackPageView } from "@/lib/analytics";
+
+const Home = lazy(() => import("./pages/Home"));
+const Layanan = lazy(() => import("./pages/Layanan"));
+const Produk = lazy(() => import("./pages/Produk"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const About = lazy(() => import("./pages/About"));
+const Kontak = lazy(() => import("./pages/Kontak"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AddProductPage = lazy(() => import("./pages/add-product"));
+const AddAdmin = lazy(() => import("./pages/add-admin"));
+const EditProfile = lazy(() => import("./pages/edit-profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProtected } from "@/components/AdminProtected";
 import { StaffProtected } from "@/components/StaffProtected";
 import ChatWidget from "./components/ChatWidget";
+
+// Initialize GA4 on app load
+initGA();
 
 
 // Komponen kecil untuk mencatat page view setiap kali rute berubah
@@ -39,6 +45,8 @@ const RouteChangeTracker = () => {
   useEffect(() => {
     // Auto scroll ke atas saat perpindahan page
     window.scrollTo(0, 0);
+    // Track page view in GA4
+    trackPageView(location.pathname);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -138,54 +146,58 @@ const AppRoutesWithAnimations = () => {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Page><Home /></Page>} />
-        <Route path="/layanan" element={<Page><Layanan /></Page>} />
-        <Route path="/produk" element={<Page><Produk /></Page>} />
-        <Route path="/produk/:id" element={<Page><ProductDetail /></Page>} />
-        <Route path="/about" element={<Page><About /></Page>} />
-        <Route path="/kontak" element={<Page><Kontak /></Page>} />
-        <Route path="/auth" element={<Page><Auth /></Page>} />
-        <Route path="/cart" element={<Page><Cart /></Page>} />
-        <Route path="/checkout" element={<Page><Checkout /></Page>} />
-        <Route path="/profile" element={<Page><Profile /></Page>} />
-        <Route path="/admin" element={<Page><Admin /></Page>} />
-        <Route path="/admin-dashboard" element={<Page><StaffProtected><AdminDashboard /></StaffProtected></Page>} />
-        <Route path="/test-admin" element={<Page><TestAdmin /></Page>} />
-        <Route path="/delete-products" element={<Page><DeleteProducts /></Page>} />
-        <Route path="/add-product" element={<Page><AddProductPage /></Page>} />
-        <Route path="/add-admin" element={<Page><AddAdmin /></Page>} />
-        <Route path="/edit-profile" element={<Page><EditProfile /></Page>} />
-        <Route path="*" element={<Page><NotFound /></Page>} />
-      </Routes>
+      <Suspense fallback={<Loading />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Page><Home /></Page>} />
+          <Route path="/layanan" element={<Page><Layanan /></Page>} />
+          <Route path="/produk" element={<Page><Produk /></Page>} />
+          <Route path="/produk/:id" element={<Page><ProductDetail /></Page>} />
+          <Route path="/about" element={<Page><About /></Page>} />
+          <Route path="/kontak" element={<Page><Kontak /></Page>} />
+          <Route path="/auth" element={<Page><Auth /></Page>} />
+          <Route path="/cart" element={<Page><Cart /></Page>} />
+          <Route path="/checkout" element={<Page><Checkout /></Page>} />
+          <Route path="/profile" element={<Page><Profile /></Page>} />
+          <Route path="/admin" element={<Page><Admin /></Page>} />
+          <Route path="/admin-dashboard" element={<Page><StaffProtected><AdminDashboard /></StaffProtected></Page>} />
+          <Route path="/add-product" element={<Page><AddProductPage /></Page>} />
+          <Route path="/add-admin" element={<Page><AddAdmin /></Page>} />
+          <Route path="/edit-profile" element={<Page><EditProfile /></Page>} />
+          <Route path="*" element={<Page><NotFound /></Page>} />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme" attribute="class" forcedTheme="light">
-      <TooltipProvider>
-        <CartProvider>
-          <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[100px] animate-pulse" />
-            <div className="absolute top-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-secondary/20 blur-[100px] animate-pulse delay-1000" />
-            <div className="absolute bottom-[-10%] left-[20%] w-[35%] h-[35%] rounded-full bg-accent/20 blur-[100px] animate-pulse delay-2000" />
-          </div>
-          <Toaster />
-          <Sonner />
-          <Analytics />
-          {/* Widget Chatbot mengambang terhubung ke n8n */}
-          <ChatWidget />
-          <BrowserRouter>
-            {/* Tracker untuk page views */}
-            <RouteChangeTracker />
-            <AppRoutesWithAnimations />
-          </BrowserRouter>
-        </CartProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme" attribute="class" forcedTheme="light">
+          <TooltipProvider>
+            <CartProvider>
+              <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[100px] animate-pulse" />
+                <div className="absolute top-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-secondary/20 blur-[100px] animate-pulse delay-1000" />
+                <div className="absolute bottom-[-10%] left-[20%] w-[35%] h-[35%] rounded-full bg-accent/20 blur-[100px] animate-pulse delay-2000" />
+              </div>
+              <Toaster />
+              <Sonner />
+              <Analytics />
+              {/* Widget Chatbot mengambang terhubung ke n8n */}
+              <ChatWidget />
+              <BrowserRouter>
+                {/* Tracker untuk page views */}
+                <RouteChangeTracker />
+                <AppRoutesWithAnimations />
+              </BrowserRouter>
+            </CartProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  </ErrorBoundary>
 );
 
 export default App;

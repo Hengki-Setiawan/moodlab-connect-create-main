@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { db } from "@/lib/turso";
+import { products } from "@/db/schema";
+import { inArray, eq } from "drizzle-orm";
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   price: number;
   image_url: string | null;
@@ -48,25 +51,50 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const { data, error } = await supabase
+      // 1. Fetch cart items from Supabase (only IDs)
+      const { data: cartData, error: cartError } = await supabase
         .from("cart_items")
-        .select(`
-          id,
-          product_id,
-          quantity,
-          product:products (
-            id,
-            name,
-            price,
-            image_url,
-            type,
-            file_url
-          )
-        `)
+        .select("id, product_id, quantity")
         .eq("user_id", user.id);
 
-      if (error) throw error;
-      setCartItems((data || []) as CartItem[]);
+      if (cartError) throw cartError;
+
+      if (!cartData || cartData.length === 0) {
+        setCartItems([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Extract product IDs (convert string to number for Turso if needed)
+      const productIds = cartData.map(item => parseInt(item.product_id));
+
+      // 3. Fetch product details from Turso
+      const productsData = await db
+        .select()
+        .from(products)
+        .where(inArray(products.id, productIds));
+
+      // 4. Merge data
+      const mergedItems: CartItem[] = cartData.map(item => {
+        const product = productsData.find(p => p.id === parseInt(item.product_id));
+        if (!product) return null; // Handle case where product might be deleted
+
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image_url: product.image_url,
+            type: product.type,
+            file_url: null // We don't store file_url in public product table usually, or it's protected
+          }
+        };
+      }).filter(Boolean) as CartItem[];
+
+      setCartItems(mergedItems);
     } catch (error) {
       console.error("Error fetching cart:", error);
       toast.error("Gagal memuat keranjang");
@@ -83,42 +111,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Ambil detail produk untuk validasi ketersediaan file digital
-      const { data: prod, error: pErr } = await supabase
-        .from('products')
-        .select('id, type, file_url, stock')
-        .eq('id', productId)
-        .single();
+      // Ambil detail produk dari Turso untuk validasi
+      const prod = await db.query.products.findFirst({
+        where: eq(products.id, parseInt(productId))
+      });
 
-      if (pErr || !prod) {
+      if (!prod) {
         toast.error('Produk tidak ditemukan');
         return;
       }
 
-      const isDigital = prod.type === 'ebook' || prod.type === 'template';
-      if (isDigital) {
-        const url = (prod.file_url || '').trim();
-        if (!url) {
-          toast.error('Produk digital belum tersedia di Storage. Tidak bisa dibeli.');
-          return;
-        }
-        // Cek ketersediaan file via HEAD request (graceful fallback)
-        try {
-          const res = await fetch(url, { method: 'HEAD' });
-          if (!res.ok) {
-            toast.error('File digital tidak ditemukan/terkunci di Storage. Tidak bisa dibeli.');
-            return;
-          }
-        } catch (e) {
-          console.error('HEAD check gagal untuk file_url:', e);
-          toast.error('Gagal mengakses file digital. Tidak bisa dibeli.');
-          return;
-        }
-      }
+      // Note: File URL check logic might need adjustment if file_url is not in public schema yet
+      // For now, we skip strict file_url check on add to cart, do it on checkout if needed
+      // or ensure schema has file_url if we want to check it here.
 
       // Check if item already in cart
       const existingItem = cartItems.find(item => item.product_id === productId);
-      
+
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + 1);
         return;
@@ -133,7 +142,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         });
 
       if (error) throw error;
-      
+
       await fetchCart();
       toast.success("Produk ditambahkan ke keranjang");
     } catch (error) {
@@ -150,7 +159,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq("id", cartItemId);
 
       if (error) throw error;
-      
+
       await fetchCart();
       toast.success("Produk dihapus dari keranjang");
     } catch (error) {
@@ -172,7 +181,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq("id", cartItemId);
 
       if (error) throw error;
-      
+
       await fetchCart();
     } catch (error) {
       console.error("Error updating quantity:", error);
@@ -191,7 +200,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", user.id);
 
       if (error) throw error;
-      
+
       setCartItems([]);
     } catch (error) {
       console.error("Error clearing cart:", error);

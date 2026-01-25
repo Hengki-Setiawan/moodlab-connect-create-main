@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { adminCreateRecord } from '@/integrations/supabase/admin';
 import { uploadImage } from '@/integrations/supabase/storage';
 import { supabaseAdmin } from '@/integrations/supabase/admin';
+import { db } from "@/lib/turso";
+import { products } from "@/db/schema";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,7 +74,7 @@ export default function AddProduct() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
 
@@ -89,16 +90,16 @@ export default function AddProduct() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const productData: any = {
+      const productData = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock || '0', 10),
         type: formData.type,
         category: formData.category,
-        image_url: null,
-        file_url: null,
-        benefits: benefits.length > 0 ? benefits : null
+        image_url: null as string | null,
+        file_url: null as string | null,
+        benefits: benefits.length > 0 ? JSON.stringify(benefits) : null
       };
 
       // Upload gambar jika ada
@@ -114,10 +115,10 @@ export default function AddProduct() {
         productData.file_url = digitalFileUrl;
       }
 
-      // Simpan produk ke database
-      const newProduct = await adminCreateRecord('products', productData);
-      
-      if (newProduct) {
+      // Simpan produk ke database Turso
+      const result = await db.insert(products).values(productData).returning();
+
+      if (result && result.length > 0) {
         toast.success('Produk berhasil ditambahkan!');
         // Reset form
         setFormData({
@@ -230,7 +231,7 @@ export default function AddProduct() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Tambah Produk Baru</h1>
-      
+
       <div className="bg-white p-6 rounded-lg shadow-md">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -246,7 +247,7 @@ export default function AddProduct() {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="price">Harga (Rp) *</Label>
                 <Input
@@ -259,7 +260,7 @@ export default function AddProduct() {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="stock">Stok</Label>
                 <Input
@@ -271,11 +272,11 @@ export default function AddProduct() {
                   placeholder="Jumlah stok produk"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="type">Tipe Produk</Label>
-                <Select 
-                  value={formData.type} 
+                <Select
+                  value={formData.type}
                   onValueChange={(value) => handleSelectChange('type', value)}
                 >
                   <SelectTrigger>
@@ -289,11 +290,11 @@ export default function AddProduct() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="category">Kategori</Label>
-                <Select 
-                  value={formData.category} 
+                <Select
+                  value={formData.category}
                   onValueChange={(value) => handleSelectChange('category', value)}
                 >
                   <SelectTrigger>
@@ -309,7 +310,7 @@ export default function AddProduct() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="description">Deskripsi Produk</Label>
@@ -334,7 +335,7 @@ export default function AddProduct() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">Poin-poin ini akan ditampilkan di bagian “Apa yang Anda Dapatkan”.</p>
               </div>
-              
+
               <div>
                 <Label htmlFor="image">Gambar Produk</Label>
                 <div className="mt-1 flex items-center">
@@ -346,14 +347,14 @@ export default function AddProduct() {
                     className="flex-1"
                   />
                 </div>
-                
+
                 {imagePreview && (
                   <div className="mt-3">
                     <p className="text-sm text-gray-500 mb-1">Preview:</p>
                     <div className="relative w-full h-48 border rounded-md overflow-hidden">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -436,10 +437,10 @@ export default function AddProduct() {
               )}
             </div>
           </div>
-          
+
           <div className="mt-6">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full md:w-auto"
               disabled={loading}
             >

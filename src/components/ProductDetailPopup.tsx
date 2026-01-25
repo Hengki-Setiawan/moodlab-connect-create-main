@@ -12,7 +12,7 @@ import { getImageUrl } from '@/integrations/supabase/storage';
 import { formatPrice } from '@/lib/utils';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
@@ -55,7 +55,7 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
             {formatPrice(product.price)}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-6 py-4">
           {product.image_url && (
             <div className="aspect-video w-full overflow-hidden rounded-lg">
@@ -66,7 +66,7 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
               />
             </div>
           )}
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold">Deskripsi Produk</h3>
@@ -74,18 +74,18 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
                 {product.description}
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                {product.type === 'template' ? 'Template' : 
-                 product.type === 'ebook' ? 'E-Book' : 
-                 product.type === 'service' ? 'Layanan' : 'Produk'}
+                {product.type === 'template' ? 'Template' :
+                  product.type === 'ebook' ? 'E-Book' :
+                    product.type === 'service' ? 'Layanan' : 'Produk'}
               </span>
               <span className="inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-sm font-medium text-secondary capitalize">
                 {product.category || 'lainnya'}
               </span>
             </div>
-            
+
             {isDigitalProduct && (
               <div>
                 <h3 className="text-lg font-semibold">Keuntungan</h3>
@@ -126,7 +126,7 @@ const ProductDetailPopup: React.FC<ProductDetailPopupProps> = ({
             )}
           </div>
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Tutup

@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { adminGetAllRecords, adminCreateRecord, adminUpdateRecord, adminDeleteRecord } from '@/integrations/supabase/admin';
+import { db } from "@/lib/turso";
+import { products as productsSchema } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EditProductModal } from './EditProductModal';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   price: number;
-  description?: string;
-  stock: number;
-  category?: string;
-  type?: string;
-  image_url?: string;
-  digital_file_url?: string;
-  is_digital?: boolean;
+  description?: string | null;
+  stock?: number | null;
+  category: string;
+  type: string;
+  image_url?: string | null;
+  file_url?: string | null;
+  benefits?: string[] | null;
 }
 
 export default function AdminProductManager() {
@@ -36,8 +38,21 @@ export default function AdminProductManager() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await adminGetAllRecords('products') as unknown as Product[];
-      setProducts(data);
+      const data = await db.select().from(productsSchema).orderBy(desc(productsSchema.created_at));
+
+      // Map and parse benefits
+      const mappedData: Product[] = data.map(p => ({
+        ...p,
+        description: p.description || null,
+        stock: p.stock || 0,
+        category: p.category || "",
+        type: p.type || "template",
+        image_url: p.image_url || null,
+        file_url: p.file_url || null,
+        benefits: p.benefits ? JSON.parse(p.benefits) : []
+      }));
+
+      setProducts(mappedData);
       setError(null);
     } catch (err) {
       console.error('Error loading products:', err);
@@ -63,12 +78,20 @@ export default function AdminProductManager() {
     try {
       setLoading(true);
 
+      // Prepare data for DB (stringify benefits)
+      const dbData = {
+        ...productData,
+        benefits: productData.benefits ? JSON.stringify(productData.benefits) : null
+      };
+
       if (selectedProduct) {
         // Update existing product
-        await adminUpdateRecord('products', selectedProduct.id, productData);
+        await db.update(productsSchema)
+          .set(dbData)
+          .where(eq(productsSchema.id, selectedProduct.id));
       } else {
         // Create new product
-        await adminCreateRecord('products', productData);
+        await db.insert(productsSchema).values(dbData as any);
       }
 
       closeModal();
@@ -87,7 +110,7 @@ export default function AdminProductManager() {
     if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
       try {
         setLoading(true);
-        await adminDeleteRecord('products', id);
+        await db.delete(productsSchema).where(eq(productsSchema.id, parseInt(id)));
         loadProducts();
       } catch (err) {
         console.error('Error deleting product:', err);
@@ -206,7 +229,7 @@ export default function AdminProductManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDelete(product.id.toString())}
                           className="text-red-600 hover:text-red-900"
                         >
                           Hapus
