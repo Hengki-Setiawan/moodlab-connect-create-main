@@ -1,7 +1,4 @@
 import { supabase } from './client';
-import { supabaseAdmin } from './admin';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 /**
  * Kompres gambar sebelum upload
@@ -96,8 +93,9 @@ export const uploadImage = async (
     const fileName = customFileName || `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-    // Upload file ke Supabase Storage (gunakan service role untuk kemudahan)
-    const { data, error } = await supabaseAdmin
+    // Upload file ke Supabase Storage
+    // Use regular client - bucket must have public INSERT policy
+    const { data, error } = await supabase
       .storage
       .from(bucket)
       .upload(filePath, uploadFile, {
@@ -106,13 +104,18 @@ export const uploadImage = async (
         contentType: compress ? 'image/jpeg' : file.type
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase upload error:', error);
+      throw error;
+    }
 
     // Mendapatkan URL publik dari file yang diupload
-    const { data: urlData } = supabaseAdmin
+    const { data: urlData } = supabase
       .storage
       .from(bucket)
       .getPublicUrl(data.path);
+
+    console.log('Image uploaded successfully:', urlData.publicUrl);
 
     return {
       path: data.path,
