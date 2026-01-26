@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { supabaseAdmin } from './admin';
 
 /**
  * Kompres gambar sebelum upload
@@ -64,7 +65,8 @@ export const compressImage = async (
  * @param {string} bucket - Nama bucket di Supabase Storage (default: 'Gambar')
  * @param {string} folder - Nama folder di dalam bucket (default: 'products')
  * @param {boolean} compress - Apakah gambar perlu dikompres (default: true)
- * @returns {Promise<{path: string, url: string} | null>} - Path dan URL gambar jika berhasil, null jika gagal
+ * @returns {Promise<{path: string, url: string}>} - Path dan URL gambar jika berhasil
+ * @throws {Error} - Jika upload gagal
  */
 export const uploadImage = async (
   file: File,
@@ -74,7 +76,7 @@ export const uploadImage = async (
   compress: boolean = true
 ) => {
   try {
-    if (!file) return null;
+    if (!file) throw new Error('No file provided');
 
     // Kompres gambar jika diperlukan dan file adalah gambar
     let uploadFile: File | Blob = file;
@@ -123,7 +125,7 @@ export const uploadImage = async (
     };
   } catch (error) {
     console.error('Error uploading image:', error);
-    return null;
+    throw error;
   }
 };
 
@@ -131,13 +133,16 @@ export const uploadImage = async (
  * Menghapus gambar dari Supabase Storage
  * @param {string} path - Path gambar di Supabase Storage
  * @param {string} bucket - Nama bucket di Supabase Storage (default: 'Gambar')
- * @returns {Promise<boolean>} - true jika berhasil, false jika gagal
+ * @returns {Promise<boolean>} - true jika berhasil
+ * @throws {Error} - Jika hapus gagal
  */
 export const deleteImage = async (path: string, bucket: string = 'Gambar') => {
   try {
     if (!path) return false;
 
-    const { error } = await supabaseAdmin
+    // Use supabase client instead of admin if possible, or ensure admin is configured
+    // Using supabase client allows RLS to work if policy allows delete
+    const { error } = await supabase
       .storage
       .from(bucket)
       .remove([path]);
@@ -147,7 +152,7 @@ export const deleteImage = async (path: string, bucket: string = 'Gambar') => {
     return true;
   } catch (error) {
     console.error('Error deleting image:', error);
-    return false;
+    throw error;
   }
 };
 

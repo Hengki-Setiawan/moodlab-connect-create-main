@@ -121,15 +121,13 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setIsUploading(true);
     try {
       const result = await uploadImage(file, 'Gambar', 'products', null, true);
-      if (result) {
-        setFormData(prev => ({ ...prev, image_url: result.url }));
-        toast.success('Gambar berhasil diupload & dikompres');
-      } else {
-        toast.error('Gagal mengupload gambar');
-      }
-    } catch (error) {
+      // Result is guaranteed to be non-null if no error thrown
+      setFormData(prev => ({ ...prev, image_url: result.url }));
+      toast.success('Gambar berhasil diupload & dikompres');
+    } catch (error: unknown) {
       console.error('Upload error:', error);
-      toast.error('Gagal mengupload gambar');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Gagal mengupload gambar: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
