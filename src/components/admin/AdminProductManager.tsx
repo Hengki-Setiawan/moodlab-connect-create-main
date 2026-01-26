@@ -5,6 +5,8 @@ import { eq, desc } from "drizzle-orm";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EditProductModal } from './EditProductModal';
+import { resolveImageUrl } from '@/integrations/supabase/storage';
+import { ImageIcon } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -91,15 +93,16 @@ export default function AdminProductManager() {
           .where(eq(productsSchema.id, selectedProduct.id));
       } else {
         // Create new product
-        await db.insert(productsSchema).values(dbData as any);
+        await db.insert(productsSchema).values(dbData as typeof productsSchema.$inferInsert);
       }
 
       closeModal();
       loadProducts();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan';
       console.error('Error saving product:', err);
-      setError(`Gagal menyimpan produk: ${err.message || "Terjadi kesalahan"}`);
+      setError(`Gagal menyimpan produk: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -131,7 +134,7 @@ export default function AdminProductManager() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk (Updated)</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Manajemen Produk</h1>
         <Button onClick={() => openModal()} className="bg-blue-600 hover:bg-blue-700">
           <span className="mr-2">+</span> Tambah Produk
         </Button>
@@ -186,13 +189,21 @@ export default function AdminProductManager() {
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {product.image_url && (
-                          <img
-                            className="h-10 w-10 rounded-full object-cover mr-3"
-                            src={product.image_url}
-                            alt={product.name}
-                          />
-                        )}
+                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center mr-3 flex-shrink-0">
+                          {product.image_url ? (
+                            <img
+                              className="h-full w-full object-cover"
+                              src={resolveImageUrl(product.image_url)}
+                              alt={product.name}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon className="h-5 w-5 text-gray-400" />
+                          )}
+                        </div>
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
                         </div>
@@ -209,11 +220,16 @@ export default function AdminProductManager() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.type === 'digital' ? 'bg-blue-100 text-blue-800' :
-                        product.type === 'service' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
+                        product.type === 'ebook' ? 'bg-purple-100 text-purple-800' :
+                          product.type === 'service' ? 'bg-green-100 text-green-800' :
+                            product.type === 'template' ? 'bg-orange-100 text-orange-800' :
+                              'bg-gray-100 text-gray-800'
                         }`}>
                         {product.type === 'digital' ? 'Digital' :
-                          product.type === 'service' ? 'Jasa' : 'Fisik'}
+                          product.type === 'ebook' ? 'E-book' :
+                            product.type === 'service' ? 'Jasa' :
+                              product.type === 'template' ? 'Template' :
+                                product.type}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

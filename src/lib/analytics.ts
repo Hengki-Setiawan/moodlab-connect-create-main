@@ -3,24 +3,36 @@
 
 import ReactGA from 'react-ga4';
 
+let isGAInitialized = false;
+
 // Initialize GA4 (call this once in App.tsx or main.tsx)
 export const initGA = () => {
-    const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
-    if (measurementId) {
-        ReactGA.initialize(measurementId);
-        console.log('GA4 Initialized');
-    } else {
-        console.warn('GA4 Measurement ID not found in environment variables');
+    try {
+        const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
+        if (measurementId && measurementId !== 'undefined') {
+            ReactGA.initialize(measurementId);
+            isGAInitialized = true;
+            console.log('GA4 Initialized');
+        } else {
+            console.warn('GA4 Measurement ID not found in environment variables');
+        }
+    } catch (error) {
+        console.error('GA4 initialization error:', error);
     }
 };
 
 // Track page views
 export const trackPageView = (path: string, title?: string) => {
-    ReactGA.send({
-        hitType: 'pageview',
-        page: path,
-        title: title || document.title
-    });
+    if (!isGAInitialized) return;
+    try {
+        ReactGA.send({
+            hitType: 'pageview',
+            page: path,
+            title: title || document.title
+        });
+    } catch (error) {
+        console.error('GA4 trackPageView error:', error);
+    }
 };
 
 // E-commerce Events

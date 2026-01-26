@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailPopup from "@/components/ProductDetailPopup";
-import { getImageUrl } from "@/integrations/supabase/storage";
+import { resolveImageUrl } from "@/integrations/supabase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProductSkeleton from "@/components/ProductSkeleton";
 import { db } from "@/lib/turso";
@@ -130,12 +130,7 @@ const Produk = () => {
     return Array.from(new Set([...defaults, ...Array.from(set)]));
   }, [ebooks]);
 
-  const resolveImageUrl = (url: string | null) => {
-    if (!url) return "/placeholder.svg";
-    const isHttp = /^https?:\/\//.test(url);
-    if (isHttp) return url;
-    return getImageUrl(url) || "/placeholder.svg";
-  };
+  // Use centralized resolveImageUrl from storage.ts
 
   return (
     <div className="min-h-screen">

@@ -101,14 +101,24 @@ const Profile = () => {
       .from("profiles")
       .select("full_name, phone, address, bio, gender")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching profile:", error);
       return;
     }
 
-    setProfile(data || { full_name: "", phone: "" });
+    // Handle case when profile doesn't exist (e.g., admin accounts)
+    if (data) {
+      setProfile(prev => ({
+        ...prev,
+        full_name: data.full_name || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        bio: data.bio || "",
+        gender: data.gender || ""
+      }));
+    }
   };
 
   const fetchOrders = async (userId: string) => {
