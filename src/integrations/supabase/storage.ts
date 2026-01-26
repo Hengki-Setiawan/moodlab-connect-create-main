@@ -102,7 +102,6 @@ export const uploadImage = async (
       .from(bucket)
       .upload(filePath, uploadFile, {
         cacheControl: '3600',
-        upsert: true,
         contentType: compress ? 'image/jpeg' : file.type
       });
 
