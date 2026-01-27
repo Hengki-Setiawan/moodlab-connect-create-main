@@ -5,6 +5,14 @@ import { streamText } from 'ai';
 
 export default async function handler(req: Request) {
     try {
+        if (!process.env.GROQ_API_KEY) {
+            console.error('GROQ_API_KEY is not set');
+            return new Response(JSON.stringify({ error: 'Konfigurasi API Key belum diatur.' }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         const { messages } = await req.json();
 
         const result = streamText({
