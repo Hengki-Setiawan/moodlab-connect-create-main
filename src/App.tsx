@@ -32,7 +32,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProtected } from "@/components/AdminProtected";
 import { StaffProtected } from "@/components/StaffProtected";
-import ChatWidget from "./components/ChatWidget";
+import { Chatbot } from "@/components/Chatbot";
 
 // Initialize GA4 on app load
 initGA();
@@ -186,7 +186,7 @@ const App = () => (
               <Sonner />
               <Analytics />
               {/* Widget Chatbot mengambang terhubung ke n8n */}
-              <ChatWidget />
+              <Chatbot />
               <BrowserRouter>
                 {/* Tracker untuk page views */}
                 <RouteChangeTracker />

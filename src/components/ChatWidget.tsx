@@ -42,9 +42,11 @@ const ChatWidget = ({
 
   // List of models to try in order of preference (Free models first)
   const MODELS_TO_TRY = [
+    'deepseek/deepseek-r1:free',
+    'deepseek/deepseek-chat:free',
     'google/gemini-2.0-flash-exp:free',
-    'google/gemini-2.0-flash-thinking-exp:free',
-    'meta-llama/llama-3-8b-instruct:free'
+    'google/gemini-1.5-flash:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
   ];
 
   // Check for API key on mount
@@ -181,8 +183,9 @@ TUGAS KAMU:
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+            throw new Error(errorMessage);
           }
 
           const data = await response.json();
@@ -217,15 +220,20 @@ TUGAS KAMU:
       setIsTyping(false);
       console.error('[Mody] Chatbot Error:', err);
 
-      let friendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+      let friendlyError = 'Maaf, terjadi kesalahan.';
+      let detailedError = '';
+
       if (err instanceof Error) {
+        detailedError = err.message;
         if (err.message.includes('API key')) {
-          friendlyError = 'API Key tidak valid. Silakan hubungi admin.';
-        } else if (err.message.includes('credit') || err.message.includes('quota')) {
-          friendlyError = 'Kuota API habis. Coba lagi nanti.';
+          friendlyError = 'API Key tidak valid.';
+        } else if (err.message.includes('credit') || err.message.includes('quota') || err.message.includes('429')) {
+          friendlyError = 'Server sedang sibuk (Rate Limit).';
         }
       }
-      setError(friendlyError);
+
+      // Show detailed error for debugging
+      setError(`${friendlyError} (${detailedError})`);
 
       const fallbackBotMessage: Message = {
         id: `fallback-${Date.now()}`,
