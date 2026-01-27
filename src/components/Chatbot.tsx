@@ -7,12 +7,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { toast } from "sonner";
+
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
         api: '/api/chat',
         onError: (err) => {
             console.error("Chatbot error:", err);
+            toast.error("Gagal mengirim pesan: " + err.message);
         }
     });
     const scrollRef = useRef<HTMLDivElement>(null);

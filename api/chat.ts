@@ -1,9 +1,7 @@
 import { groq } from '@ai-sdk/groq';
 import { streamText } from 'ai';
 
-export const config = {
-    runtime: 'edge',
-};
+
 
 export default async function handler(req: Request) {
     try {
