@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { Send, MessageCircle, X, User, Bot, Sparkles } from 'lucide-react';
+import { Send, MessageCircle, X, User, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import './ChatWidget.css';
 import ModyAvatar from '@/assets/mody-avatar.png';
 
@@ -37,7 +38,6 @@ const ChatWidget = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Configuration for Google Gemini API
-  // Best practice: Use environment variable VITE_GEMINI_API_KEY in Vercel
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBfd9R30vzHKmIOcytytKXfPgCNIYXVBno';
 
   // List of models to try in order of preference
@@ -122,9 +122,15 @@ const ChatWidget = ({
     setIsTyping(true);
 
     try {
-      // Prepare conversation history for Gemini API
-      const contents = newMessages
+      // Initialize Google Generative AI
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+      // Prepare history for SDK
+      // Filter out initial bot messages and fallback messages for cleaner context
+      // SDK expects: { role: 'user' | 'model', parts: [{ text: string }] }
+      const history = newMessages
         .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('fallback'))
+        .slice(0, -1) // Exclude the very last message (current user message) because sendMessage takes it as argument
         .map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'model',
           parts: [{ text: msg.text }]
@@ -134,47 +140,46 @@ const ChatWidget = ({
       let lastError = null;
 
       // Try models sequentially
-      for (const model of MODELS_TO_TRY) {
+      for (const modelName of MODELS_TO_TRY) {
         try {
-          console.log(`Trying model: ${model}`);
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              contents: contents,
-              systemInstruction: {
-                parts: [{ text: systemPrompt }]
+          console.log(`Trying model: ${modelName}`);
+
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: systemPrompt,
+            safetySettings: [
+              {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
               },
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1000,
-              }
-            })
+            ],
           });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`API Error (${model}): ${response.status} - ${JSON.stringify(errorData)}`);
-          }
+          const chat = model.startChat({
+            history: history,
+            generationConfig: {
+              maxOutputTokens: 1000,
+              temperature: 0.7,
+            },
+          });
 
-          const data = await response.json();
-          botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const result = await chat.sendMessage(text);
+          const response = await result.response;
+          botResponseText = response.text();
 
           if (botResponseText) {
-            console.log(`Success with model: ${model}`);
+            console.log(`Success with model: ${modelName}`);
             break; // Success!
           }
         } catch (err) {
-          console.warn(`Failed with model ${model}:`, err);
+          console.warn(`Failed with model ${modelName}:`, err);
           lastError = err;
           // Continue to next model
         }
       }
 
       if (!botResponseText) {
-        throw lastError || new Error('All models failed');
+        throw lastError || new Error('All models failed to generate response');
       }
 
       setIsTyping(false);
