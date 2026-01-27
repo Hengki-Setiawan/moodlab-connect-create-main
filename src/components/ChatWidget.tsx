@@ -39,7 +39,7 @@ const ChatWidget = ({
   // Configuration for Google Gemini API
   // Best practice: Use environment variable VITE_GEMINI_API_KEY in Vercel
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBfd9R30vzHKmIOcytytKXfPgCNIYXVBno';
-  const MODEL = 'gemini-2.0-flash-exp'; // Or gemini-1.5-flash
+  const MODEL = 'gemini-1.5-flash'; // Stable model
 
   const systemPrompt = `
     Kamu adalah Mody, asisten AI dari Moodlab.
@@ -116,18 +116,12 @@ const ChatWidget = ({
 
     try {
       // Prepare conversation history for Gemini API
-      // Gemini format: { role: "user" | "model", parts: [{ text: "..." }] }
       const contents = newMessages
-        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('fallback')) // Filter out initial greeting if needed, or keep it. Let's keep user/bot flow.
-        // Actually, better to just map all relevant history.
-        // Note: Gemini doesn't like "system" role in contents, it uses systemInstruction.
+        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('fallback'))
         .map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'model',
           parts: [{ text: msg.text }]
         }));
-
-      // If history is empty (first message), just send the user message
-      // But we have newMessages which includes the latest user message.
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -148,7 +142,7 @@ const ChatWidget = ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Gemini API Error:', errorData);
+        console.error('Gemini API Error Details:', errorData);
         throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
@@ -168,12 +162,14 @@ const ChatWidget = ({
 
     } catch (err) {
       setIsTyping(false);
-      console.error('Chatbot error:', err);
-      setError('Maaf, terjadi kesalahan koneksi. Silakan coba lagi.');
+      console.error('FULL CHATBOT ERROR:', err);
+
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Error: ${errorMessage}. Silakan coba lagi.`);
 
       const fallbackBotMessage: Message = {
         id: `fallback-${Date.now()}`,
-        text: 'Maaf, saya sedang mengalami gangguan. Mohon coba lagi nanti atau hubungi kami melalui halaman kontak.',
+        text: 'Maaf, saya sedang mengalami gangguan koneksi ke server Google. Mohon periksa koneksi internet Anda atau coba lagi nanti.',
         sender: 'bot',
         timestamp: new Date()
       };
