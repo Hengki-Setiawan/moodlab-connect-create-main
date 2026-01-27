@@ -13,6 +13,9 @@ export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const { messages, input, handleInputChange, handleSubmit, isLoading, error, append, setInput } = useChat({
         api: '/api/chat',
+        onFinish: () => {
+            console.log("Message finished");
+        },
         onError: (err) => {
             console.error("Chatbot error:", err);
             toast.error("Gagal mengirim pesan: " + err.message);
@@ -118,46 +121,20 @@ export function Chatbot() {
                         <div className="p-4 border-t bg-background">
                             <div className="flex gap-2">
                                 <Input
-                                    value={input}
-                                    onChange={handleInputChange}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (!input?.trim() || isLoading) return;
-                                            append({ role: 'user', content: input });
-                                            setInput('');
-                                        }
-                                    }}
-                                    placeholder="Ketik pesan..."
-                                    className="flex-1"
-                                />
-                                <Button
-                                    onClick={() => {
-                                        if (!input?.trim() || isLoading) return;
-                                        append({ role: 'user', content: input });
-                                        setInput('');
-                                    }}
-                                    size="icon"
-                                    disabled={isLoading || !(input || '').trim()}
-                                >
-                                    <Send className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+                        </AnimatePresence>
 
-            <motion.button
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
-            >
-                {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-            </motion.button>
-        </>
-    );
+                        <motion.button
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+                        >
+                            {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+                        </motion.button>
+                    </>
+                );
 }
