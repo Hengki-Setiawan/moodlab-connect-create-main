@@ -121,7 +121,34 @@ export function Chatbot() {
                         <div className="p-4 border-t bg-background">
                             <div className="flex gap-2">
                                 <Input
-                    </motion.div>
+                                    value={input}
+                                    onChange={handleInputChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (!input?.trim() || isLoading) return;
+                                            console.log("Enter key pressed, sending:", input);
+                                            append({ role: 'user', content: input });
+                                            setInput('');
+                                        }
+                                    }}
+                                    placeholder="Ketik pesan..."
+                                    className="flex-1"
+                                />
+                                <Button 
+                                    onClick={() => {
+                                        console.log("Button clicked, sending:", input);
+                                        if (!input?.trim() || isLoading) return;
+                                        append({ role: 'user', content: input });
+                                        setInput('');
+                                    }}
+                                    size="icon" 
+                                    disabled={isLoading || !(input || '').trim()}
+                                >
+                                    <Send className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
                 )}
                         </AnimatePresence>
 
@@ -136,5 +163,5 @@ export function Chatbot() {
                             {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
                         </motion.button>
                     </>
-                );
+            );
 }
