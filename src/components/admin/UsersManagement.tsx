@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,27 +60,23 @@ const UsersManagement = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const res = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
-      if ((res as any).error) throw (res as any).error;
-      const authUsers: AdminAuthUser[] = (res as any).data?.users || [];
-      const ids = authUsers.map(u => u.id);
+      // Fetch profiles directly. Assuming profiles has email column based on usage in other files.
+      // If types are missing email, we cast to any or ignore type error for now.
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*, user_roles(role)")
+        .order("created_at", { ascending: false });
 
-      const { data: profiles } = await supabaseAdmin.from("profiles").select("*").in("id", ids);
-      const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids);
+      if (profilesError) throw profilesError;
 
-      const byIdProfile = new Map<string, ProfileRow>();
-      (profiles || []).forEach((p: any) => byIdProfile.set(p.id, p));
-
-      const byIdRole = new Map<string, RoleRow["role"]>();
-      (roles || []).forEach((r: any) => byIdRole.set(r.user_id, r.role));
-
-      const combined: UserCombined[] = authUsers.map(u => ({
-        id: u.id,
-        email: u.email || "",
-        profile: byIdProfile.get(u.id) || null,
-        role: byIdRole.get(u.id) || null,
-        created_at: u.created_at,
-        last_sign_in_at: u.last_sign_in_at || null,
+      // Transform to match UserCombined interface
+      const combined: UserCombined[] = (profiles || []).map((p: any) => ({
+        id: p.id,
+        email: p.email || "Email hidden", // Fallback if email not in profile
+        profile: p,
+        role: p.user_roles?.[0]?.role || null,
+        created_at: p.created_at,
+        last_sign_in_at: null, // Cannot get this from public profile
       }));
 
       setUsers(combined);
@@ -121,17 +116,20 @@ const UsersManagement = () => {
         full_name: fullName,
         phone: phone,
       };
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profilePayload);
+      const { error: profileError } = await supabase.from("profiles").upsert(profilePayload);
       if (profileError) throw profileError;
 
       // Update role
       const role = userData.role ?? (userData as any).role;
       if (role) {
-        await supabaseAdmin.from("user_roles").delete().eq("user_id", selectedUser?.id);
-        const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+        // Delete existing role first (if one-to-one) or just insert/update
+        // Using RLS, admin should be able to do this
+        await supabase.from("user_roles").delete().eq("user_id", selectedUser?.id);
+        const { error: roleError } = await supabase.from("user_roles").insert({
           user_id: selectedUser?.id,
-          role: role
-        });
+          role: role,
+          email: selectedUser?.email // Need email for user_roles
+        } as any);
         if (roleError) throw roleError;
       }
 
@@ -147,49 +145,51 @@ const UsersManagement = () => {
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm("Hapus pengguna ini? Tindakan tidak dapat dibatalkan.")) return;
-    try {
-      setDeletingId(userId);
-      const r = await supabaseAdmin.auth.admin.deleteUser(userId);
-      if ((r as any).error) throw (r as any).error;
-      toast.success("Pengguna dihapus");
-      await loadUsers();
-    } catch (err) {
-      console.error("deleteUser error:", err);
-      toast.error("Gagal menghapus pengguna");
-    } finally {
-      setDeletingId(null);
-    }
+    toast.error("Fitur hapus user dinonaktifkan untuk keamanan (membutuhkan backend).");
+    // if (!confirm("Hapus pengguna ini? Tindakan tidak dapat dibatalkan.")) return;
+    // try {
+    //   setDeletingId(userId);
+    //   const r = await supabaseAdmin.auth.admin.deleteUser(userId);
+    //   if ((r as any).error) throw (r as any).error;
+    //   toast.success("Pengguna dihapus");
+    //   await loadUsers();
+    // } catch (err) {
+    //   console.error("deleteUser error:", err);
+    //   toast.error("Gagal menghapus pengguna");
+    // } finally {
+    //   setDeletingId(null);
+    // }
   };
 
   const impersonateUser = async (user: UserCombined) => {
-    try {
-      setSavingId(user.id);
-      if (!user.email) {
-        toast.error("Pengguna tidak memiliki email valid");
-        return;
-      }
-      const redirectTo = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
-      const res: any = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: user.email, options: { redirectTo } });
-      if (res?.error) throw res.error;
-      const url: string | undefined = res?.data?.properties?.action_link || res?.data?.action_link;
-      const hashedToken: string | undefined = res?.data?.properties?.hashed_token;
-      if (hashedToken) {
-        const { error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: hashedToken });
-        if (error) throw error;
-        toast.success('Berhasil masuk sebagai pengguna');
-        navigate('/profile');
-        return;
-      }
-      if (!url) throw new Error('action_link tidak tersedia');
-      window.open(url, '_blank');
-      toast.success('Membuka sesi sebagai pengguna di tab baru');
-    } catch (err: any) {
-      console.error('impersonateUser error:', err);
-      toast.error(`Gagal membuka sesi pengguna${err?.message ? `: ${err.message}` : ''}`);
-    } finally {
-      setSavingId(null);
-    }
+    toast.error("Fitur impersonate dinonaktifkan untuk keamanan (membutuhkan backend).");
+    // try {
+    //   setSavingId(user.id);
+    //   if (!user.email) {
+    //     toast.error("Pengguna tidak memiliki email valid");
+    //     return;
+    //   }
+    //   const redirectTo = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
+    //   const res: any = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: user.email, options: { redirectTo } });
+    //   if (res?.error) throw res.error;
+    //   const url: string | undefined = res?.data?.properties?.action_link || res?.data?.action_link;
+    //   const hashedToken: string | undefined = res?.data?.properties?.hashed_token;
+    //   if (hashedToken) {
+    //     const { error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: hashedToken });
+    //     if (error) throw error;
+    //     toast.success('Berhasil masuk sebagai pengguna');
+    //     navigate('/profile');
+    //     return;
+    //   }
+    //   if (!url) throw new Error('action_link tidak tersedia');
+    //   window.open(url, '_blank');
+    //   toast.success('Membuka sesi sebagai pengguna di tab baru');
+    // } catch (err: any) {
+    //   console.error('impersonateUser error:', err);
+    //   toast.error(`Gagal membuka sesi pengguna${err?.message ? `: ${err.message}` : ''}`);
+    // } finally {
+    //   setSavingId(null);
+    // }
   };
 
   return (

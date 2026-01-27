@@ -20,8 +20,6 @@ interface ChatWidgetProps {
   initialMessages?: string[];
 }
 
-type ChatEvent = { type?: string; content?: string; text?: string;[k: string]: unknown };
-
 const ChatWidget = ({
   primaryColor = '#7C3AED',
   position = 'bottom-right',
@@ -38,16 +36,43 @@ const ChatWidget = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const requireAuth = (import.meta.env.VITE_N8N_AUTH_MODE || 'none') !== 'none';
-  const envChatBase = import.meta.env.VITE_N8N_CHAT_URL as string | undefined;
-  const absWebhookUrl = envChatBase
-    ? (envChatBase.replace(/\/$/, '').endsWith('/chat') ? envChatBase.replace(/\/$/, '') : `${envChatBase.replace(/\/$/, '')}/chat`)
-    : 'https://gwu0a4k-n8n.bocindonesia.com/webhook/1295d2c4-5439-4a3c-b1bf-3bb35a4e281e/chat';
-  const proxyWebhookUrl = '/n8n-chat/chat';
-  const withAction = (url: string, action: string) => `${url}${url.includes('?') ? '&' : '?'}action=${action}`;
-  const sendUrlProxy = withAction(proxyWebhookUrl, 'sendMessage');
-  const storedApiKey = typeof window !== 'undefined' ? localStorage.getItem('ml_n8n_api_key') : null;
-  const apiKey = storedApiKey || import.meta.env.VITE_N8N_API_KEY;
+  // Configuration for OpenRouter
+  // Best practice: Use environment variable VITE_OPENROUTER_API_KEY in Vercel
+  const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
+  const SITE_URL = window.location.origin;
+  const SITE_NAME = 'Moodlab Website';
+  const MODEL = 'google/gemini-2.0-flash-exp:free';
+
+  const systemPrompt = `
+    Kamu adalah Mody, asisten AI dari Moodlab.
+    
+    TENTANG MOODLAB:
+    Moodlab adalah agensi digital yang didirikan oleh Hengki Setiawan (Mahasiswa Bisnis Digital UNM).
+    Fokus utama: Membantu brand (terutama UMKM) membangun relevansi dan loyalitas dengan audiens Gen Z.
+    Tagline: "Ubah Popularitas Menjadi Loyalitas".
+    Values: Autentik, Data-Driven, Berkualitas.
+    
+    LAYANAN KAMI:
+    1. Konsultasi Pemasaran: Analisis media sosial, website, dan SEO.
+    2. Kerjasama Agensi: Pembuatan konten (content creation), pembuatan website, dan manajemen kampanye.
+    
+    PRODUK DIGITAL:
+    1. Template Konten (mulai Rp 50.000): Template meme, carousel, bahan edit video.
+    2. E-book (mulai Rp 80.000): Panduan e-commerce, digital marketing, content creation.
+    
+    GAYA KOMUNIKASI:
+    - Nama kamu adalah Mody.
+    - Ramah, profesional, tapi santai (Gen Z friendly).
+    - Gunakan emoji sesekali agar tidak kaku 😊.
+    - Selalu membantu user menemukan solusi terbaik untuk bisnis mereka.
+    - Jika ditanya harga spesifik layanan (bukan produk), arahkan untuk konsultasi karena harga variatif tergantung kebutuhan.
+    - Jawab dalam Bahasa Indonesia yang baik dan natural.
+    
+    TUGAS KAMU:
+    - Menjawab pertanyaan tentang layanan dan produk Moodlab.
+    - Memberikan tips singkat seputar digital marketing jika diminta.
+    - Mengarahkan user untuk menghubungi kontak atau melihat halaman layanan/produk jika mereka tertarik.
+  `;
 
   // Initialize messages when chat opens
   useEffect(() => {
@@ -84,196 +109,68 @@ const ChatWidget = ({
       sender: 'user',
       timestamp: new Date()
     };
-    setMessages(prev => [...prev, userMessage]);
+
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputText('');
     setError(null);
-
-    // Show typing indicator
     setIsTyping(true);
 
     try {
-      if (!absWebhookUrl) {
-        throw new Error('Endpoint webhook tidak dikonfigurasi dengan benar.');
+      // Prepare conversation history for API
+      const apiMessages = [
+        { role: 'system', content: systemPrompt },
+        ...newMessages.map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }))
+      ];
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': SITE_URL,
+          'X-Title': SITE_NAME,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: apiMessages,
+          temperature: 0.7,
+          max_tokens: 1000,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('OpenRouter API Error:', errorData);
+        throw new Error(`API Error: ${response.status}`);
       }
 
-      // Build request headers - support both API key and no-auth modes
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream'
+      const data = await response.json();
+      const botResponseText = data.choices?.[0]?.message?.content || 'Maaf, saya tidak dapat memproses permintaan Anda saat ini.';
+
+      // Simulate typing delay slightly if response is too fast, or just show it
+      setIsTyping(false);
+
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        text: botResponseText,
+        sender: 'bot',
+        timestamp: new Date()
       };
 
-      // Only add auth headers if required
-      if (requireAuth && apiKey) {
-        headers['X-N8N-API-KEY'] = apiKey;
-        headers['Authorization'] = `Bearer ${apiKey}`;
-      }
-
-      const doPost = (url: string, usePrimaryPayload: boolean) => {
-        return fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            chatInput: usePrimaryPayload ? text.trim() : undefined,
-            sessionId: 'user-session',
-            timestamp: new Date().toISOString(),
-            userId: 'anonymous',
-            message: usePrimaryPayload ? undefined : text.trim(),
-            metadata: usePrimaryPayload ? undefined : {
-              sessionId: 'user-session',
-              timestamp: new Date().toISOString(),
-              userId: 'anonymous'
-            }
-          })
-        });
-      };
-
-      let response: Response | null = null;
-      try {
-        response = await doPost(sendUrlProxy, true);
-      } catch (e1) {
-        response = null;
-      }
-
-      if (!response || !response.ok) {
-        if (response && response.status >= 400 && response.status < 500) {
-          try {
-            response = await doPost(sendUrlProxy, false);
-          } catch (e3) {
-            response = null;
-          }
-        }
-
-        if (!response || !response.ok) {
-          if (response && (response.status === 401 || response.status === 403)) {
-            const newKey = typeof window !== 'undefined' ? window.prompt('API key bermasalah. Masukkan API key n8n:') : null;
-            if (newKey) {
-              localStorage.setItem('ml_n8n_api_key', newKey);
-              return sendMessage(text);
-            }
-            const errText = response ? await response.text().catch(() => '') : '';
-            throw new Error(errText || 'API key tidak valid atau akses ditolak.');
-          }
-          const errBody = response ? await response.text().catch(() => '') : '';
-          throw new Error(errBody || (response ? `HTTP error! status: ${response.status}` : 'Network failed'));
-        }
-      }
-
-      let data: unknown = null;
-      const ct = response.headers.get('content-type') || '';
-      if (ct.includes('text/event-stream') && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let s = '';
-        while (true) {
-          const chunk = await reader.read();
-          if (chunk.done) break;
-          s += decoder.decode(chunk.value, { stream: true });
-        }
-        s += decoder.decode();
-        const normalized = s.replace(/\}\s+\{/g, '}\n{');
-        const lines = normalized.split(/\r?\n/).filter(Boolean);
-        const payloads: ChatEvent[] = [];
-        for (const line of lines) {
-          const raw = line.startsWith('data:') ? line.slice(5).trim() : line.trim();
-          if (!raw) continue;
-          try { payloads.push(JSON.parse(raw) as ChatEvent); } catch { payloads.push({ text: raw }); }
-        }
-        const items = payloads.filter((p) => p && (p as ChatEvent).type === 'item');
-        const joined = items
-          .map((p) => {
-            const ev = p as ChatEvent;
-            return typeof ev.content === 'string' ? ev.content : (typeof ev.text === 'string' ? ev.text : '');
-          })
-          .filter(Boolean)
-          .join('');
-        if (joined) {
-          data = { text: joined };
-        } else {
-          const lastItem = [...payloads].reverse().find((p) => p && (p as ChatEvent).type === 'item') as ChatEvent | undefined;
-          data = lastItem && typeof lastItem!.content === 'string'
-            ? { text: lastItem!.content as string }
-            : (payloads[payloads.length - 1] || { text: s });
-        }
-      } else {
-        const clone = response.clone();
-        const txtRaw = await clone.text().catch(() => '');
-        const txt = txtRaw.replace(/\}\s+\{/g, '}\n{');
-        const matches = Array.from(txt.matchAll(/"type":"item"[\s\S]*?"content":"([^"]+)"/g));
-        const joinedText = matches.map((m) => m[1]).join('');
-        if (joinedText) {
-          data = { text: joinedText };
-        } else {
-          try {
-            data = txt ? JSON.parse(txt) : await response.json();
-          } catch {
-            data = txt ? { text: txt } : { text: 'Maaf, sistem mengirim respons yang tidak terduga.' };
-          }
-        }
-      }
-
-      // Simulate typing delay for natural feel
-      setTimeout(() => {
-        setIsTyping(false);
-
-        // Handle different response formats from n8n
-        let botResponse = '';
-        if (typeof data === 'string') {
-          botResponse = data as string;
-        } else {
-          const d = (data ?? {}) as Record<string, unknown>;
-          if (typeof d.response === 'string') botResponse = d.response;
-          else if (typeof d.message === 'string') botResponse = d.message;
-          else if (typeof d.text === 'string') botResponse = d.text;
-          else if (typeof d.content === 'string') botResponse = d.content;
-          else if (typeof d.output === 'string') botResponse = d.output;
-          else if (typeof d.chatOutput === 'string') botResponse = d.chatOutput;
-          else if (typeof d.answer === 'string') botResponse = d.answer;
-          else if (Array.isArray(d.replies) && d.replies.length > 0 && typeof d.replies[0] === 'string') botResponse = d.replies[0];
-          else botResponse = 'Maaf, saya tidak mengerti pertanyaan Anda. Silakan coba lagi.';
-        }
-        const sanitizeText = (raw: string): string => {
-          let s = raw;
-          s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-          s = s.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, ' ');
-          s = s.replace(/\*\*/g, '').replace(/\*/g, '');
-          s = s.replace(/\\(?![nrtu])/g, '');
-          s = s.replace(/[ \t]+/g, ' ');
-          s = s.replace(/\n{3,}/g, '\n\n');
-          return s.trim();
-        };
-        botResponse = sanitizeText(botResponse);
-
-        const botMessage: Message = {
-          id: `bot-${Date.now()}`,
-          text: botResponse,
-          sender: 'bot',
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, botMessage]);
-      }, 1000);
+      setMessages(prev => [...prev, botMessage]);
 
     } catch (err) {
       setIsTyping(false);
       console.error('Chatbot error:', err);
-      let errorMessage = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
-      if (err instanceof Error) {
-        if (err.message.includes('API key')) errorMessage = 'Terjadi masalah dengan konfigurasi. Silakan hubungi administrator.';
-        else if (err.message.includes('fetch')) errorMessage = 'Koneksi bermasalah. Periksa koneksi internet Anda.';
-        else if (err.message.includes('NetworkError')) errorMessage = 'Tidak dapat terhubung ke server. Coba lagi nanti.';
-      }
-      setError(errorMessage);
-
-      const fallbackResponses = [
-        'Maaf, saya sedang mengalami gangguan koneksi. Silakan coba lagi dalam beberapa saat.',
-        'Saya tidak dapat terhubung ke server saat ini. Mohon coba lagi nanti.',
-        'Terjadi masalah teknis. Tim kami sedang memperbaikinya.'
-      ];
-      const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      setError('Maaf, terjadi kesalahan koneksi. Silakan coba lagi.');
 
       const fallbackBotMessage: Message = {
         id: `fallback-${Date.now()}`,
-        text: randomFallback,
+        text: 'Maaf, saya sedang mengalami gangguan. Mohon coba lagi nanti atau hubungi kami melalui halaman kontak.',
         sender: 'bot',
         timestamp: new Date()
       };

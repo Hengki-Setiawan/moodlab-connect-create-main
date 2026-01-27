@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Plus, PlusCircle, UserPlus } from "lucide-react";
 import AdminNavbar from "@/components/AdminNavbar";
 import { getImageUrl, uploadImage } from "@/integrations/supabase/storage";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
 
 interface Product {
   id: string;
@@ -51,7 +50,7 @@ const Admin = () => {
   const checkAdminStatus = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         navigate("/auth");
         return;
@@ -96,7 +95,7 @@ const Admin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Upload gambar baru bila ada
       let uploadedImageUrl: string | null = null;
@@ -199,7 +198,7 @@ const Admin = () => {
     (async () => {
       try {
         setDigitalLoading(true);
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
           .storage
           .from('Produk Digital')
           .list('uploads', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
@@ -213,37 +212,7 @@ const Admin = () => {
     })();
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const resolveImageUrl = (url: string | null) => {
-    if (!url) return "/placeholder.svg";
-    const isHttp = /^https?:\/\//.test(url);
-    if (isHttp) return url;
-    return getImageUrl(url) || "/placeholder.svg";
-  };
-
-  const handleImageChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("File harus berupa gambar");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran gambar maksimal 2MB");
-      return;
-    }
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(String(reader.result));
-    reader.readAsDataURL(file);
-  };
+  // ...
 
   const handleDigitalUpload: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
@@ -251,16 +220,16 @@ const Admin = () => {
     try {
       setDigitalUploading(true);
       const path = `${digitalFolder}/${Date.now()}_${file.name}`;
-      const { error } = await supabaseAdmin.storage.from(digitalBucket).upload(path, file, { upsert: false });
+      const { error } = await supabase.storage.from(digitalBucket).upload(path, file);
       if (error) throw error;
-      const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+      const { data } = await supabase.storage.from(digitalBucket).getPublicUrl(path);
       setDigitalFileUrl(data.publicUrl);
       const name = path.split('/').pop() || file.name;
       setDigitalSelectedName(name);
       toast.success('File digital diupload');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error upload digital file:', err);
-      toast.error('Gagal upload file digital');
+      toast.error(`Gagal upload file digital: ${err.message || 'Unknown error'}`);
     } finally {
       setDigitalUploading(false);
       e.target.value = '';
@@ -270,13 +239,13 @@ const Admin = () => {
   const loadDigitalFiles = async () => {
     try {
       setDigitalLoading(true);
-      const { data, error } = await supabaseAdmin.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+      const { data, error } = await supabase.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
       if (error) throw error;
       setDigitalFiles((data || []).map((d: any) => d.name));
       toast.success('Daftar file dimuat');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error list digital files:', err);
-      toast.error('Gagal memuat daftar file');
+      toast.error(`Gagal memuat daftar file: ${err.message || 'Unknown error'}`);
     } finally {
       setDigitalLoading(false);
     }
@@ -297,15 +266,15 @@ const Admin = () => {
       const confirmed = window.confirm(`Hapus file "${digitalSelectedName}" dari Storage?`);
       if (!confirmed) return;
       const path = `${digitalFolder}/${digitalSelectedName}`;
-      const { error } = await supabaseAdmin.storage.from(digitalBucket).remove([path]);
+      const { error } = await supabase.storage.from(digitalBucket).remove([path]);
       if (error) throw error;
       toast.success('File dihapus dari Storage');
       setDigitalSelectedName(null);
       setDigitalFileUrl('');
       await loadDigitalFiles();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal hapus file digital:', err);
-      toast.error('Gagal menghapus file digital');
+      toast.error(`Gagal menghapus file digital: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -366,7 +335,7 @@ const Admin = () => {
           <h1 className="text-4xl md:text-6xl font-bold mb-12 text-center">
             Dashboard <span className="gradient-text">Admin</span>
           </h1>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Link to="/admin?tab=add">
               <Button className="w-full h-20 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg">
@@ -377,7 +346,7 @@ const Admin = () => {
                 </div>
               </Button>
             </Link>
-            
+
             <Link to="/admin?tab=products">
               <Button className="w-full h-20 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white shadow-lg">
                 <Trash2 className="mr-2 h-6 w-6" />
@@ -387,7 +356,7 @@ const Admin = () => {
                 </div>
               </Button>
             </Link>
-            
+
             <Link to="/admin/users">
               <Button className="w-full h-20 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg">
                 <UserPlus className="mr-2 h-6 w-6" />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { uploadImage } from '@/integrations/supabase/storage';
-import { supabaseAdmin } from '@/integrations/supabase/admin';
+import { supabase } from '@/integrations/supabase/client';
 import { db } from "@/lib/turso";
 import { products } from "@/db/schema";
 import { Button } from '@/components/ui/button';
@@ -148,16 +148,18 @@ export default function AddProduct() {
     try {
       setDigitalUploading(true);
       const path = `${digitalFolder}/${Date.now()}_${file.name}`;
-      const { error } = await supabaseAdmin.storage.from(digitalBucket).upload(path, file, { upsert: false });
+      // Use standard client, relies on RLS
+      const { error } = await supabase.storage.from(digitalBucket).upload(path, file);
       if (error) throw error;
-      const { data } = await supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+
+      const { data } = await supabase.storage.from(digitalBucket).getPublicUrl(path);
       setDigitalFileUrl(data.publicUrl);
       const name = path.split('/').pop() || file.name;
       setDigitalSelectedName(name);
       toast.success('File digital diupload');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error upload digital file:', err);
-      toast.error('Gagal upload file digital');
+      toast.error(`Gagal upload file digital: ${err.message || 'Unknown error'}`);
     } finally {
       setDigitalUploading(false);
       e.target.value = '';
@@ -167,13 +169,13 @@ export default function AddProduct() {
   const loadDigitalFiles = async () => {
     try {
       setDigitalLoading(true);
-      const { data, error } = await supabaseAdmin.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+      const { data, error } = await supabase.storage.from(digitalBucket).list(digitalFolder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
       if (error) throw error;
       setDigitalFiles((data || []).map((d: any) => d.name));
       toast.success('Daftar file dimuat');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error list digital files:', err);
-      toast.error('Gagal memuat daftar file');
+      toast.error(`Gagal memuat daftar file: ${err.message || 'Unknown error'}`);
     } finally {
       setDigitalLoading(false);
     }
@@ -194,15 +196,15 @@ export default function AddProduct() {
       const confirmed = window.confirm(`Hapus file "${digitalSelectedName}" dari Storage?`);
       if (!confirmed) return;
       const path = `${digitalFolder}/${digitalSelectedName}`;
-      const { error } = await supabaseAdmin.storage.from(digitalBucket).remove([path]);
+      const { error } = await supabase.storage.from(digitalBucket).remove([path]);
       if (error) throw error;
       toast.success('File dihapus dari Storage');
       setDigitalSelectedName(null);
       setDigitalFileUrl('');
       await loadDigitalFiles();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal hapus file digital:', err);
-      toast.error('Gagal menghapus file digital');
+      toast.error(`Gagal menghapus file digital: ${err.message || 'Unknown error'}`);
     }
   };
 

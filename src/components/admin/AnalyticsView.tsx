@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { format, subDays } from "date-fns";
@@ -16,7 +16,7 @@ const AnalyticsView = () => {
             setLoading(true);
             const thirtyDaysAgo = subDays(new Date(), 30);
 
-            const { data, error } = await supabaseAdmin
+            const { data, error } = await supabase
                 .from('page_views' as any)
                 .select('*')
                 .gte('created_at', thirtyDaysAgo.toISOString());

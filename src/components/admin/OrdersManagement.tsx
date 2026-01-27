@@ -7,7 +7,7 @@ import { Eye, CheckCircle, XCircle, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import OrderDetailModal from "./OrderDetailModal";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Order {
@@ -49,7 +49,7 @@ const OrdersManagement = ({ orders, onOrderUpdated }: OrdersManagementProps) => 
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         setUpdatingId(orderId);
         try {
-            const { error } = await supabaseAdmin
+            const { error } = await supabase
                 .from('orders')
                 .update({ status: newStatus })
                 .eq('id', orderId);

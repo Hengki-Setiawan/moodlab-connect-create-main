@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -23,7 +23,7 @@ const ConsultationsManagement = () => {
     const fetchConsultations = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabaseAdmin
+            const { data, error } = await supabase
                 .from("consultations")
                 .select("*")
                 .order("created_at", { ascending: false });
@@ -40,7 +40,7 @@ const ConsultationsManagement = () => {
 
     const updateStatus = async (id: string, status: string) => {
         try {
-            const { error } = await supabaseAdmin
+            const { error } = await supabase
                 .from("consultations")
                 .update({ status })
                 .eq("id", id);
@@ -57,7 +57,7 @@ const ConsultationsManagement = () => {
     const deleteConsultation = async (id: string) => {
         if (!confirm("Hapus data konsultasi ini?")) return;
         try {
-            const { error } = await supabaseAdmin
+            const { error } = await supabase
                 .from("consultations")
                 .delete()
                 .eq("id", id);

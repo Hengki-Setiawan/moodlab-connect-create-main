@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabaseAdmin } from '@/integrations/supabase/admin';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { AdminProtected } from '@/components/AdminProtected';
@@ -26,7 +26,7 @@ export default function AddAdmin() {
 
   const fetchRoles = async () => {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('user_roles')
         .select('id, user_id, role, email, created_at')
         .order('created_at', { ascending: false });
@@ -46,7 +46,7 @@ export default function AddAdmin() {
       setLoading(true);
 
       // Cari user_id berdasarkan email di tabel profiles
-      const { data: userData, error: userError } = await supabaseAdmin
+      const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id, email')
         .eq('email', email.trim())
@@ -58,11 +58,13 @@ export default function AddAdmin() {
         return;
       }
 
+      const targetUser = userData as any;
+
       // Cek apakah role yang sama sudah ada
-      const { data: existingRole, error: checkError } = await supabaseAdmin
+      const { data: existingRole, error: checkError } = await supabase
         .from('user_roles')
         .select('*')
-        .eq('user_id', userData.id)
+        .eq('user_id', targetUser.id)
         .eq('role', role)
         .single();
 
@@ -78,9 +80,9 @@ export default function AddAdmin() {
       }
 
       // Tambahkan role baru
-      const { error: insertError } = await supabaseAdmin
+      const { error: insertError } = await supabase
         .from('user_roles')
-        .insert([{ user_id: userData.id, role, email: userData.email }]);
+        .insert([{ user_id: targetUser.id, role, email: targetUser.email }] as any);
 
       if (insertError) {
         console.error('Error menambahkan role:', insertError);
@@ -102,7 +104,7 @@ export default function AddAdmin() {
   const removeModerator = async (row: RoleRow) => {
     if (row.role !== 'moderator') return;
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('user_roles')
         .delete()
         .eq('id', row.id);

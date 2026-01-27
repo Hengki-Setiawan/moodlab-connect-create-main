@@ -160,9 +160,9 @@ const AppRoutesWithAnimations = () => {
           <Route path="/profile" element={<Page><Profile /></Page>} />
           <Route path="/admin" element={<Page><Admin /></Page>} />
           <Route path="/admin-dashboard" element={<Page><StaffProtected><AdminDashboard /></StaffProtected></Page>} />
-          <Route path="/add-product" element={<Page><AddProductPage /></Page>} />
-          <Route path="/add-admin" element={<Page><AddAdmin /></Page>} />
-          <Route path="/edit-profile" element={<Page><EditProfile /></Page>} />
+          <Route path="/add-product" element={<Page><StaffProtected><AddProductPage /></StaffProtected></Page>} />
+          <Route path="/add-admin" element={<Page><StaffProtected><AddAdmin /></StaffProtected></Page>} />
+          <Route path="/edit-profile" element={<Page><StaffProtected><EditProfile /></StaffProtected></Page>} />
           <Route path="*" element={<Page><NotFound /></Page>} />
         </Routes>
       </Suspense>

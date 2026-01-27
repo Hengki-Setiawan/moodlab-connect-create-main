@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { supabaseAdmin } from './admin';
+
 
 /**
  * Kompres gambar sebelum upload

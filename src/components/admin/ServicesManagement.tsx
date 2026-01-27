@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,7 +42,7 @@ const ServicesManagement = () => {
   const loadServices = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabaseAdmin.from("services").select("*").order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("services").select("*").order("created_at", { ascending: true });
       if (error) throw error;
       setServices(data || []);
     } catch (err) {
@@ -98,11 +98,11 @@ const ServicesManagement = () => {
       };
 
       if (editingId) {
-        const { error } = await supabaseAdmin.from("services").update(payload).eq("id", editingId);
+        const { error } = await supabase.from("services").update(payload).eq("id", editingId);
         if (error) throw error;
         toast.success("Layanan diperbarui");
       } else {
-        const { error } = await supabaseAdmin.from("services").insert(payload);
+        const { error } = await supabase.from("services").insert(payload);
         if (error) throw error;
         toast.success("Layanan ditambahkan");
       }
@@ -116,7 +116,7 @@ const ServicesManagement = () => {
 
   const toggleActive = async (id: string, current: boolean) => {
     try {
-      const { error } = await supabaseAdmin.from("services").update({ is_active: !current }).eq("id", id);
+      const { error } = await supabase.from("services").update({ is_active: !current }).eq("id", id);
       if (error) throw error;
       toast.success("Status layanan diperbarui");
       await loadServices();
@@ -129,7 +129,7 @@ const ServicesManagement = () => {
   const deleteService = async (id: string) => {
     if (!confirm("Hapus layanan ini?")) return;
     try {
-      const { error } = await supabaseAdmin.from("services").delete().eq("id", id);
+      const { error } = await supabase.from("services").delete().eq("id", id);
       if (error) throw error;
       toast.success("Layanan dihapus");
       await loadServices();
