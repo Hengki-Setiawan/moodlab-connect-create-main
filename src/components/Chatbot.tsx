@@ -206,10 +206,10 @@ export function Chatbot() {
                                 <Button
                                     type="submit"
                                     size="icon"
-                                    disabled={isLoading || !input.trim()}
+                                    disabled={isLoading || !(input || '').trim()}
                                     className={cn(
                                         "absolute right-1.5 w-9 h-9 rounded-full transition-all duration-300",
-                                        input.trim()
+                                        (input || '').trim()
                                             ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg scale-100"
                                             : "bg-slate-200 text-slate-400 scale-90"
                                     )}
