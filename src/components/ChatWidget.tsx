@@ -36,12 +36,10 @@ const ChatWidget = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Configuration for OpenRouter
-  // Best practice: Use environment variable VITE_OPENROUTER_API_KEY in Vercel
-  const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
-  const SITE_URL = window.location.origin;
-  const SITE_NAME = 'Moodlab Website';
-  const MODEL = 'google/gemini-2.0-flash-exp:free';
+  // Configuration for Google Gemini API
+  // Best practice: Use environment variable VITE_GEMINI_API_KEY in Vercel
+  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBfd9R30vzHKmIOcytytKXfPgCNIYXVBno';
+  const MODEL = 'gemini-2.0-flash-exp'; // Or gemini-1.5-flash
 
   const systemPrompt = `
     Kamu adalah Mody, asisten AI dari Moodlab.
@@ -117,41 +115,46 @@ const ChatWidget = ({
     setIsTyping(true);
 
     try {
-      // Prepare conversation history for API
-      const apiMessages = [
-        { role: 'system', content: systemPrompt },
-        ...newMessages.map(msg => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text
-        }))
-      ];
+      // Prepare conversation history for Gemini API
+      // Gemini format: { role: "user" | "model", parts: [{ text: "..." }] }
+      const contents = newMessages
+        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('fallback')) // Filter out initial greeting if needed, or keep it. Let's keep user/bot flow.
+        // Actually, better to just map all relevant history.
+        // Note: Gemini doesn't like "system" role in contents, it uses systemInstruction.
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        }));
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // If history is empty (first message), just send the user message
+      // But we have newMessages which includes the latest user message.
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': SITE_URL,
-          'X-Title': SITE_NAME,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: MODEL,
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 1000,
+          contents: contents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1000,
+          }
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('OpenRouter API Error:', errorData);
-        throw new Error(`API Error: ${response.status}`);
+        console.error('Gemini API Error:', errorData);
+        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const data = await response.json();
-      const botResponseText = data.choices?.[0]?.message?.content || 'Maaf, saya tidak dapat memproses permintaan Anda saat ini.';
+      const botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, saya tidak dapat memproses permintaan Anda saat ini.';
 
-      // Simulate typing delay slightly if response is too fast, or just show it
       setIsTyping(false);
 
       const botMessage: Message = {
