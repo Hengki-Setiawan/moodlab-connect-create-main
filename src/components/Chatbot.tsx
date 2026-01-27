@@ -1,28 +1,25 @@
 import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { toast } from "sonner";
-
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const { messages, input, handleInputChange, handleSubmit, isLoading, error, append, setInput } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
         api: '/api/chat',
-        onFinish: () => {
-            console.log("Message finished");
-        },
-        onError: (err) => {
-            console.error("Chatbot error:", err);
-            toast.error("Gagal mengirim pesan: " + err.message);
+        onError: (error) => {
+            console.error("Chat error:", error);
+            alert("Gagal mengirim pesan. Pastikan koneksi internet lancar.");
         }
     });
+
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -31,6 +28,19 @@ export function Chatbot() {
 
     return (
         <>
+            {/* Toggle Button */}
+            <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsOpen(!isOpen)}
+                className="fixed bottom-4 right-4 z-[9999] bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+            >
+                {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+            </motion.button>
+
+            {/* Chat Window */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -38,7 +48,7 @@ export function Chatbot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-24 right-4 z-50 w-[350px] md:w-[400px] h-[450px] max-h-[80vh] bg-background border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+                        className="fixed bottom-24 right-4 z-[9999] w-[350px] md:w-[400px] h-[500px] max-h-[80vh] bg-background border rounded-xl shadow-2xl flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="bg-primary p-4 flex items-center justify-between text-primary-foreground">
@@ -51,118 +61,58 @@ export function Chatbot() {
                                     <p className="text-xs opacity-90">Powered by Groq AI</p>
                                 </div>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-primary-foreground hover:bg-white/20 h-8 w-8"
-                                onClick={() => setIsOpen(false)}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-primary-foreground hover:bg-white/20">
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
 
-                        {/* Messages */}
+                        {/* Messages Area */}
                         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-                            <div className="space-y-4">
-                                {messages.length === 0 && (
-                                    <div className="text-center text-muted-foreground mt-8 space-y-2">
-                                        <Bot className="w-12 h-12 mx-auto opacity-20" />
-                                        <p className="text-sm">Halo! Ada yang bisa saya bantu tentang Moodlab?</p>
-                                    </div>
-                                )}
+                            {messages.length === 0 && (
+                                <div className="text-center text-muted-foreground mt-10 space-y-2">
+                                    <Bot className="w-12 h-12 mx-auto opacity-20" />
+                                    <p className="text-sm">Halo! Saya siap membantu Anda.</p>
+                                </div>
+                            )}
 
+                            <div className="space-y-4">
                                 {messages.map((m) => (
-                                    <div
-                                        key={m.id}
-                                        className={cn(
-                                            "flex gap-3 max-w-[85%]",
-                                            m.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                            m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                        )}>
+                                    <div key={m.id} className={cn("flex gap-3 max-w-[85%]", m.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
+                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted")}>
                                             {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                         </div>
-                                        <div className={cn(
-                                            "p-3 rounded-lg text-sm",
-                                            m.role === 'user'
-                                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                                : "bg-muted text-foreground rounded-tl-none"
-                                        )}>
+                                        <div className={cn("p-3 rounded-lg text-sm", m.role === 'user' ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-muted text-foreground rounded-tl-none")}>
                                             {m.content}
                                         </div>
                                     </div>
                                 ))}
-
                                 {isLoading && (
                                     <div className="flex gap-3 max-w-[85%]">
-                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                            <Bot className="w-4 h-4" />
-                                        </div>
-                                        <div className="bg-muted p-3 rounded-lg rounded-tl-none">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0"><Bot className="w-4 h-4" /></div>
+                                        <div className="bg-muted p-3 rounded-lg rounded-tl-none"><Loader2 className="w-4 h-4 animate-spin" /></div>
                                     </div>
                                 )}
-                                {error && (
-                                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm mb-4">
-                                        Terjadi kesalahan: {error.message}
-                                        <br />
-                                        <span className="text-xs opacity-70">Pastikan API Key sudah diatur.</span>
-                                    </div>
-                                )}
-                                <div ref={scrollRef} />
                             </div>
                         </ScrollArea>
 
-                        {/* Input */}
+                        {/* Input Area */}
                         <div className="p-4 border-t bg-background">
-                            <div className="flex gap-2">
+                            <form onSubmit={handleSubmit} className="flex gap-2">
                                 <Input
                                     value={input}
                                     onChange={handleInputChange}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (!input?.trim() || isLoading) return;
-                                            console.log("Enter key pressed, sending:", input);
-                                            append({ role: 'user', content: input });
-                                            setInput('');
-                                        }
-                                    }}
                                     placeholder="Ketik pesan..."
                                     className="flex-1"
+                                    disabled={isLoading}
                                 />
-                                <Button
-                                    onClick={() => {
-                                        console.log("Button clicked, sending:", input);
-                                        if (!input?.trim() || isLoading) return;
-                                        append({ role: 'user', content: input });
-                                        setInput('');
-                                    }}
-                                    size="icon"
-                                    disabled={isLoading || !(input || '').trim()}
-                                >
+                                <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
                                     <Send className="w-4 h-4" />
                                 </Button>
-                            </div>
+                            </form>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <motion.button
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
-            >
-                {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-            </motion.button>
         </>
     );
 }
