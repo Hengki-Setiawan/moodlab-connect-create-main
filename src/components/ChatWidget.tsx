@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Send, MessageCircle, X, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import './ChatWidget.css';
 import ModyAvatar from '@/assets/mody-avatar.png';
 import { fetchChatbotContext } from '@/services/chatbotService';
@@ -38,23 +37,23 @@ const ChatWidget = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Configuration for Google Gemini API - NO FALLBACK, must be in .env
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  // Configuration for OpenRouter API
+  const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
-  // List of models to try in order of preference
+  // List of models to try in order of preference (Free models first)
   const MODELS_TO_TRY = [
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash'
+    'google/gemini-2.0-flash-exp:free',
+    'google/gemini-2.0-flash-thinking-exp:free',
+    'meta-llama/llama-3-8b-instruct:free'
   ];
 
   // Check for API key on mount
   useEffect(() => {
-    if (!GEMINI_API_KEY) {
+    if (!OPENROUTER_API_KEY) {
       setApiKeyMissing(true);
-      console.error('VITE_GEMINI_API_KEY is not set in environment variables.');
+      console.error('VITE_OPENROUTER_API_KEY is not set in environment variables.');
     }
-  }, [GEMINI_API_KEY]);
+  }, [OPENROUTER_API_KEY]);
 
   // Fetch product context when chat opens
   const loadContext = useCallback(async () => {
@@ -145,43 +144,49 @@ TUGAS KAMU:
     setIsTyping(true);
 
     try {
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const systemInstruction = buildSystemPrompt();
 
-      const history = newMessages
-        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('response'))
-        .slice(0, -1)
-        .map(msg => ({
-          role: msg.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-        }));
+      // Prepare messages for OpenRouter (OpenAI format)
+      const apiMessages = [
+        { role: 'system', content: systemInstruction },
+        ...newMessages
+          .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('response'))
+          .map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }))
+      ];
 
       let botResponseText = '';
       let lastError: Error | null = null;
 
       for (const modelName of MODELS_TO_TRY) {
         try {
-          console.log(`[Mody] Trying model: ${modelName}`);
+          console.log(`[Mody] Trying OpenRouter model: ${modelName}`);
 
-          const model = genAI.getGenerativeModel({
-            model: modelName,
-            systemInstruction: buildSystemPrompt(),
-            safetySettings: [
-              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            ],
-          });
-
-          const chat = model.startChat({
-            history: history,
-            generationConfig: {
-              maxOutputTokens: 1000,
-              temperature: 0.7,
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'HTTP-Referer': window.location.origin, // Required by OpenRouter
+              'X-Title': 'Moodlab Website', // Optional
+              'Content-Type': 'application/json'
             },
+            body: JSON.stringify({
+              model: modelName,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 1000,
+            })
           });
 
-          const result = await chat.sendMessage(text);
-          const response = await result.response;
-          botResponseText = response.text();
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
+          }
+
+          const data = await response.json();
+          botResponseText = data.choices[0]?.message?.content || '';
 
           if (botResponseText) {
             console.log(`[Mody] Success with model: ${modelName}`);
@@ -214,9 +219,9 @@ TUGAS KAMU:
 
       let friendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
       if (err instanceof Error) {
-        if (err.message.includes('API_KEY_INVALID') || err.message.includes('API key')) {
+        if (err.message.includes('API key')) {
           friendlyError = 'API Key tidak valid. Silakan hubungi admin.';
-        } else if (err.message.includes('quota') || err.message.includes('rate')) {
+        } else if (err.message.includes('credit') || err.message.includes('quota')) {
           friendlyError = 'Kuota API habis. Coba lagi nanti.';
         }
       }
@@ -333,7 +338,7 @@ TUGAS KAMU:
               {apiKeyMissing && (
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
                   <p className="text-xs text-yellow-700 dark:text-yellow-300 text-center">
-                    ⚠️ Chatbot tidak aktif. Harap set VITE_GEMINI_API_KEY di file .env
+                    ⚠️ Chatbot tidak aktif. Harap set VITE_OPENROUTER_API_KEY di file .env
                   </p>
                 </div>
               )}
