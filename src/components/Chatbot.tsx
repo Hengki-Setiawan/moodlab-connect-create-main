@@ -9,8 +9,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
         api: '/api/chat',
+        onError: (err) => {
+            console.error("Chatbot error:", err);
+        }
     });
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -95,6 +98,13 @@ export function Chatbot() {
                                         <div className="bg-muted p-3 rounded-lg rounded-tl-none">
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         </div>
+                                    </div>
+                                )}
+                                {error && (
+                                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm mb-4">
+                                        Terjadi kesalahan: {error.message}
+                                        <br />
+                                        <span className="text-xs opacity-70">Pastikan API Key sudah diatur.</span>
                                     </div>
                                 )}
                                 <div ref={scrollRef} />
