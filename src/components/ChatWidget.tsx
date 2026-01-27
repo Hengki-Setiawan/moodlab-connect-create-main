@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
-import { Send, MessageCircle, X, User, Bot } from 'lucide-react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Send, MessageCircle, X, User, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import './ChatWidget.css';
 import ModyAvatar from '@/assets/mody-avatar.png';
+import { fetchChatbotContext } from '@/services/chatbotService';
 
 interface Message {
   id: string;
@@ -16,72 +17,95 @@ interface ChatWidgetProps {
   primaryColor?: string;
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   title?: string;
-  subtitle?: string;
   placeholder?: string;
   initialMessages?: string[];
 }
 
 const ChatWidget = ({
-  primaryColor = '#7C3AED',
   position = 'bottom-right',
   title = 'Moodlab Assistant',
-  subtitle = 'AI Chatbot',
   placeholder = 'Tulis pertanyaanmu...',
-  initialMessages = ['Halo saya Mody, AI chat bot dari Moodlab 😊', 'Ada yang bisa saya bantu?']
+  initialMessages = ['Halo! Saya Mody, asisten pintar Moodlab 😊', 'Saya bisa menjawab pertanyaan tentang produk dan layanan kami. Ada yang bisa saya bantu?']
 }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [productContext, setProductContext] = useState<string>('');
+  const [isLoadingContext, setIsLoadingContext] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Configuration for Google Gemini API
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBfd9R30vzHKmIOcytytKXfPgCNIYXVBno';
+  // Configuration for Google Gemini API - NO FALLBACK, must be in .env
+  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   // List of models to try in order of preference
   const MODELS_TO_TRY = [
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-001',
     'gemini-2.0-flash-exp',
-    'gemini-pro'
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash'
   ];
 
-  const systemPrompt = `
-    Kamu adalah Mody, asisten AI dari Moodlab.
-    
-    TENTANG MOODLAB:
-    Moodlab adalah agensi digital yang didirikan oleh Hengki Setiawan (Mahasiswa Bisnis Digital UNM).
-    Fokus utama: Membantu brand (terutama UMKM) membangun relevansi dan loyalitas dengan audiens Gen Z.
-    Tagline: "Ubah Popularitas Menjadi Loyalitas".
-    Values: Autentik, Data-Driven, Berkualitas.
-    
-    LAYANAN KAMI:
-    1. Konsultasi Pemasaran: Analisis media sosial, website, dan SEO.
-    2. Kerjasama Agensi: Pembuatan konten (content creation), pembuatan website, dan manajemen kampanye.
-    
-    PRODUK DIGITAL:
-    1. Template Konten (mulai Rp 50.000): Template meme, carousel, bahan edit video.
-    2. E-book (mulai Rp 80.000): Panduan e-commerce, digital marketing, content creation.
-    
-    GAYA KOMUNIKASI:
-    - Nama kamu adalah Mody.
-    - Ramah, profesional, tapi santai (Gen Z friendly).
-    - Gunakan emoji sesekali agar tidak kaku 😊.
-    - Selalu membantu user menemukan solusi terbaik untuk bisnis mereka.
-    - Jika ditanya harga spesifik layanan (bukan produk), arahkan untuk konsultasi karena harga variatif tergantung kebutuhan.
-    - Jawab dalam Bahasa Indonesia yang baik dan natural.
-    
-    TUGAS KAMU:
-    - Menjawab pertanyaan tentang layanan dan produk Moodlab.
-    - Memberikan tips singkat seputar digital marketing jika diminta.
-    - Mengarahkan user untuk menghubungi kontak atau melihat halaman layanan/produk jika mereka tertarik.
-  `;
+  // Check for API key on mount
+  useEffect(() => {
+    if (!GEMINI_API_KEY) {
+      setApiKeyMissing(true);
+      console.error('VITE_GEMINI_API_KEY is not set in environment variables.');
+    }
+  }, [GEMINI_API_KEY]);
+
+  // Fetch product context when chat opens
+  const loadContext = useCallback(async () => {
+    if (productContext) return; // Already loaded
+    setIsLoadingContext(true);
+    try {
+      const context = await fetchChatbotContext();
+      setProductContext(context);
+    } catch (err) {
+      console.error('Failed to load product context:', err);
+    } finally {
+      setIsLoadingContext(false);
+    }
+  }, [productContext]);
+
+  // Build the full system prompt with real data
+  const buildSystemPrompt = useCallback(() => {
+    return `
+Kamu adalah Mody, asisten AI PINTAR dari Moodlab yang TERKONEKSI ke database produk real-time.
+
+TENTANG MOODLAB:
+Moodlab adalah agensi digital yang didirikan oleh Hengki Setiawan (Mahasiswa Bisnis Digital UNM).
+Fokus utama: Membantu brand (terutama UMKM) membangun relevansi dan loyalitas dengan audiens Gen Z.
+Tagline: "Ubah Popularitas Menjadi Loyalitas".
+Values: Autentik, Data-Driven, Berkualitas.
+
+LAYANAN KAMI:
+1. Konsultasi Pemasaran: Analisis media sosial, website, dan SEO.
+2. Kerjasama Agensi: Pembuatan konten (content creation), pembuatan website, dan manajemen kampanye.
+
+${productContext}
+
+GAYA KOMUNIKASI:
+- Nama kamu adalah Mody.
+- Ramah, profesional, tapi santai (Gen Z friendly).
+- Gunakan emoji sesekali agar tidak kaku 😊.
+- SELALU gunakan data produk di atas untuk menjawab pertanyaan tentang harga atau produk.
+- Jika ditanya harga spesifik LAYANAN (bukan produk digital), arahkan untuk konsultasi karena harga variatif.
+- Jawab dalam Bahasa Indonesia yang baik dan natural.
+
+TUGAS KAMU:
+- Menjawab pertanyaan tentang layanan dan produk Moodlab BERDASARKAN DATA DI ATAS.
+- Memberikan tips singkat seputar digital marketing jika diminta.
+- Mengarahkan user untuk menghubungi kontak atau melihat halaman layanan/produk jika mereka tertarik.
+`;
+  }, [productContext]);
 
   // Initialize messages when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      loadContext();
       const initialBotMessages: Message[] = initialMessages.map((text, index) => ({
         id: `bot-${Date.now()}-${index}`,
         text,
@@ -90,7 +114,7 @@ const ChatWidget = ({
       }));
       setMessages(initialBotMessages);
     }
-  }, [isOpen, messages.length, initialMessages]);
+  }, [isOpen, messages.length, initialMessages, loadContext]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -105,9 +129,8 @@ const ChatWidget = ({
   }, [isOpen]);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || apiKeyMissing) return;
 
-    // Add user message
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       text: text.trim(),
@@ -122,36 +145,29 @@ const ChatWidget = ({
     setIsTyping(true);
 
     try {
-      // Initialize Google Generative AI
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-      // Prepare history for SDK
-      // Filter out initial bot messages and fallback messages for cleaner context
-      // SDK expects: { role: 'user' | 'model', parts: [{ text: string }] }
       const history = newMessages
-        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('fallback'))
-        .slice(0, -1) // Exclude the very last message (current user message) because sendMessage takes it as argument
+        .filter(msg => !msg.id.startsWith('bot-') || msg.id.includes('response'))
+        .slice(0, -1)
         .map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'model',
           parts: [{ text: msg.text }]
         }));
 
       let botResponseText = '';
-      let lastError = null;
+      let lastError: Error | null = null;
 
-      // Try models sequentially
       for (const modelName of MODELS_TO_TRY) {
         try {
-          console.log(`Trying model: ${modelName}`);
+          console.log(`[Mody] Trying model: ${modelName}`);
 
           const model = genAI.getGenerativeModel({
             model: modelName,
-            systemInstruction: systemPrompt,
+            systemInstruction: buildSystemPrompt(),
             safetySettings: [
-              {
-                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-              },
+              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
             ],
           });
 
@@ -168,24 +184,23 @@ const ChatWidget = ({
           botResponseText = response.text();
 
           if (botResponseText) {
-            console.log(`Success with model: ${modelName}`);
-            break; // Success!
+            console.log(`[Mody] Success with model: ${modelName}`);
+            break;
           }
         } catch (err) {
-          console.warn(`Failed with model ${modelName}:`, err);
-          lastError = err;
-          // Continue to next model
+          console.warn(`[Mody] Failed with model ${modelName}:`, err);
+          lastError = err instanceof Error ? err : new Error(String(err));
         }
       }
 
       if (!botResponseText) {
-        throw lastError || new Error('All models failed to generate response');
+        throw lastError || new Error('Semua model gagal merespons');
       }
 
       setIsTyping(false);
 
       const botMessage: Message = {
-        id: `bot-${Date.now()}`,
+        id: `response-${Date.now()}`,
         text: botResponseText,
         sender: 'bot',
         timestamp: new Date()
@@ -195,14 +210,21 @@ const ChatWidget = ({
 
     } catch (err) {
       setIsTyping(false);
-      console.error('FULL CHATBOT ERROR:', err);
+      console.error('[Mody] Chatbot Error:', err);
 
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Error: ${errorMessage}. Silakan coba lagi.`);
+      let friendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+      if (err instanceof Error) {
+        if (err.message.includes('API_KEY_INVALID') || err.message.includes('API key')) {
+          friendlyError = 'API Key tidak valid. Silakan hubungi admin.';
+        } else if (err.message.includes('quota') || err.message.includes('rate')) {
+          friendlyError = 'Kuota API habis. Coba lagi nanti.';
+        }
+      }
+      setError(friendlyError);
 
       const fallbackBotMessage: Message = {
         id: `fallback-${Date.now()}`,
-        text: 'Maaf, saya sedang mengalami gangguan koneksi ke server Google. Mohon periksa koneksi internet Anda atau coba lagi nanti.',
+        text: 'Maaf, saya sedang mengalami gangguan. Silakan coba lagi atau hubungi kami langsung via WhatsApp.',
         sender: 'bot',
         timestamp: new Date()
       };
@@ -280,8 +302,22 @@ const ChatWidget = ({
                   <div>
                     <h3 className="font-bold text-sm">{title}</h3>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-xs opacity-90">Online</span>
+                      {isLoadingContext ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span className="text-xs opacity-90">Memuat data...</span>
+                        </>
+                      ) : apiKeyMissing ? (
+                        <>
+                          <AlertTriangle className="w-3 h-3 text-yellow-300" />
+                          <span className="text-xs opacity-90">Offline</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          <span className="text-xs opacity-90">Online • Terhubung ke Database</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -292,6 +328,15 @@ const ChatWidget = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* API Key Warning */}
+              {apiKeyMissing && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 text-center">
+                    ⚠️ Chatbot tidak aktif. Harap set VITE_GEMINI_API_KEY di file .env
+                  </p>
+                </div>
+              )}
 
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
@@ -367,7 +412,7 @@ const ChatWidget = ({
                       onClick={() => setError(null)}
                       className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-3 py-1 rounded-full hover:bg-red-200 transition-colors"
                     >
-                      Coba Lagi
+                      Tutup
                     </button>
                   </motion.div>
                 )}
@@ -383,15 +428,15 @@ const ChatWidget = ({
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={placeholder}
-                    className="w-full pl-4 pr-12 py-3 bg-white dark:bg-gray-800 border-none ring-1 ring-gray-200 dark:ring-gray-700 rounded-full focus:ring-2 focus:ring-primary/50 resize-none text-sm shadow-sm scrollbar-hide"
-                    disabled={isTyping}
+                    placeholder={apiKeyMissing ? 'Chatbot tidak aktif...' : placeholder}
+                    className="w-full pl-4 pr-12 py-3 bg-white dark:bg-gray-800 border-none ring-1 ring-gray-200 dark:ring-gray-700 rounded-full focus:ring-2 focus:ring-primary/50 resize-none text-sm shadow-sm scrollbar-hide disabled:opacity-50"
+                    disabled={isTyping || apiKeyMissing}
                     rows={1}
                     style={{ minHeight: '44px', maxHeight: '100px' }}
                   />
                   <button
                     type="submit"
-                    disabled={!inputText.trim() || isTyping}
+                    disabled={!inputText.trim() || isTyping || apiKeyMissing}
                     className="absolute right-2 p-2 gradient-primary rounded-full text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
                   >
                     <Send className="w-4 h-4" />
