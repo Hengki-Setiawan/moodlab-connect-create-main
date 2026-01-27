@@ -135,33 +135,34 @@ export function Chatbot() {
                                     placeholder="Ketik pesan..."
                                     className="flex-1"
                                 />
-                                <Button 
+                                <Button
                                     onClick={() => {
                                         console.log("Button clicked, sending:", input);
                                         if (!input?.trim() || isLoading) return;
                                         append({ role: 'user', content: input });
                                         setInput('');
                                     }}
-                                    size="icon" 
+                                    size="icon"
                                     disabled={isLoading || !(input || '').trim()}
                                 >
                                     <Send className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
+                    </motion.div>
                 )}
-                        </AnimatePresence>
+            </AnimatePresence>
 
-                        <motion.button
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
-                        >
-                            {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-                        </motion.button>
-                    </>
-            );
+            <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsOpen(!isOpen)}
+                className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+            >
+                {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+            </motion.button>
+        </>
+    );
 }
