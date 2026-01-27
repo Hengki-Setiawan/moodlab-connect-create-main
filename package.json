@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.16",
+    "@ai-sdk/react": "^3.0.57",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
     "@libsql/client": "^0.17.0",
