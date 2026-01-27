@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading, error, append, setInput } = useChat({
         api: '/api/chat',
         onError: (err) => {
             console.error("Chatbot error:", err);
@@ -116,17 +116,33 @@ export function Chatbot() {
 
                         {/* Input */}
                         <div className="p-4 border-t bg-background">
-                            <form onSubmit={handleSubmit} className="flex gap-2">
+                            <div className="flex gap-2">
                                 <Input
                                     value={input}
                                     onChange={handleInputChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (!input?.trim() || isLoading) return;
+                                            append({ role: 'user', content: input });
+                                            setInput('');
+                                        }
+                                    }}
                                     placeholder="Ketik pesan..."
                                     className="flex-1"
                                 />
-                                <Button type="submit" size="icon" disabled={isLoading || !(input || '').trim()}>
+                                <Button
+                                    onClick={() => {
+                                        if (!input?.trim() || isLoading) return;
+                                        append({ role: 'user', content: input });
+                                        setInput('');
+                                    }}
+                                    size="icon"
+                                    disabled={isLoading || !(input || '').trim()}
+                                >
                                     <Send className="w-4 h-4" />
                                 </Button>
-                            </form>
+                            </div>
                         </div>
                     </motion.div>
                 )}
