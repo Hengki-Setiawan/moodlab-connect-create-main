@@ -1,7 +1,12 @@
 import { groq } from '@ai-sdk/groq';
 import { streamText } from 'ai';
+import { createClient } from '@supabase/supabase-js';
 
-
+// Initialize Supabase Client (Server-Side)
+const supabaseUrl = process.env.VITE_SUPABASE_PROJECT_ID
+    ? `https://${process.env.VITE_SUPABASE_PROJECT_ID}.supabase.co`
+    : process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export default async function handler(req: Request) {
     try {
@@ -16,6 +21,33 @@ export default async function handler(req: Request) {
 
         const { messages } = await req.json();
 
+        // --- RAG: Fetch Product Data from Supabase ---
+        let productContext = "Data produk sedang tidak tersedia (gunakan pengetahuan umum).";
+
+        if (supabaseUrl && supabaseKey) {
+            try {
+                const supabase = createClient(supabaseUrl, supabaseKey);
+                const { data: products, error } = await supabase
+                    .from('products')
+                    .select('name, price, category, description')
+                    .limit(20); // Limit context size
+
+                if (!error && products && products.length > 0) {
+                    const formattedProducts = products.map((p: { name: string; category: string; price: number; description: string }) => {
+                        const price = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price);
+                        return `- ${p.name} (${p.category}): ${price}. Info: ${p.description}`;
+                    }).join('\n');
+                    productContext = `DAFTAR PRODUK & LAYANAN MOODLAB (Real-time):\n${formattedProducts}`;
+                } else if (error) {
+                    console.error("Supabase RAG Error:", error);
+                }
+            } catch (err) {
+                console.error("Supabase Connection Error:", err);
+                // Fallback: Continue without product data
+            }
+        }
+        // ---------------------------------------------
+
         const result = streamText({
             model: groq('llama-3.3-70b-versatile'),
             messages,
@@ -26,7 +58,10 @@ export default async function handler(req: Request) {
             2. Menjelaskan layanan Moodlab dengan bahasa yang "fun", profesional, tapi tetap "daging" (berisi).
             3. Mengarahkan user untuk menghubungi WhatsApp Admin jika butuh penawaran khusus.
 
-            Layanan Kami:
+            KONTEKS PRODUK/LAYANAN SAAT INI:
+            ${productContext}
+
+            Layanan Umum (Jika tidak ada di database):
             - Social Media Management: Konten kalender, copywriting, admin posting.
             - Content Creation: Video TikTok/Reels viral, desain feed estetik.
             - Digital Ads: Iklan tertarget (FB/IG/TikTok Ads) untuk ROI tinggi.
@@ -38,7 +73,7 @@ export default async function handler(req: Request) {
             - Jangan terlalu panjang lebar, langsung to the point ke solusi.
 
             Aturan Penting:
-            - Jika ditanya harga, jawab kisaran (mulai dari X jutaan) atau arahkan ke WA untuk custom package. Jangan asal sebut angka pasti.
+            - Jika user tanya harga spesifik dan ada di "KONTEKS PRODUK", sebutkan harganya. Jika tidak ada, jawab kisaran atau arahkan ke WA.
             - Jika user curhat bisnis sepi, berikan tips singkat lalu tawarkan jasa Moodlab sebagai solusi.
             - Jika ditanya hal di luar marketing/bisnis, tolak halus: "Waduh, kalau itu di luar keahlianku kak. Tapi kalau soal bikin brand kakak viral, aku jagonya! 🚀"`,
         });
