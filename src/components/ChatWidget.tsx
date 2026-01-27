@@ -39,7 +39,14 @@ const ChatWidget = ({
   // Configuration for Google Gemini API
   // Best practice: Use environment variable VITE_GEMINI_API_KEY in Vercel
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBfd9R30vzHKmIOcytytKXfPgCNIYXVBno';
-  const MODEL = 'gemini-1.5-flash'; // Stable model
+
+  // List of models to try in order of preference
+  const MODELS_TO_TRY = [
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-001',
+    'gemini-2.0-flash-exp',
+    'gemini-pro'
+  ];
 
   const systemPrompt = `
     Kamu adalah Mody, asisten AI dari Moodlab.
@@ -123,31 +130,52 @@ const ChatWidget = ({
           parts: [{ text: msg.text }]
         }));
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: contents,
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          }
-        })
-      });
+      let botResponseText = '';
+      let lastError = null;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Gemini API Error Details:', errorData);
-        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+      // Try models sequentially
+      for (const model of MODELS_TO_TRY) {
+        try {
+          console.log(`Trying model: ${model}`);
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              contents: contents,
+              systemInstruction: {
+                parts: [{ text: systemPrompt }]
+              },
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1000,
+              }
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`API Error (${model}): ${response.status} - ${JSON.stringify(errorData)}`);
+          }
+
+          const data = await response.json();
+          botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+          if (botResponseText) {
+            console.log(`Success with model: ${model}`);
+            break; // Success!
+          }
+        } catch (err) {
+          console.warn(`Failed with model ${model}:`, err);
+          lastError = err;
+          // Continue to next model
+        }
       }
 
-      const data = await response.json();
-      const botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, saya tidak dapat memproses permintaan Anda saat ini.';
+      if (!botResponseText) {
+        throw lastError || new Error('All models failed');
+      }
 
       setIsTyping(false);
 
