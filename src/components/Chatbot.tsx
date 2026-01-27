@@ -32,7 +32,7 @@ export function Chatbot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-20 right-4 z-50 w-[350px] md:w-[400px] h-[min(500px,80vh)] bg-background border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+                        className="fixed bottom-24 right-4 z-50 w-[350px] md:w-[400px] h-[450px] max-h-[80vh] bg-background border rounded-xl shadow-2xl flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="bg-primary p-4 flex items-center justify-between text-primary-foreground">
@@ -113,14 +113,7 @@ export function Chatbot() {
 
                         {/* Input */}
                         <div className="p-4 border-t bg-background">
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    if (!input?.trim()) return;
-                                    handleSubmit(e);
-                                }}
-                                className="flex gap-2"
-                            >
+                            <form onSubmit={handleSubmit} className="flex gap-2">
                                 <Input
                                     value={input}
                                     onChange={handleInputChange}
