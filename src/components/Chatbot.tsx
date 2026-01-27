@@ -120,7 +120,7 @@ export function Chatbot() {
                                     placeholder="Ketik pesan..."
                                     className="flex-1"
                                 />
-                                <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+                                <Button type="submit" size="icon" disabled={isLoading || !(input || '').trim()}>
                                     <Send className="w-4 h-4" />
                                 </Button>
                             </form>
