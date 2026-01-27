@@ -9,7 +9,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+
+    // Separate local input state to guarantee control
+    const [localInput, setLocalInput] = useState('');
+
+    const { messages, append, isLoading } = useChat({
         api: '/api/chat',
         onError: (error) => {
             console.error("Chat error:", error);
@@ -25,6 +29,13 @@ export function Chatbot() {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
+
+    const handleSend = () => {
+        if (!localInput.trim() || isLoading) return;
+
+        append({ role: 'user', content: localInput });
+        setLocalInput(''); // Clear local input immediately
+    };
 
     return (
         <>
@@ -97,18 +108,28 @@ export function Chatbot() {
 
                         {/* Input Area */}
                         <div className="p-4 border-t bg-background">
-                            <form onSubmit={handleSubmit} className="flex gap-2">
+                            <div className="flex gap-2">
                                 <Input
-                                    value={input}
-                                    onChange={handleInputChange}
+                                    value={localInput}
+                                    onChange={(e) => setLocalInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSend();
+                                        }
+                                    }}
                                     placeholder="Ketik pesan..."
                                     className="flex-1"
                                     disabled={isLoading}
                                 />
-                                <Button type="submit" size="icon" disabled={isLoading || !(input || '').trim()}>
+                                <Button
+                                    onClick={handleSend}
+                                    size="icon"
+                                    disabled={isLoading || !localInput.trim()}
+                                >
                                     <Send className="w-4 h-4" />
                                 </Button>
-                            </form>
+                            </div>
                         </div>
                     </motion.div>
                 )}
