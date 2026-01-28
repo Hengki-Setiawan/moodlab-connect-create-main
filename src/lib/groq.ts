@@ -1,17 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createGroq } from '@ai-sdk/groq';
+import { generateText } from 'ai';
 
 // Initialize the API
-const API_KEY = "AIzaSyCEZuQBqufLuQruwJ-wC6FOJkvG42ON-LY";
+const API_KEY = "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";
 
-console.log("DEBUG: API_KEY length:", API_KEY ? API_KEY.length : 0);
-console.log("DEBUG: API_KEY first 5 chars:", API_KEY ? API_KEY.substring(0, 5) : "NONE");
+const groq = createGroq({
+    apiKey: API_KEY,
+});
 
-if (!API_KEY) {
-    console.error("Missing VITE_GEMINI_API_KEY in .env file");
-}
-
-const genAI = new GoogleGenerativeAI(API_KEY || "");
-console.log("DEBUG: genAI initialized:", genAI);
+const model = groq('llama-3.3-70b-versatile');
 
 // 1. Chatbot Function
 export async function chatWithAI(message: string, history: { role: "user" | "model"; parts: string }[] = [], context: string = "") {
@@ -37,27 +34,23 @@ export async function chatWithAI(message: string, history: { role: "user" | "mod
                 - Jika ditanya harga spesifik jasa (bukan produk digital), arahkan untuk konsultasi lebih lanjut di halaman Kontak.
             `;
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash-lite",
-            systemInstruction: systemInstruction
-        });
-
-        // Convert history to Gemini format
-        const formattedHistory = history.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.parts }]
+        // Convert history to AI SDK format
+        // Gemini uses 'model', AI SDK uses 'assistant'
+        const messages: any[] = history.map(msg => ({
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.parts
         }));
 
-        const chat = model.startChat({
-            history: formattedHistory,
-            generationConfig: {
-                maxOutputTokens: 500,
-            },
+        // Add the new message
+        messages.push({ role: 'user', content: message });
+
+        const { text } = await generateText({
+            model: model,
+            system: systemInstruction,
+            messages: messages,
         });
 
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
-        return response.text();
+        return text;
     } catch (error) {
         console.error("Error in chatWithAI:", error);
         throw error;
@@ -67,8 +60,6 @@ export async function chatWithAI(message: string, history: { role: "user" | "mod
 // 2. Magic Description Function
 export async function generateProductDescription(productName: string, category: string, keywords: string = "") {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `
       Bertindaklah sebagai copywriter profesional untuk toko "Moodlab" (toko lilin, teh, dan produk relaksasi).
       Buatkan deskripsi produk yang menarik, emosional, dan menjual untuk produk berikut:
@@ -86,9 +77,10 @@ export async function generateProductDescription(productName: string, category: 
       Pastikan output hanya JSON valid tanpa markdown.
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const { text } = await generateText({
+            model: model,
+            prompt: prompt,
+        });
 
         // Clean up markdown code blocks if present
         const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
@@ -103,8 +95,6 @@ export async function generateProductDescription(productName: string, category: 
 // 3. MoodMatch Function
 export async function analyzeMood(userMood: string) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `
       Kamu adalah asisten rekomendasi produk Moodlab.
       User berkata: "${userMood}"
@@ -121,9 +111,10 @@ export async function analyzeMood(userMood: string) {
       Pastikan output hanya JSON valid tanpa markdown. Bahasa Indonesia.
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const { text } = await generateText({
+            model: model,
+            prompt: prompt,
+        });
 
         const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
 

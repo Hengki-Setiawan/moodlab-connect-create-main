@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { chatWithAI } from '@/lib/gemini';
+import { chatWithAI } from '@/lib/groq';
 
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +16,29 @@ export function Chatbot() {
     const [messages, setMessages] = useState<{ id: string; role: 'user' | 'assistant'; content: string }[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [productContext, setProductContext] = useState("");
+
+    // Fetch products for context
+    useEffect(() => {
+        const fetchContext = async () => {
+            try {
+                // Dynamic import to avoid circular dependencies or server-side issues if any
+                const { db } = await import('@/lib/turso');
+                const { products } = await import('@/db/schema');
+
+                const productsData = await db.select().from(products);
+                const contextString = productsData.map(p =>
+                    `- ${p.name} (${p.category}): Rp ${p.price.toLocaleString('id-ID')} | ${p.description ? p.description.substring(0, 50) + "..." : ""}`
+                ).join("\n");
+
+                setProductContext(contextString);
+                console.log("AI Context Loaded:", contextString.length, "chars");
+            } catch (error) {
+                console.error("Failed to load product context:", error);
+            }
+        };
+        fetchContext();
+    }, []);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -53,7 +76,7 @@ export function Chatbot() {
                 parts: m.content
             }));
 
-            const response = await chatWithAI(userMessage, history);
+            const response = await chatWithAI(userMessage, history, productContext);
 
             setMessages(prev => [
                 ...prev,
@@ -72,11 +95,7 @@ export function Chatbot() {
 
     const handleQuickReply = (text: string) => {
         setInput(text);
-        // Hacky way to trigger submit after state update, better to separate logic but this works for now
         setTimeout(() => {
-            // We can't easily trigger the form submit event, so we call logic directly
-            // But we need to set input first. 
-            // Actually better to just call logic with text directly
             submitQuickReply(text);
         }, 0);
     };
@@ -94,7 +113,7 @@ export function Chatbot() {
                 role: m.role === 'user' ? 'user' as const : 'model' as const,
                 parts: m.content
             }));
-            const response = await chatWithAI(text, history);
+            const response = await chatWithAI(text, history, productContext);
             setMessages(prev => [
                 ...prev,
                 { id: (Date.now() + 1).toString(), role: 'assistant', content: response }
