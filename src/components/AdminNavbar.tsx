@@ -14,7 +14,8 @@ import {
   LogOut,
   Menu,
   X,
-  LayoutDashboard
+  LayoutDashboard,
+  Sparkles
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -153,6 +154,16 @@ const AdminNavbar = () => {
             >
               <Briefcase className="mr-3 h-5 w-5" />
               Layanan
+            </Button>
+          </Link>
+
+          <Link to="/admin-dashboard?tab=ai-playground" onClick={() => setIsOpen(false)}>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-white hover:bg-white/10 ${currentTab === "ai-playground" ? "bg-white/20 shadow-inner" : ""}`}
+            >
+              <Sparkles className="mr-3 h-5 w-5" />
+              AI Playground
             </Button>
           </Link>
 

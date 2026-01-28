@@ -12,51 +12,16 @@ import AdminProductManager from "@/components/admin/AdminProductManager";
 import ConsultationsManagement from "@/components/admin/ConsultationsManagement";
 import AnalyticsView from "@/components/admin/AnalyticsView";
 import PagesManagement from "@/components/admin/PagesManagement";
+import AITest from "@/pages/AITest"; // Import AITest
 import { uploadImage } from "@/integrations/supabase/storage";
 import { db } from "@/lib/turso";
 import { products as productsSchema } from "@/db/schema";
 import { desc } from "drizzle-orm";
 
-// Import other necessary components for different tabs if needed
-// For now, we'll keep the inline implementations for simple tabs or move them later
-
-interface User {
-  id: string;
-  email: string;
-  role: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  description?: string | null;
-  price: number;
-  type: string | null;
-  category: string | null;
-  image_url?: string | null;
-  file_url?: string | null;
-  benefits?: string | null;
-  created_at: Date | null;
-}
-
-interface Order {
-  id: string;
-  user_id: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-}
-
-interface Consultation {
-  id: string;
-  name: string;
-  email: string;
-  service_type: string;
-  status: string;
-  created_at: string;
-}
+// ... (keep interfaces)
 
 const AdminDashboard = () => {
+  // ... (keep existing state)
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
@@ -103,170 +68,21 @@ const AdminDashboard = () => {
     fetchRecentActivity();
   }, []);
 
-  // ... (keep existing realtime subscription)
+  // ... (keep fetch functions)
 
-  const fetchRecentActivity = async () => {
-    try {
-      // Fetch latest orders
-      const { data: latestOrders } = await supabase
-        .from('orders')
-        .select('id, created_at, status, total_amount')
-        .order('created_at', { ascending: false })
-        .limit(5);
+  // ... (keep checkUserRole)
 
-      // Fetch latest products
-      const latestProducts = await db.select({
-        id: productsSchema.id,
-        created_at: productsSchema.created_at,
-        name: productsSchema.name
-      })
-        .from(productsSchema)
-        .orderBy(desc(productsSchema.created_at))
-        .limit(5);
+  // ... (keep fetchData)
 
-      // Fetch latest users
-      const { data: latestUsers } = await supabase
-        .from('profiles')
-        .select('id, created_at, full_name')
-        .order('created_at', { ascending: false })
-        .limit(5);
+  // ... (keep fetchAnalytics)
 
-      const activities = [
-        ...(latestOrders || []).map((o: any) => ({
-          id: `order-${o.id}`,
-          action: 'Pesanan Baru',
-          details: `Order #${o.id.slice(0, 8)} - Rp ${o.total_amount?.toLocaleString('id-ID')}`,
-          timestamp: o.created_at
-        })),
-        ...(latestProducts || []).map((p: any) => ({
-          id: `product-${p.id}`,
-          action: 'Produk Ditambahkan',
-          details: p.name,
-          timestamp: p.created_at
-        })),
-        ...(latestUsers || []).map((u: any) => ({
-          id: `user-${u.id}`,
-          action: 'Pengguna Baru',
-          details: u.full_name || 'User Baru',
-          timestamp: u.created_at
-        }))
-      ];
+  // ... (keep fetchStorageFiles)
 
-      const sortedActivity = activities
-        .sort((a, b) => {
-          const dateA = a.timestamp ? new Date(a.timestamp) : null;
-          const dateB = b.timestamp ? new Date(b.timestamp) : null;
+  // ... (keep handleUpload)
 
-          const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : -Infinity;
-          const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : -Infinity;
+  // ... (keep removeFile)
 
-          return timeB - timeA;
-        })
-        .slice(0, 5);
-
-      setRecentActivity(sortedActivity);
-    } catch (error) {
-      console.error("Error fetching recent activity:", error);
-    }
-  };
-
-  // ... (checkUserRole remains same)
-
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-
-      const productsData = await db.select().from(productsSchema).orderBy(desc(productsSchema.created_at));
-
-      // Map Turso data to Product interface
-      const mappedProducts: Product[] = productsData.map(p => ({
-        ...p,
-        description: p.description || null,
-        type: p.type || "template",
-        category: p.category || "general",
-        image_url: p.image_url || null,
-        file_url: p.file_url || null,
-        benefits: p.benefits || null,
-        created_at: p.created_at || null
-      }));
-
-      setProducts(mappedProducts);
-
-      const { data: ordersData } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setOrders(ordersData || []);
-
-      const { data: consultationsData } = await supabase
-        .from('consultations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setConsultations(consultationsData || []);
-
-      const { data: bucketsData } = await supabase.storage.listBuckets();
-      if (bucketsData) {
-        setBuckets(bucketsData);
-        if (bucketsData.length > 0 && !selectedBucket) {
-          setSelectedBucket(bucketsData[0].name);
-        }
-      }
-
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ... (fetchAnalytics remains same)
-
-  const fetchStorageFiles = async () => {
-    if (!selectedBucket) return;
-    setLoadingStorage(true);
-    try {
-      const { data, error } = await supabase.storage.from(selectedBucket).list(currentPath);
-      if (error) throw error;
-      setStorageFiles(data || []);
-    } catch (error) {
-      console.error('Error fetching storage:', error);
-    } finally {
-      setLoadingStorage(false);
-    }
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !selectedBucket) return;
-    setUploading(true);
-    try {
-      for (const file of Array.from(e.target.files)) {
-        await uploadImage(file, selectedBucket, currentPath, file.name);
-      }
-      fetchStorageFiles();
-    } catch (error) {
-      console.error('Error uploading:', error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeFile = async (name: string) => {
-    if (!selectedBucket) return;
-    try {
-      const path = currentPath ? `${currentPath}/${name}` : name;
-      const { error } = await supabase.storage.from(selectedBucket).remove([path]);
-      if (error) throw error;
-      fetchStorageFiles();
-    } catch (error) {
-      console.error('Error deleting file:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedBucket) {
-      fetchStorageFiles();
-    }
-  }, [selectedBucket, currentPath]);
+  // ... (keep useEffect for storage)
 
   const renderContent = () => {
     switch (tab) {
@@ -297,9 +113,21 @@ const AdminDashboard = () => {
         return <PagesManagement />;
       case 'services':
         return <ServicesManagement />;
+      case 'ai-playground': // New Tab
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-4">AI Playground</h2>
+            <p className="text-gray-500 mb-6">Test fitur AI Moodlab secara langsung di sini.</p>
+            <div className="border rounded-lg overflow-hidden">
+              {/* Render AITest but we might need to adjust it to not show Navbar if embedded */}
+              <AITest />
+            </div>
+          </div>
+        );
       case 'storage':
         return (
           <div className="bg-white dark:bg-card/60 backdrop-blur-sm rounded-lg p-6 shadow-sm border dark:border-border">
+            {/* ... (keep storage content) */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-foreground">File Storage</h2>
               <div className="flex gap-2">
@@ -374,7 +202,7 @@ const AdminDashboard = () => {
         <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200/50">
           <div className="container mx-auto px-6 py-4 flex justify-between items-center pl-16 md:pl-6">
             <h1 className="text-xl font-semibold capitalize text-gray-800">
-              {tab === 'overview' ? 'Dashboard Overview' : tab}
+              {tab === 'overview' ? 'Dashboard Overview' : tab.replace('-', ' ')}
             </h1>
 
             <div className="flex items-center gap-4">

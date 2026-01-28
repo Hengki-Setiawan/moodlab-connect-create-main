@@ -1,4 +1,3 @@
-import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Sparkles, User, Bot, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,18 +5,17 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { chatWithAI } from '@/lib/gemini';
 
 export function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const { messages, append, isLoading, input, setInput, handleSubmit } = useChat({
-        api: '/api/chat',
-        onError: (error) => {
-            console.error("Chat error:", error);
-        }
-    });
+    // Local State for Chat
+    const [messages, setMessages] = useState<{ id: string; role: 'user' | 'assistant'; content: string }[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -33,8 +31,82 @@ export function Chatbot() {
         }
     }, [isOpen]);
 
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!input.trim() || isLoading) return;
+
+        const userMessage = input.trim();
+        setInput("");
+
+        // Add user message
+        const newMessages = [
+            ...messages,
+            { id: Date.now().toString(), role: 'user' as const, content: userMessage }
+        ];
+        setMessages(newMessages);
+        setIsLoading(true);
+
+        try {
+            // Convert to format expected by gemini.ts
+            const history = newMessages.map(m => ({
+                role: m.role === 'user' ? 'user' as const : 'model' as const,
+                parts: m.content
+            }));
+
+            const response = await chatWithAI(userMessage, history);
+
+            setMessages(prev => [
+                ...prev,
+                { id: (Date.now() + 1).toString(), role: 'assistant', content: response }
+            ]);
+        } catch (error) {
+            console.error("Chat error:", error);
+            setMessages(prev => [
+                ...prev,
+                { id: (Date.now() + 1).toString(), role: 'assistant', content: "Maaf, ada gangguan koneksi. Coba lagi nanti ya kak! 🙏" }
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleQuickReply = (text: string) => {
-        append({ role: 'user', content: text });
+        setInput(text);
+        // Hacky way to trigger submit after state update, better to separate logic but this works for now
+        setTimeout(() => {
+            // We can't easily trigger the form submit event, so we call logic directly
+            // But we need to set input first. 
+            // Actually better to just call logic with text directly
+            submitQuickReply(text);
+        }, 0);
+    };
+
+    const submitQuickReply = async (text: string) => {
+        const newMessages = [
+            ...messages,
+            { id: Date.now().toString(), role: 'user' as const, content: text }
+        ];
+        setMessages(newMessages);
+        setIsLoading(true);
+
+        try {
+            const history = newMessages.map(m => ({
+                role: m.role === 'user' ? 'user' as const : 'model' as const,
+                parts: m.content
+            }));
+            const response = await chatWithAI(text, history);
+            setMessages(prev => [
+                ...prev,
+                { id: (Date.now() + 1).toString(), role: 'assistant', content: response }
+            ]);
+        } catch (error) {
+            setMessages(prev => [
+                ...prev,
+                { id: (Date.now() + 1).toString(), role: 'assistant', content: "Maaf, ada gangguan koneksi. Coba lagi nanti ya kak! 🙏" }
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const suggestedQuestions = [
@@ -192,7 +264,7 @@ export function Chatbot() {
                         {/* Input Area */}
                         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
                             <form
-                                onSubmit={handleSubmit}
+                                onSubmit={handleSendMessage}
                                 className="relative flex items-center gap-2"
                             >
                                 <Input
