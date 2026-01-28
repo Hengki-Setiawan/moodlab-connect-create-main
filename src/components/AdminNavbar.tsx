@@ -18,6 +18,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { version } from "../../package.json";
 
 const AdminNavbar = () => {
   const location = useLocation();
@@ -41,7 +42,7 @@ const AdminNavbar = () => {
       const { data: hasRole, error } = await supabase.rpc('has_role', {
         _user_id: user.id,
         _role: 'admin',
-      });
+      } as any);
 
       if (error || hasRole !== true) {
         setIsAdmin(false);
@@ -71,7 +72,7 @@ const AdminNavbar = () => {
           </div>
           Admin
         </h2>
-        <p className="text-purple-200 text-xs ml-10">Moodlab Management</p>
+        <p className="text-purple-200 text-xs ml-10">Moodlab Management v{version}</p>
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-1">
