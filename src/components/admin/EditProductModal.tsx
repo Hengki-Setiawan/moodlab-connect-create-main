@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { uploadImage, resolveImageUrl } from '@/integrations/supabase/storage';
-import { Upload, X, ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { generateProductSEO } from '@/lib/groq';
 
 interface Product {
   id: number;
@@ -19,6 +20,9 @@ interface Product {
   image_url?: string | null;
   file_url?: string | null;
   benefits?: string[] | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  keywords?: string | null;
 }
 
 interface EditProductModalProps {
@@ -45,10 +49,14 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     image_url: '',
     file_url: '',
     benefitsInput: '',
+    meta_title: '',
+    meta_description: '',
+    keywords: '',
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [seoLoading, setSeoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,6 +70,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         image_url: product.image_url || '',
         file_url: product.file_url || '',
         benefitsInput: (product.benefits || []).join('\n'),
+        meta_title: product.meta_title || '',
+        meta_description: product.meta_description || '',
+        keywords: product.keywords || '',
       });
       // Set preview dari URL yang sudah ada
       if (product.image_url) {
@@ -80,6 +91,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         image_url: '',
         file_url: '',
         benefitsInput: '',
+        meta_title: '',
+        meta_description: '',
+        keywords: '',
       });
       setImagePreview(null);
     }
@@ -141,6 +155,29 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   };
 
+  const handleGenerateSEO = async () => {
+    if (!formData.name || !formData.description) {
+      toast.error("Nama dan deskripsi produk harus diisi dulu!");
+      return;
+    }
+
+    setSeoLoading(true);
+    try {
+      const result = await generateProductSEO(formData.name, formData.description);
+      setFormData(prev => ({
+        ...prev,
+        meta_title: result.meta_title,
+        meta_description: result.meta_description,
+        keywords: result.keywords
+      }));
+      toast.success("SEO Metadata berhasil dibuat!");
+    } catch (error) {
+      toast.error("Gagal generate SEO");
+    } finally {
+      setSeoLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -157,6 +194,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         .split(/\r?\n/)
         .map((s) => s.trim())
         .filter(Boolean),
+      meta_title: formData.meta_title,
+      meta_description: formData.meta_description,
+      keywords: formData.keywords,
     };
 
     if (!updatedProduct.name?.trim()) {
@@ -319,6 +359,58 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
           <div className="space-y-2">
             <Label>Benefit (satu per baris)</Label>
             <Textarea name="benefitsInput" value={formData.benefitsInput} onChange={handleInputChange} rows={4} placeholder="Desain profesional&#10;Mudah diedit&#10;Support 24/7" />
+          </div>
+
+          {/* SEO Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex justify-between items-center mb-4">
+              <Label className="text-base font-semibold">SEO Settings</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateSEO}
+                disabled={seoLoading}
+                className="text-purple-600 border-purple-200 hover:bg-purple-50"
+              >
+                {seoLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                Auto-Generate SEO
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="meta_title">Meta Title</Label>
+                <Input
+                  id="meta_title"
+                  name="meta_title"
+                  value={formData.meta_title}
+                  onChange={handleInputChange}
+                  placeholder="Judul menarik untuk Google..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="meta_description">Meta Description</Label>
+                <Textarea
+                  id="meta_description"
+                  name="meta_description"
+                  value={formData.meta_description}
+                  onChange={handleInputChange}
+                  rows={2}
+                  placeholder="Deskripsi singkat yang muncul di hasil pencarian..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="keywords">Keywords</Label>
+                <Input
+                  id="keywords"
+                  name="keywords"
+                  value={formData.keywords}
+                  onChange={handleInputChange}
+                  placeholder="keyword1, keyword2, keyword3..."
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

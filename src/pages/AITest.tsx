@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { chatWithAI, generateProductDescription, analyzeMood } from "@/lib/groq";
-import { Loader2, Send, Sparkles, Heart } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { chatWithAI, generateProductDescription, analyzeMood, generateCaption, generateSEOOutline, analyzeSentiment } from "@/lib/groq";
+import { Loader2, Send, Sparkles, Heart, Instagram, Search, MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 interface AITestProps {
@@ -29,6 +30,23 @@ export default function AITest({ hideNavbar = false }: AITestProps) {
     const [moodInput, setMoodInput] = useState("");
     const [moodResult, setMoodResult] = useState<any>(null);
     const [moodLoading, setMoodLoading] = useState(false);
+
+    // Caption Creator State
+    const [captionTopic, setCaptionTopic] = useState("");
+    const [captionTone, setCaptionTone] = useState("Aesthetic");
+    const [captionPlatform, setCaptionPlatform] = useState("Instagram");
+    const [captionResult, setCaptionResult] = useState<any>(null);
+    const [captionLoading, setCaptionLoading] = useState(false);
+
+    // SEO Outline State
+    const [seoKeyword, setSeoKeyword] = useState("");
+    const [seoResult, setSeoResult] = useState<any>(null);
+    const [seoLoading, setSeoLoading] = useState(false);
+
+    // Sentiment Analysis State
+    const [reviewInput, setReviewInput] = useState("");
+    const [sentimentResult, setSentimentResult] = useState<any>(null);
+    const [sentimentLoading, setSentimentLoading] = useState(false);
 
     // --- Handlers ---
 
@@ -79,6 +97,45 @@ export default function AITest({ hideNavbar = false }: AITestProps) {
         }
     };
 
+    const handleGenerateCaption = async () => {
+        if (!captionTopic) return;
+        setCaptionLoading(true);
+        try {
+            const result = await generateCaption(captionTopic, captionTone, captionPlatform);
+            setCaptionResult(result);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCaptionLoading(false);
+        }
+    };
+
+    const handleGenerateSEO = async () => {
+        if (!seoKeyword) return;
+        setSeoLoading(true);
+        try {
+            const result = await generateSEOOutline(seoKeyword);
+            setSeoResult(result);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSeoLoading(false);
+        }
+    };
+
+    const handleAnalyzeSentiment = async () => {
+        if (!reviewInput) return;
+        setSentimentLoading(true);
+        try {
+            const result = await analyzeSentiment(reviewInput);
+            setSentimentResult(result);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSentimentLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {!hideNavbar && <Navbar />}
@@ -87,11 +144,14 @@ export default function AITest({ hideNavbar = false }: AITestProps) {
                     Moodlab AI Playground
                 </h1>
 
-                <Tabs defaultValue="chatbot" className="max-w-4xl mx-auto">
-                    <TabsList className="grid w-full grid-cols-3 mb-8">
+                <Tabs defaultValue="chatbot" className="max-w-5xl mx-auto">
+                    <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-8 h-auto">
                         <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
-                        <TabsTrigger value="magic">Magic Description</TabsTrigger>
+                        <TabsTrigger value="magic">Desc Gen</TabsTrigger>
                         <TabsTrigger value="mood">MoodMatch</TabsTrigger>
+                        <TabsTrigger value="caption">Caption</TabsTrigger>
+                        <TabsTrigger value="seo">SEO Blog</TabsTrigger>
+                        <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
                     </TabsList>
 
                     {/* 1. Chatbot Tab */}
@@ -239,6 +299,168 @@ export default function AITest({ hideNavbar = false }: AITestProps) {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* 4. Caption Creator Tab */}
+                    <TabsContent value="caption">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Sosmed Caption Creator</CardTitle>
+                                <CardDescription>Buat caption Instagram/TikTok instan</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label>Topik / Produk</Label>
+                                    <Input
+                                        value={captionTopic}
+                                        onChange={(e) => setCaptionTopic(e.target.value)}
+                                        placeholder="Contoh: Promo Diskon 50% Akhir Tahun"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Tone</Label>
+                                        <Select value={captionTone} onValueChange={setCaptionTone}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Aesthetic">Aesthetic</SelectItem>
+                                                <SelectItem value="Lucu & Receh">Lucu & Receh</SelectItem>
+                                                <SelectItem value="Profesional">Profesional</SelectItem>
+                                                <SelectItem value="Hard Selling">Hard Selling</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Platform</Label>
+                                        <Select value={captionPlatform} onValueChange={setCaptionPlatform}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Instagram">Instagram</SelectItem>
+                                                <SelectItem value="TikTok">TikTok</SelectItem>
+                                                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <Button onClick={handleGenerateCaption} disabled={captionLoading || !captionTopic} className="w-full bg-pink-600 hover:bg-pink-700">
+                                    {captionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-4 w-4" />}
+                                    Buat Caption
+                                </Button>
+
+                                {captionResult && (
+                                    <div className="bg-pink-50 p-6 rounded-lg border border-pink-100 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                        <div>
+                                            <h3 className="font-semibold mb-2 text-pink-900">Caption:</h3>
+                                            <p className="text-gray-800 whitespace-pre-line">{captionResult.caption}</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold mb-2 text-pink-900">Hashtags:</h3>
+                                            <p className="text-blue-600">{captionResult.hashtags.join(" ")}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* 5. SEO Outline Tab */}
+                    <TabsContent value="seo">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>SEO Blog Outline</CardTitle>
+                                <CardDescription>Riset konten blog dalam hitungan detik</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label>Keyword Utama</Label>
+                                    <Input
+                                        value={seoKeyword}
+                                        onChange={(e) => setSeoKeyword(e.target.value)}
+                                        placeholder="Contoh: Manfaat Lilin Aromaterapi"
+                                    />
+                                </div>
+                                <Button onClick={handleGenerateSEO} disabled={seoLoading || !seoKeyword} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    {seoLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                                    Generate Outline
+                                </Button>
+
+                                {seoResult && (
+                                    <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-blue-900">{seoResult.title}</h3>
+                                            <p className="text-sm text-gray-500 mt-1">Meta: {seoResult.meta_description}</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {seoResult.outline.map((section: any, idx: number) => (
+                                                <div key={idx} className="bg-white p-4 rounded border border-blue-100">
+                                                    <h4 className="font-semibold text-blue-800 mb-2">{section.heading}</h4>
+                                                    <ul className="list-disc list-inside text-gray-600">
+                                                        {section.points.map((point: string, i: number) => (
+                                                            <li key={i}>{point}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* 6. Sentiment Analysis Tab */}
+                    <TabsContent value="sentiment">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Review Sentiment Analyzer</CardTitle>
+                                <CardDescription>Analisis kepuasan pelanggan dari ulasan</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label>Teks Ulasan / Feedback</Label>
+                                    <Textarea
+                                        value={reviewInput}
+                                        onChange={(e) => setReviewInput(e.target.value)}
+                                        placeholder="Paste ulasan pelanggan di sini..."
+                                        rows={4}
+                                    />
+                                </div>
+                                <Button onClick={handleAnalyzeSentiment} disabled={sentimentLoading || !reviewInput} className="w-full bg-orange-500 hover:bg-orange-600">
+                                    {sentimentLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                                    Analisis Sentimen
+                                </Button>
+
+                                {sentimentResult && (
+                                    <div className="bg-orange-50 p-6 rounded-lg border border-orange-100 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="font-semibold text-orange-900">Sentimen:</h3>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${sentimentResult.sentiment === 'Positif' ? 'bg-green-100 text-green-700' : sentimentResult.sentiment === 'Negatif' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                    {sentimentResult.sentiment}
+                                                </span>
+                                            </div>
+                                            <div className="text-right">
+                                                <h3 className="font-semibold text-orange-900">Skor:</h3>
+                                                <span className="text-2xl font-bold text-orange-600">{sentimentResult.score}/10</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white p-4 rounded border border-orange-100">
+                                            <h4 className="font-medium text-orange-800 mb-1">Ringkasan:</h4>
+                                            <p className="text-gray-700 mb-3">{sentimentResult.summary}</p>
+
+                                            <h4 className="font-medium text-orange-800 mb-1">Saran Tindakan:</h4>
+                                            <p className="text-gray-700 italic">"{sentimentResult.action_item}"</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
                 </Tabs>
             </div>
         </div>

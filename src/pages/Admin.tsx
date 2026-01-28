@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Plus, PlusCircle, UserPlus } from "lucide-react";
 import AdminNavbar from "@/components/AdminNavbar";
 import { getImageUrl, uploadImage } from "@/integrations/supabase/storage";
+import { ReviewsManagement } from "@/components/admin/ReviewsManagement";
 
 interface Product {
   id: string;
@@ -369,10 +370,15 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="products">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-12">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-12">
               <TabsTrigger value="products">Kelola Produk</TabsTrigger>
               <TabsTrigger value="add">Tambah Produk</TabsTrigger>
+              <TabsTrigger value="reviews">Ulasan</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="reviews">
+              <ReviewsManagement />
+            </TabsContent>
 
             <TabsContent value="products">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

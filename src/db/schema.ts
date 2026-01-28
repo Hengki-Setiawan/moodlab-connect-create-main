@@ -11,8 +11,23 @@ export const products = sqliteTable("products", {
     file_url: text("file_url"),
     stock: integer("stock").default(0),
     benefits: text("benefits"), // Stored as JSON string
+    meta_title: text("meta_title"),
+    meta_description: text("meta_description"),
+    keywords: text("keywords"),
+    created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const reviews = sqliteTable("reviews", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    product_id: integer("product_id").references(() => products.id),
+    user_name: text("user_name").notNull(),
+    rating: integer("rating").notNull(),
+    comment: text("comment").notNull(),
+    reply: text("reply"),
     created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
+export type Review = typeof reviews.$inferSelect;
+export type NewReview = typeof reviews.$inferInsert;

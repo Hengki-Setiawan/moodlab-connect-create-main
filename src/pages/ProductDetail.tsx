@@ -11,6 +11,7 @@ import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/integrations/supabase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReviewSection } from "@/components/ReviewSection";
 
 interface Product {
   id: string;
@@ -156,7 +157,7 @@ const ProductDetail = () => {
                 Produk
               </span>
               <span className="mx-2">/</span>
-              <span className="cursor-pointer hover:underline" onClick={() => navigate(`/produk?tab=${product.type}&category=${(product.category||'').toLowerCase()}`)}>
+              <span className="cursor-pointer hover:underline" onClick={() => navigate(`/produk?tab=${product.type}&category=${(product.category || '').toLowerCase()}`)}>
                 {(product.type || '').toUpperCase()}
               </span>
               <span className="mx-2">/</span>
@@ -330,6 +331,9 @@ const ProductDetail = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Reviews Section */}
+          {product && <ReviewSection productId={Number(product.id)} />}
 
           {relatedProducts.length > 0 && (
             <div className="mt-12">
