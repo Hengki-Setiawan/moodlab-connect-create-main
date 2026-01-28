@@ -10,8 +10,8 @@ if (!url || !authToken) {
 }
 
 export const tursoClient = createClient({
-    url: url || "",
-    authToken: authToken || "",
+    url: url || "libsql://placeholder-db.turso.io",
+    authToken: authToken || "placeholder-token",
 });
 
 // Pass schema for relational queries support

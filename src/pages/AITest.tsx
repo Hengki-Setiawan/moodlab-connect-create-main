@@ -9,7 +9,11 @@ import { chatWithAI, generateProductDescription, analyzeMood } from "@/lib/gemin
 import { Loader2, Send, Sparkles, Heart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
-export default function AITest() {
+interface AITestProps {
+    hideNavbar?: boolean;
+}
+
+export default function AITest({ hideNavbar = false }: AITestProps) {
     // Chatbot State
     const [chatInput, setChatInput] = useState("");
     const [chatHistory, setChatHistory] = useState<{ role: "user" | "model"; parts: string }[]>([]);
@@ -77,7 +81,7 @@ export default function AITest() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar />
+            {!hideNavbar && <Navbar />}
             <div className="container mx-auto pt-32 pb-20 px-4">
                 <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
                     Moodlab AI Playground
