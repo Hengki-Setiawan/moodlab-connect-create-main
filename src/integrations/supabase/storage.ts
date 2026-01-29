@@ -83,7 +83,7 @@ export const uploadImage = async (
     if (compress && file.type.startsWith('image/')) {
       try {
         uploadFile = await compressImage(file);
-        console.log(`Image compressed: ${file.size} -> ${uploadFile.size} bytes`);
+        // console.log(`Image compressed: ${file.size} -> ${uploadFile.size} bytes`);
       } catch (e) {
         console.warn('Compression failed, using original file:', e);
         uploadFile = file;
@@ -116,7 +116,7 @@ export const uploadImage = async (
       .from(bucket)
       .getPublicUrl(data.path);
 
-    console.log('Image uploaded successfully:', urlData.publicUrl);
+    // console.log('Image uploaded successfully:', urlData.publicUrl);
 
     return {
       path: data.path,

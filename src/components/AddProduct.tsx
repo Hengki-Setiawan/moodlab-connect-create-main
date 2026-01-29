@@ -407,7 +407,7 @@ export default function AddProduct() {
                         <div className="mt-2">
                           <Select onValueChange={(name) => {
                             const path = `${digitalFolder}/${name}`;
-                            const { data } = supabaseAdmin.storage.from(digitalBucket).getPublicUrl(path);
+                            const { data } = supabase.storage.from(digitalBucket).getPublicUrl(path);
                             setDigitalFileUrl(data.publicUrl);
                             setDigitalSelectedName(name);
                           }}>

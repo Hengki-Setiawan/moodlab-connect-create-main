@@ -80,22 +80,33 @@ export default function AdminProductManager() {
     try {
       setLoading(true);
 
-      // Prepare data for DB (stringify benefits)
-      const dbData = {
-        ...productData,
-        benefits: productData.benefits ? JSON.stringify(productData.benefits) : null
+      // Strictly sanitize data to avoid sending 'id', 'created_at' or other unwanted fields
+      const cleanData = {
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        type: productData.type,
+        category: productData.category,
+        image_url: productData.image_url,
+        file_url: productData.file_url,
+        // Only include stock if it's defined
+        ...(productData.stock !== undefined && { stock: productData.stock }),
+        benefits: productData.benefits ? JSON.stringify(productData.benefits) : null,
+        meta_title: (productData as any).meta_title,
+        meta_description: (productData as any).meta_description,
+        keywords: (productData as any).keywords,
       };
+
+      console.log("Saving product data:", cleanData);
 
       if (selectedProduct) {
         // Update existing product
-        // Exclude id from update data
-        const { id, ...updateData } = dbData;
         await db.update(productsSchema)
-          .set(updateData)
+          .set(cleanData)
           .where(eq(productsSchema.id, selectedProduct.id));
       } else {
         // Create new product
-        await db.insert(productsSchema).values(dbData as typeof productsSchema.$inferInsert);
+        await db.insert(productsSchema).values(cleanData as typeof productsSchema.$inferInsert);
       }
 
       closeModal();

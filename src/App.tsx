@@ -118,7 +118,7 @@ const RouteChangeTracker = () => {
           await supabase.from("page_views").insert(minimal);
         }
       } catch (error) {
-        console.error("Error tracking page view:", error);
+        // Silent error
       }
     };
 

@@ -3,45 +3,39 @@
  * Fetches data from Supabase to provide context for the AI chatbot.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { db } from '@/lib/turso';
+import { products as productsSchema } from '@/db/schema';
+import { desc } from 'drizzle-orm';
 
 export interface ProductData {
     name: string;
     price: number;
     category: string;
-    description: string;
-    type: string;
+    description: string | null;
+    type: string | null;
 }
 
 /**
- * Fetches all products from Supabase and formats them for the chatbot context.
+ * Fetches all products from Turso and formats them for the chatbot context.
  */
 export async function fetchChatbotContext(): Promise<string> {
     try {
-        // Fetch products
-        const { data: products, error: productsError } = await supabase
-            .from('products')
-            .select('name, price, category, description, type')
-            .order('name');
-
-        if (productsError) {
-            console.error('Error fetching products for chatbot:', productsError);
-            return 'Data produk tidak tersedia saat ini.';
-        }
+        // Fetch products from Turso
+        const products = await db.select().from(productsSchema).orderBy(desc(productsSchema.created_at));
 
         if (!products || products.length === 0) {
             return 'Belum ada produk yang tersedia.';
         }
 
         // Format products into readable text
-        const formattedProducts = (products as ProductData[]).map((p) => {
+        const formattedProducts = products.map((p) => {
             const priceFormatted = new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
                 minimumFractionDigits: 0,
             }).format(p.price);
 
-            return `- ${p.name} (${p.category}): ${priceFormatted} - ${p.description}`;
+            return `- ${p.name} (${p.category}): ${priceFormatted} - ${p.description || ''}`;
         }).join('\n');
 
         return `

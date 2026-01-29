@@ -32,9 +32,9 @@ export function Chatbot() {
                 ).join("\n");
 
                 setProductContext(contextString);
-                console.log("AI Context Loaded:", contextString.length, "chars");
+                setProductContext(contextString);
             } catch (error) {
-                console.error("Failed to load product context:", error);
+                // Silent error
             }
         };
         fetchContext();

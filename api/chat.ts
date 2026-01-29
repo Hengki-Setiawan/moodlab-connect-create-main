@@ -21,30 +21,26 @@ export default async function handler(req: Request) {
 
         const { messages } = await req.json();
 
-        // --- RAG: Fetch Product Data from Supabase ---
+        // --- RAG: Fetch Product Data from Turso ---
         let productContext = "Data produk sedang tidak tersedia (gunakan pengetahuan umum).";
 
-        if (supabaseUrl && supabaseKey) {
-            try {
-                const supabase = createClient(supabaseUrl, supabaseKey);
-                const { data: products, error } = await supabase
-                    .from('products')
-                    .select('name, price, category, description')
-                    .limit(20); // Limit context size
+        try {
+            // Dynamic import to avoid build issues if any
+            const { db } = await import('../src/lib/turso');
+            const { products } = await import('../src/db/schema');
 
-                if (!error && products && products.length > 0) {
-                    const formattedProducts = products.map((p: { name: string; category: string; price: number; description: string }) => {
-                        const price = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price);
-                        return `- ${p.name} (${p.category}): ${price}. Info: ${p.description}`;
-                    }).join('\n');
-                    productContext = `DAFTAR PRODUK & LAYANAN MOODLAB (Real-time):\n${formattedProducts}`;
-                } else if (error) {
-                    console.error("Supabase RAG Error:", error);
-                }
-            } catch (err) {
-                console.error("Supabase Connection Error:", err);
-                // Fallback: Continue without product data
+            const productList = await db.select().from(products).limit(20);
+
+            if (productList && productList.length > 0) {
+                const formattedProducts = productList.map((p) => {
+                    const price = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price);
+                    return `- ${p.name} (${p.category}): ${price}. Info: ${p.description || '-'}`;
+                }).join('\n');
+                productContext = `DAFTAR PRODUK & LAYANAN MOODLAB (Real-time):\n${formattedProducts}`;
             }
+        } catch (err) {
+            console.error("Turso Connection Error:", err);
+            // Fallback: Continue without product data
         }
         // ---------------------------------------------
 

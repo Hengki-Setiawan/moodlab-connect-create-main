@@ -15,7 +15,7 @@ import PagesManagement from "@/components/admin/PagesManagement";
 import AITest from "@/pages/AITest";
 import { uploadImage } from "@/integrations/supabase/storage";
 import { db } from "@/lib/turso";
-import { products as productsSchema } from "@/db/schema";
+import { products as productsSchema, orders as ordersSchema, consultations as consultationsSchema } from "@/db/schema";
 import { desc } from "drizzle-orm";
 
 interface User {
@@ -153,18 +153,36 @@ const AdminDashboard = () => {
       }
 
       // Fetch Orders
-      const { data: ordersData } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setOrders(ordersData || []);
+      try {
+        const ordersData = await db.select().from(ordersSchema).orderBy(desc(ordersSchema.created_at));
+        // Map Turso result to Order interface (ensure types match)
+        const mappedOrders: Order[] = ordersData.map(o => ({
+          id: String(o.id),
+          user_id: o.user_id,
+          status: o.status || 'pending',
+          total_amount: o.total_amount,
+          created_at: o.created_at ? new Date(o.created_at).toISOString() : new Date().toISOString()
+        }));
+        setOrders(mappedOrders);
+      } catch (e) {
+        console.error("Failed to fetch orders from Turso:", e);
+      }
 
       // Fetch Consultations
-      const { data: consultationsData } = await supabase
-        .from('consultations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setConsultations(consultationsData || []);
+      try {
+        const consultationsData = await db.select().from(consultationsSchema).orderBy(desc(consultationsSchema.created_at));
+        const mappedConsultations: Consultation[] = consultationsData.map(c => ({
+          id: String(c.id),
+          name: c.name,
+          email: c.email,
+          service_type: c.service_type,
+          status: c.status || 'pending',
+          created_at: c.created_at ? new Date(c.created_at).toISOString() : new Date().toISOString()
+        }));
+        setConsultations(mappedConsultations);
+      } catch (e) {
+        console.error("Failed to fetch consultations from Turso:", e);
+      }
 
       // Fetch Buckets
       const { data: bucketsData } = await supabase.storage.listBuckets();
@@ -195,11 +213,20 @@ const AdminDashboard = () => {
 
   const fetchRecentActivity = async () => {
     try {
-      const { data: latestOrders } = await supabase
-        .from('orders')
-        .select('id, created_at, status, total_amount')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      let latestOrders: any[] = [];
+      try {
+        latestOrders = await db.select({
+          id: ordersSchema.id,
+          created_at: ordersSchema.created_at,
+          status: ordersSchema.status,
+          total_amount: ordersSchema.total_amount
+        })
+          .from(ordersSchema)
+          .orderBy(desc(ordersSchema.created_at))
+          .limit(5);
+      } catch (e) {
+        console.error("Failed to fetch recent orders:", e);
+      }
 
       let latestProducts: any[] = [];
       try {
@@ -225,7 +252,7 @@ const AdminDashboard = () => {
         ...(latestOrders || []).map((o: any) => ({
           id: `order-${o.id}`,
           action: 'Pesanan Baru',
-          details: `Order #${o.id.slice(0, 8)} - Rp ${o.total_amount?.toLocaleString('id-ID')}`,
+          details: `Order #${String(o.id).slice(0, 8)} - Rp ${o.total_amount?.toLocaleString('id-ID')}`,
           timestamp: o.created_at
         })),
         ...(latestProducts || []).map((p: any) => ({

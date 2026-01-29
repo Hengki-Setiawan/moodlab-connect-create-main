@@ -7,7 +7,9 @@ import { Eye, CheckCircle, XCircle, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import OrderDetailModal from "./OrderDetailModal";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/turso";
+import { orders as ordersSchema } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { toast } from "sonner";
 
 interface Order {
@@ -49,12 +51,9 @@ const OrdersManagement = ({ orders, onOrderUpdated }: OrdersManagementProps) => 
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         setUpdatingId(orderId);
         try {
-            const { error } = await supabase
-                .from('orders')
-                .update({ status: newStatus })
-                .eq('id', orderId);
-
-            if (error) throw error;
+            await db.update(ordersSchema)
+                .set({ status: newStatus })
+                .where(eq(ordersSchema.id, parseInt(orderId)));
 
             toast.success(`Status pesanan berhasil diubah menjadi ${newStatus}`);
             onOrderUpdated();

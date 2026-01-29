@@ -12,9 +12,12 @@ import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/integrations/supabase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReviewSection } from "@/components/ReviewSection";
+import { db } from "@/lib/turso";
+import { products as productsSchema } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
@@ -34,6 +37,7 @@ const ProductDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { addToCart } = useCart();
   const [digitalAvailable, setDigitalAvailable] = useState(true);
+  const [errorDebug, setErrorDebug] = useState<string>("");
 
   useEffect(() => {
     if (id) {
@@ -44,34 +48,80 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchRelated = async () => {
       if (!product) return;
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, description, price, image_url, type, category, stock")
-        .eq("type", product.type)
-        .eq("category", product.category)
-        .neq("id", product.id)
-        .limit(6);
-      if (error) {
+      try {
+        const data = await db.select()
+          .from(productsSchema)
+          .where(eq(productsSchema.type, product.type))
+          .limit(6);
+
+        // Filter manually since we can't easily do complex neq/limit in one go with simple sqlite sometimes, 
+        // but let's try to filter in memory for simplicity or add .where(and(eq(...), ne(productsSchema.id, product.id)))
+        // For now, simple fetch and filter:
+
+        const filtered = data
+          .filter(p => p.id !== Number(product.id))
+          .slice(0, 4) // Limit to 4 related products
+          .map(p => {
+            let parsedBenefits = null;
+            try {
+              if (p.benefits) parsedBenefits = JSON.parse(p.benefits);
+            } catch (e) {
+              // Ignore related product parse errors
+            }
+            return {
+              ...p,
+              type: (p.type || "template") as "template" | "ebook" | "service",
+              category: p.category || "general",
+              image_url: p.image_url || null,
+              benefits: parsedBenefits
+            };
+          });
+
+        setRelatedProducts(filtered);
+      } catch (error) {
         console.error("Error fetching related products:", error);
-        return;
       }
-      setRelatedProducts((data || []) as Product[]);
     };
     fetchRelated();
   }, [product]);
 
   const fetchProduct = async (productId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId)
-        .single();
+      // Fetch from Turso
+      const data = await db.select().from(productsSchema).where(eq(productsSchema.id, Number(productId)));
 
-      if (error) throw error;
-      setProduct(data as Product);
-    } catch (error) {
+      if (data.length === 0) {
+        setProduct(null);
+        return;
+      }
+
+      const p = data[0];
+      let parsedBenefits: string[] | null = null;
+      try {
+        if (p.benefits) {
+          if (Array.isArray(p.benefits)) {
+            parsedBenefits = p.benefits;
+          } else {
+            parsedBenefits = JSON.parse(p.benefits);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse benefits JSON for product:", p.id, p.benefits);
+        parsedBenefits = null;
+      }
+
+      const mappedProduct: Product = {
+        ...p,
+        type: (p.type || "template") as "template" | "ebook" | "service",
+        category: p.category || "general",
+        image_url: p.image_url || null,
+        benefits: parsedBenefits
+      };
+
+      setProduct(mappedProduct);
+    } catch (error: any) {
       console.error("Error fetching product:", error);
+      setErrorDebug(error.message || JSON.stringify(error));
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +129,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (product) {
-      await addToCart(product.id);
+      await addToCart(product.id.toString());
     }
   };
 
@@ -121,12 +171,23 @@ const ProductDetail = () => {
     );
   }
 
+
+
+  // ...
+
   if (!product) {
     return (
       <div className="min-h-screen">
         <Navbar />
         <div className="container mx-auto max-w-6xl pt-32 pb-20 px-4 text-center">
           <h2 className="text-2xl font-bold">Produk tidak ditemukan</h2>
+          <p className="text-muted-foreground mt-2">ID: {id}</p>
+          {errorDebug && (
+            <div className="mt-4 p-4 bg-red-100 text-red-800 rounded text-left max-w-md mx-auto overflow-auto">
+              <p className="font-bold">Debug Error:</p>
+              <pre className="text-xs">{errorDebug}</pre>
+            </div>
+          )}
           <Button onClick={goBack} className="mt-4">
             Kembali
           </Button>
@@ -333,7 +394,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Reviews Section */}
-          {product && <ReviewSection productId={Number(product.id)} />}
+          {product && <ReviewSection productId={product.id} />}
 
           {relatedProducts.length > 0 && (
             <div className="mt-12">
@@ -352,7 +413,7 @@ const ProductDetail = () => {
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rp.description}</p>
                       <div className="flex gap-2 mt-3">
                         <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/produk/${rp.id}`); }}>Detail</Button>
-                        <Button size="sm" className="gradient-primary" onClick={async (e) => { e.stopPropagation(); await addToCart(rp.id); }}>Beli</Button>
+                        <Button size="sm" className="gradient-primary" onClick={async (e) => { e.stopPropagation(); await addToCart(rp.id.toString()); }}>Beli</Button>
                       </div>
                     </div>
                   </div>

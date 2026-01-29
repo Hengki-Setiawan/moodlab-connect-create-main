@@ -1,35 +1,32 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/turso";
+import { consultations } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 interface Consultation {
-    id: string;
+    id: number;
     name: string;
     email: string;
     phone: string;
     service_type: string;
     message: string;
     status: string;
-    created_at: string;
+    created_at: Date;
 }
 
 const ConsultationsManagement = () => {
-    const [consultations, setConsultations] = useState<Consultation[]>([]);
+    const [consultationList, setConsultationList] = useState<Consultation[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchConsultations = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from("consultations")
-                .select("*")
-                .order("created_at", { ascending: false });
-
-            if (error) throw error;
-            setConsultations(data || []);
+            const data = await db.select().from(consultations).orderBy(desc(consultations.created_at));
+            setConsultationList(data);
         } catch (error) {
             console.error("Error fetching consultations:", error);
             toast.error("Gagal memuat data konsultasi");
@@ -38,14 +35,12 @@ const ConsultationsManagement = () => {
         }
     };
 
-    const updateStatus = async (id: string, status: string) => {
+    const updateStatus = async (id: number, status: string) => {
         try {
-            const { error } = await supabase
-                .from("consultations")
-                .update({ status })
-                .eq("id", id);
+            await db.update(consultations)
+                .set({ status })
+                .where(eq(consultations.id, id));
 
-            if (error) throw error;
             toast.success("Status berhasil diperbarui");
             fetchConsultations();
         } catch (error) {
@@ -54,15 +49,11 @@ const ConsultationsManagement = () => {
         }
     };
 
-    const deleteConsultation = async (id: string) => {
+    const deleteConsultation = async (id: number) => {
         if (!confirm("Hapus data konsultasi ini?")) return;
         try {
-            const { error } = await supabase
-                .from("consultations")
-                .delete()
-                .eq("id", id);
+            await db.delete(consultations).where(eq(consultations.id, id));
 
-            if (error) throw error;
             toast.success("Data konsultasi dihapus");
             fetchConsultations();
         } catch (error) {
@@ -96,12 +87,12 @@ const ConsultationsManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-border">
-                            {consultations.length === 0 ? (
+                            {consultationList.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-4 text-center text-muted-foreground">Belum ada data konsultasi</td>
                                 </tr>
                             ) : (
-                                consultations.map((item) => (
+                                consultationList.map((item) => (
                                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-muted/30 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                                             {format(new Date(item.created_at), "dd MMM yyyy HH:mm", { locale: id })}

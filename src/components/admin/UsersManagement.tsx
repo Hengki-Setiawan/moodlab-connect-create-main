@@ -60,29 +60,66 @@ const UsersManagement = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Fetch profiles directly. Assuming profiles has email column based on usage in other files.
-      // If types are missing email, we cast to any or ignore type error for now.
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*, user_roles(role)")
-        .order("created_at", { ascending: false });
 
-      if (profilesError) throw profilesError;
+      // Fetch profiles and user_roles separately to avoid 400 error if relationship is missing
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("user_roles")
+          .select("*")
+      ]);
+
+      if (profilesResult.error) {
+        // Check for common RLS errors
+        if (profilesResult.error.code === 'PGRST301' || profilesResult.error.message?.includes('RLS')) {
+          console.error("RLS Policy Error:", profilesResult.error);
+          toast.error("Tidak memiliki akses admin. Hubungi administrator untuk menjalankan migration RLS.");
+        } else if (profilesResult.error.code === '42501') {
+          toast.error("Akses ditolak. Pastikan migration 20260129_add_admin_profiles_policy.sql sudah dijalankan di Supabase.");
+        } else {
+          toast.error(`Gagal memuat data: ${profilesResult.error.message}`);
+        }
+        throw profilesResult.error;
+      }
+
+      // rolesResult.error might be ignored if we want to show profiles even if roles fail
+      if (rolesResult.error) {
+        console.warn("Error fetching user roles:", rolesResult.error);
+      }
+
+      const profiles = profilesResult.data || [];
+      const roles = rolesResult.data || [];
+
+      // Create a map of user_id -> role for faster lookup
+      const roleMap = new Map();
+      roles.forEach((r: any) => {
+        roleMap.set(r.user_id, r.role);
+      });
 
       // Transform to match UserCombined interface
-      const combined: UserCombined[] = (profiles || []).map((p: any) => ({
+      const combined: UserCombined[] = profiles.map((p: any) => ({
         id: p.id,
-        email: p.email || "Email hidden", // Fallback if email not in profile
+        email: p.email || "Email tidak tersedia",
         profile: p,
-        role: p.user_roles?.[0]?.role || null,
+        role: roleMap.get(p.id) || null,
         created_at: p.created_at,
         last_sign_in_at: null, // Cannot get this from public profile
       }));
 
       setUsers(combined);
+
+      if (combined.length === 0) {
+        toast.info("Belum ada pengguna terdaftar");
+      }
     } catch (err: any) {
       console.error("Error loadUsers:", err);
-      toast.error("Gagal memuat data pengguna");
+      // Don't show duplicate toast if already shown above
+      if (!err.code) {
+        toast.error("Gagal memuat data pengguna");
+      }
     } finally {
       setLoading(false);
     }
