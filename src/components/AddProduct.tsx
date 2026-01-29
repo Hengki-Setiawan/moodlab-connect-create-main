@@ -99,7 +99,8 @@ export default function AddProduct() {
         category: formData.category,
         image_url: null as string | null,
         file_url: null as string | null,
-        benefits: benefits.length > 0 ? JSON.stringify(benefits) : null
+        benefits: benefits.length > 0 ? JSON.stringify(benefits) : null,
+        // id is omitted to let database auto-increment
       };
 
       // Upload gambar jika ada
