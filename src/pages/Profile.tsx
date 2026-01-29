@@ -13,8 +13,8 @@ import { useTheme } from "next-themes";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { db } from "@/lib/turso";
-import { products } from "@/db/schema";
-import { inArray } from "drizzle-orm";
+import { products, orders as ordersSchema, orderItems as orderItemsSchema } from "@/db/schema";
+import { inArray, eq, desc, and } from "drizzle-orm";
 
 interface Profile {
   full_name: string;
@@ -122,97 +122,96 @@ const Profile = () => {
   };
 
   const fetchOrders = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        total_amount,
-        status,
-        created_at,
-        order_items (
-          quantity,
-          product_id
-        )
-      `)
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching orders:", error);
-      return;
-    }
-
-    setOrders((data || []) as Order[]);
-
-    // Fetch product names from Turso for these orders
     try {
-      const orderItems = (data || []).flatMap((o: any) => o.order_items || []);
-      const productIds = orderItems.map((i: any) => parseInt(i.product_id)).filter((id: number) => !isNaN(id));
+      // Fetch orders from Turso
+      const ordersData = await db.query.orders.findMany({
+        where: eq(ordersSchema.user_id, userId),
+        orderBy: [desc(ordersSchema.created_at)],
+        with: {
+          // @ts-ignore - Drizzle relations might not be fully typed if not in schema relations
+          // We might need to fetch items separately if relations aren't set up in schema.ts
+          // Let's assume we need to fetch manually for safety or add relations.
+        }
+      });
 
+      // Fetch order items manually since relations might be missing in schema export
+      // Or better, let's just use raw queries or simple selects if relations are tricky
+
+      // Let's use a simpler approach: fetch orders, then fetch all items for these orders
+      const orderIds = ordersData.map(o => o.id);
+
+      let allOrderItems: any[] = [];
+      if (orderIds.length > 0) {
+        allOrderItems = await db.select().from(orderItemsSchema).where(inArray(orderItemsSchema.order_id, orderIds));
+      }
+
+      // Fetch products
+      const productIds = allOrderItems.map(i => i.product_id).filter((id): id is number => id !== null);
+      let tursoProducts: any[] = [];
       if (productIds.length > 0) {
-        const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+        tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
+      }
 
-        // Update orders with product names
-        const updatedOrders = (data || []).map((order: any) => ({
-          ...order,
-          order_items: (order.order_items || []).map((item: any) => {
-            const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+      // Assemble the data structure
+      const formattedOrders: Order[] = ordersData.map(order => {
+        const items = allOrderItems.filter(i => i.order_id === order.id);
+        return {
+          id: order.id.toString(),
+          total_amount: order.total_amount,
+          status: order.status || 'pending',
+          created_at: order.created_at ? new Date(order.created_at).toISOString() : new Date().toISOString(),
+          order_items: items.map(item => {
+            const p = tursoProducts.find(tp => tp.id === item.product_id);
             return {
-              ...item,
-              product: { name: p?.name || "Produk tidak ditemukan" }
+              quantity: item.quantity,
+              product_id: item.product_id.toString(),
+              product: {
+                name: p?.name || "Produk tidak ditemukan"
+              }
             };
           })
-        }));
-        setOrders(updatedOrders);
-      }
-    } catch (tursoError) {
-      console.error("Turso error in fetchOrders:", tursoError);
-      // Continue with orders without product names
+        };
+      });
+
+      setOrders(formattedOrders);
+    } catch (error) {
+      console.error("Error fetching orders from Turso:", error);
+      toast.error("Gagal memuat riwayat pesanan");
     }
   };
 
   const fetchPurchasedProducts = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        status,
-        created_at,
-        order_items (
-          id,
-          quantity,
-          product_id
-        )
-      `)
-      .eq("user_id", userId)
-      .in("status", ["paid", "completed"]) // hanya order yang berhasil dibayar
-      .order("created_at", { ascending: false });
+    try {
+      // Fetch paid orders from Turso
+      const ordersData = await db.select().from(ordersSchema)
+        .where(and(
+          eq(ordersSchema.user_id, userId),
+          inArray(ordersSchema.status, ["paid", "completed"])
+        ));
 
-    if (error) {
-      console.error("Error fetching purchased products from orders:", error);
-      return;
-    }
+      if (ordersData.length === 0) {
+        setPurchasedProducts([]);
+        return;
+      }
 
-    const items = ((data || []) as any[]).flatMap((order: any) =>
-      (order.order_items || []).map((oi: any) => ({
-        id: oi.id,
-        accessed_at: order.created_at,
-        product_id: oi.product_id
-      }))
-    );
+      const orderIds = ordersData.map(o => o.id);
+      const items = await db.select().from(orderItemsSchema)
+        .where(inArray(orderItemsSchema.order_id, orderIds));
 
-    const productIds = items.map(i => parseInt(i.product_id)).filter(id => !isNaN(id));
+      const productIds = items.map(i => i.product_id).filter((id): id is number => id !== null);
 
-    if (productIds.length > 0) {
-      try {
+      if (productIds.length > 0) {
         const tursoProducts = await db.select().from(products).where(inArray(products.id, productIds));
 
         const mergedItems = items.map(item => {
-          const p = tursoProducts.find(tp => tp.id === parseInt(item.product_id));
+          const order = ordersData.find(o => o.id === item.order_id);
+          const p = tursoProducts.find(tp => tp.id === item.product_id);
           if (!p) return null;
 
           return {
-            ...item,
+            id: item.id.toString(),
+            accessed_at: order?.created_at ? new Date(order.created_at).toISOString() : new Date().toISOString(),
+            product_id: item.product_id.toString(),
             product: {
               id: p.id.toString(),
               name: p.name,
@@ -222,22 +221,19 @@ const Profile = () => {
               category: p.category || ""
             }
           };
-        }).filter(Boolean);
+        }).filter(Boolean) as PurchasedProduct[];
 
-        // Hilangkan duplikasi berdasarkan product.id
-        const uniqueByProduct = new Map<string, any>();
+        // Unique by product ID
+        const uniqueByProduct = new Map<string, PurchasedProduct>();
         for (const item of mergedItems) {
-          if (item && item.product.id) {
-            uniqueByProduct.set(item.product.id, item);
-          }
+          uniqueByProduct.set(item.product.id, item);
         }
-        setPurchasedProducts(Array.from(uniqueByProduct.values()) as PurchasedProduct[]);
-      } catch (tursoError) {
-        console.error("Turso error in fetchPurchasedProducts:", tursoError);
+        setPurchasedProducts(Array.from(uniqueByProduct.values()));
+      } else {
         setPurchasedProducts([]);
       }
-    } else {
-      setPurchasedProducts([]);
+    } catch (error) {
+      console.error("Error fetching purchased products from Turso:", error);
     }
   };
 

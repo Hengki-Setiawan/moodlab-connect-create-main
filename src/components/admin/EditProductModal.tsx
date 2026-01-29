@@ -23,6 +23,7 @@ interface Product {
   meta_title?: string | null;
   meta_description?: string | null;
   keywords?: string | null;
+  stock?: number;
 }
 
 interface EditProductModalProps {
@@ -51,7 +52,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     benefitsInput: '',
     meta_title: '',
     meta_description: '',
+    meta_description: '',
     keywords: '',
+    stock: '0',
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -73,6 +76,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         meta_title: product.meta_title || '',
         meta_description: product.meta_description || '',
         keywords: product.keywords || '',
+        stock: (product.stock ?? 0).toString(),
       });
       // Set preview dari URL yang sudah ada
       if (product.image_url) {
@@ -94,6 +98,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         meta_title: '',
         meta_description: '',
         keywords: '',
+        stock: '0',
       });
       setImagePreview(null);
     }
@@ -197,6 +202,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       meta_title: formData.meta_title,
       meta_description: formData.meta_description,
       keywords: formData.keywords,
+      stock: Number(formData.stock) || 0,
     };
 
     if (!updatedProduct.name?.trim()) {
@@ -317,7 +323,20 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Deskripsi</Label>
+            <Label htmlFor="stock">Stok</Label>
+            <Input
+              id="stock"
+              name="stock"
+              type="number"
+              value={formData.stock}
+              onChange={handleInputChange}
+              min="0"
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Deskripsi (Support Markdown: **bold**, - list)</Label>
             <Textarea
               id="description"
               name="description"

@@ -5,8 +5,8 @@ export const products = sqliteTable("products", {
     name: text("name").notNull(),
     description: text("description"),
     price: integer("price").notNull(),
-    type: text("type").$default("template"),
-    category: text("category").$default("general"),
+    type: text("type").default("template"),
+    category: text("category").default("general"),
     image_url: text("image_url"),
     file_url: text("file_url"),
     stock: integer("stock").default(0),
@@ -39,15 +39,24 @@ export const consultations = sqliteTable("consultations", {
     phone: text("phone").notNull(),
     service_type: text("service_type").notNull(),
     message: text("message").notNull(),
-    status: text("status").$default("pending"),
+    status: text("status").default("pending"),
     created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
 export const orders = sqliteTable("orders", {
     id: integer("id").primaryKey({ autoIncrement: true }),
     user_id: text("user_id").notNull(), // Supabase User ID
-    status: text("status").$default("pending"),
+    status: text("status").default("pending"),
     total_amount: integer("total_amount").notNull(),
+    created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const orderItems = sqliteTable("order_items", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    order_id: integer("order_id").references(() => orders.id),
+    product_id: integer("product_id").references(() => products.id),
+    quantity: integer("quantity").notNull(),
+    price: integer("price").notNull(),
     created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
@@ -57,6 +66,14 @@ export const pages = sqliteTable("pages", {
     title: text("title").notNull(),
     description: text("description"),
     updated_at: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const cartItems = sqliteTable("cart_items", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    user_id: text("user_id").notNull(),
+    product_id: integer("product_id").references(() => products.id),
+    quantity: integer("quantity").notNull().default(1),
+    created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
 export type Consultation = typeof consultations.$inferSelect;

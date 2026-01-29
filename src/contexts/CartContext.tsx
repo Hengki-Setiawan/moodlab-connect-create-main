@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { db } from "@/lib/turso";
-import { products } from "@/db/schema";
-import { inArray, eq } from "drizzle-orm";
+import { products, cartItems as cartItemsSchema } from "@/db/schema";
+import { inArray, eq, and } from "drizzle-orm";
 
 interface Product {
   id: number;
@@ -52,12 +52,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // 1. Fetch cart items from Supabase (only IDs)
-      const { data: cartData, error: cartError } = await supabase
-        .from("cart_items")
-        .select("id, product_id, quantity")
-        .eq("user_id", user.id);
-
-      if (cartError) throw cartError;
+      // 1. Fetch cart items from Turso
+      const cartData = await db
+        .select()
+        .from(cartItemsSchema)
+        .where(eq(cartItemsSchema.user_id, user.id));
 
       if (!cartData || cartData.length === 0) {
         setCartItems([]);
@@ -67,8 +66,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       // 2. Extract product IDs (convert string to number for Turso if needed)
       const productIds = cartData
-        .map(item => parseInt(item.product_id))
-        .filter(id => !isNaN(id));
+        .map(item => item.product_id)
+        .filter((id): id is number => id !== null);
 
       if (productIds.length === 0) {
         setCartItems([]);
@@ -93,12 +92,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       // 4. Merge data
       const mergedItems: CartItem[] = cartData.map(item => {
-        const product = productsData.find(p => p.id === parseInt(item.product_id));
+        const product = productsData.find(p => p.id === item.product_id);
         if (!product) return null; // Handle case where product might be deleted
 
         return {
-          id: item.id,
-          product_id: item.product_id,
+          id: item.id.toString(),
+          product_id: item.product_id?.toString() || "",
           quantity: item.quantity,
           product: {
             id: product.id,
@@ -144,22 +143,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // or ensure schema has file_url if we want to check it here.
 
       // Check if item already in cart
-      const existingItem = cartItems.find(item => item.product_id === productId);
+      const existingItem = await db.query.cartItems.findFirst({
+        where: and(
+          eq(cartItemsSchema.user_id, user.id),
+          eq(cartItemsSchema.product_id, parseInt(productId))
+        )
+      });
 
       if (existingItem) {
-        await updateQuantity(existingItem.id, existingItem.quantity + 1);
+        await updateQuantity(existingItem.id.toString(), existingItem.quantity + 1);
         return;
       }
 
-      const { error } = await supabase
-        .from("cart_items")
-        .insert({
-          user_id: user.id,
-          product_id: productId,
-          quantity: 1,
-        });
-
-      if (error) throw error;
+      await db.insert(cartItemsSchema).values({
+        user_id: user.id,
+        product_id: parseInt(productId),
+        quantity: 1,
+      });
 
       await fetchCart();
       toast.success("Produk ditambahkan ke keranjang");
@@ -171,12 +171,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromCart = async (cartItemId: string) => {
     try {
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("id", cartItemId);
-
-      if (error) throw error;
+      await db.delete(cartItemsSchema)
+        .where(eq(cartItemsSchema.id, parseInt(cartItemId)));
 
       await fetchCart();
       toast.success("Produk dihapus dari keranjang");
@@ -193,12 +189,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity })
-        .eq("id", cartItemId);
-
-      if (error) throw error;
+      await db.update(cartItemsSchema)
+        .set({ quantity })
+        .where(eq(cartItemsSchema.id, parseInt(cartItemId)));
 
       await fetchCart();
     } catch (error) {
@@ -212,12 +205,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await db.delete(cartItemsSchema)
+        .where(eq(cartItemsSchema.user_id, user.id));
 
       setCartItems([]);
     } catch (error) {

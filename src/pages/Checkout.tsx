@@ -7,6 +7,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/CartContext";
+import { db } from "@/lib/turso";
+import { orders, orderItems as orderItemsSchema } from "@/db/schema";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -54,36 +56,31 @@ const Checkout = () => {
       }
 
       // Create order
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          total_amount: cartTotal,
-          status: "pending",
-        })
-        .select()
-        .single();
+      // Create order in Turso
+      const orderResult = await db.insert(orders).values({
+        user_id: user.id,
+        total_amount: cartTotal,
+        status: "pending",
+      }).returning();
 
-      if (orderError) throw orderError;
+      const orderData = orderResult[0];
 
-      // Create order items
-      const orderItems = cartItems.map((item) => ({
+      if (!orderData) throw new Error("Failed to create order");
+
+      // Create order items in Turso
+      const orderItemsData = cartItems.map((item) => ({
         order_id: orderData.id,
-        product_id: item.product_id,
+        product_id: parseInt(item.product_id), // Ensure integer
         quantity: item.quantity,
         price: item.product.price,
       }));
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      await db.insert(orderItemsSchema).values(orderItemsData);
 
       // Call edge function to process payment with Midtrans
       const { data, error } = await supabase.functions.invoke("process-payment", {
         body: {
-          orderId: orderData.id,
+          orderId: orderData.id.toString(), // Pass as string for consistency
           amount: cartTotal,
           customerDetails: {
             first_name: customerDetails.name,
@@ -239,7 +236,7 @@ const Checkout = () => {
                       </p>
                     </div>
                   ))}
-                  
+
                   <div className="border-t pt-4">
                     <div className="flex justify-between text-xl font-bold text-primary">
                       <span>Total:</span>
@@ -260,8 +257,8 @@ const Checkout = () => {
             </div>
           </div>
         </div>
-       </section>
-       <Footer />
+      </section>
+      <Footer />
     </div>
   );
 };

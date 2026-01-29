@@ -402,30 +402,72 @@ const AdminDashboard = () => {
             {loadingStorage ? (
               <div className="text-center py-8 text-muted-foreground">Loading files...</div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {storageFiles.length === 0 && <p className="col-span-full text-center text-muted-foreground">Folder kosong</p>}
-                {storageFiles.map((file, idx) => (
-                  <div key={idx} className="group relative border dark:border-border rounded-lg p-4 hover:bg-white/80 dark:hover:bg-muted/50 transition-all">
-                    <div className="aspect-square bg-gray-100 dark:bg-muted rounded mb-2 flex items-center justify-center overflow-hidden">
-                      {file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <img
-                          src={supabase.storage.from(selectedBucket).getPublicUrl(`${currentPath ? currentPath + '/' : ''}${file.name}`).data.publicUrl}
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-2xl text-gray-400">📄</span>
-                      )}
-                    </div>
-                    <p className="text-xs truncate font-medium text-foreground" title={file.name}>{file.name}</p>
-                    <button
-                      onClick={() => removeFile(file.name)}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              <div>
+                {/* Breadcrumbs / Up Button */}
+                {currentPath && (
+                  <div className="mb-4 flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const parts = currentPath.split('/');
+                        parts.pop();
+                        setCurrentPath(parts.join('/'));
+                      }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2" /></svg>
-                    </button>
+                      ⬅️ Back
+                    </Button>
+                    <span className="text-sm text-gray-500">Path: /{currentPath}</span>
                   </div>
-                ))}
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {storageFiles.length === 0 && <p className="col-span-full text-center text-muted-foreground">Folder kosong</p>}
+
+                  {storageFiles.map((file, idx) => {
+                    // Check if it's a folder (Supabase usually returns id=null for folders)
+                    const isFolder = !file.id;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`group relative border dark:border-border rounded-lg p-4 transition-all ${isFolder ? 'hover:bg-blue-50 cursor-pointer border-blue-200' : 'hover:bg-white/80'}`}
+                        onClick={() => {
+                          if (isFolder) {
+                            setCurrentPath(currentPath ? `${currentPath}/${file.name}` : file.name);
+                          }
+                        }}
+                      >
+                        <div className="aspect-square bg-gray-100 dark:bg-muted rounded mb-2 flex items-center justify-center overflow-hidden">
+                          {isFolder ? (
+                            <span className="text-4xl">📁</span>
+                          ) : file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img
+                              src={supabase.storage.from(selectedBucket).getPublicUrl(`${currentPath ? currentPath + '/' : ''}${file.name}`).data.publicUrl}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-2xl text-gray-400">📄</span>
+                          )}
+                        </div>
+                        <p className="text-xs truncate font-medium text-foreground" title={file.name}>{file.name}</p>
+
+                        {!isFolder && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent folder navigation if we add click handler to parent
+                              removeFile(file.name);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2" /></svg>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
