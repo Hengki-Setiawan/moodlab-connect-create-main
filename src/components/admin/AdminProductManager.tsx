@@ -88,8 +88,10 @@ export default function AdminProductManager() {
 
       if (selectedProduct) {
         // Update existing product
+        // Exclude id from update data
+        const { id, ...updateData } = dbData;
         await db.update(productsSchema)
-          .set(dbData)
+          .set(updateData)
           .where(eq(productsSchema.id, selectedProduct.id));
       } else {
         // Create new product
