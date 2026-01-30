@@ -15,6 +15,7 @@ import { initGA, trackPageView } from "@/lib/analytics";
 
 const Home = lazy(() => import("./pages/Home"));
 const Layanan = lazy(() => import("./pages/Layanan"));
+const ServiceDetail = lazy(() => import("./pages/ServiceDetail"));
 const Produk = lazy(() => import("./pages/Produk"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const About = lazy(() => import("./pages/About"));
@@ -106,7 +107,7 @@ const RouteChangeTracker = () => {
         } as any;
 
         // Coba insert dengan kolom tambahan; jika gagal (mis. kolom belum ada/RLS), fallback ke payload minimal
-        let { error } = await supabase.from("page_views").insert(payload);
+        const { error } = await supabase.from("page_views").insert(payload);
         if (error) {
           const minimal = {
             path: `${location.pathname}${location.search}`,
@@ -151,6 +152,7 @@ const AppRoutesWithAnimations = () => {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Page><Home /></Page>} />
           <Route path="/layanan" element={<Page><Layanan /></Page>} />
+          <Route path="/layanan/:id" element={<Page><ServiceDetail /></Page>} />
           <Route path="/produk" element={<Page><Produk /></Page>} />
           <Route path="/produk/:id" element={<Page><ProductDetail /></Page>} />
           <Route path="/about" element={<Page><About /></Page>} />

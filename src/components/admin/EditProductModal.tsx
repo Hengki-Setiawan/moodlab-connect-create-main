@@ -52,7 +52,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     benefitsInput: '',
     meta_title: '',
     meta_description: '',
-    meta_description: '',
     keywords: '',
     stock: '0',
   });
