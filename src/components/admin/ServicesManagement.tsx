@@ -19,6 +19,7 @@ interface ServiceRow {
   color_class: string;
   is_active: boolean;
   image_url?: string;
+  price: number;
 }
 
 const emptyService: ServiceRow = {
@@ -30,6 +31,7 @@ const emptyService: ServiceRow = {
   color_class: "bg-indigo-50 text-indigo-600",
   is_active: true,
   image_url: "",
+  price: 0,
 };
 
 const iconOptions = ["MessageSquare", "Globe", "Palette", "Code", "Briefcase", "Zap", "Megaphone", "FileText", "Share2", "Package"];
@@ -121,6 +123,7 @@ const ServicesManagement = () => {
         color_class: form.color_class,
         is_active: form.is_active,
         image_url: form.image_url,
+        price: form.price || 0,
       };
 
       if (editingId) {
@@ -167,6 +170,7 @@ const ServicesManagement = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Gambar</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Judul</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Harga</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Kategori</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Aksi</th>
@@ -174,9 +178,9 @@ const ServicesManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" /></td></tr>
               ) : services.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">Belum ada layanan</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Belum ada layanan</td></tr>
               ) : (
                 services.map((s) => (
                   <tr key={s.id} className="hover:bg-gray-50 transition-colors">
@@ -190,6 +194,7 @@ const ServicesManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{s.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">Rp {(s.price || 0).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{s.category}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -221,6 +226,17 @@ const ServicesManagement = () => {
               <div>
                 <label className="block text-sm font-medium mb-1.5">Judul Layanan</label>
                 <Input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Harga (Rp)</label>
+                <Input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm(prev => ({ ...prev, price: Number(e.target.value) || 0 }))}
+                  placeholder="Contoh: 500000"
+                  min="0"
+                />
               </div>
 
               <div>

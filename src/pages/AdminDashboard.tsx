@@ -356,7 +356,7 @@ const AdminDashboard = () => {
       case 'consultations':
         return <ConsultationsManagement />;
       case 'analytics':
-        return <AnalyticsView />;
+        return <AnalyticsView orders={orders} />;
       case 'pages':
         return <PagesManagement />;
       case 'services':

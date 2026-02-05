@@ -11,6 +11,6 @@ export default defineConfig({
 
     dbCredentials: {
         url: process.env.VITE_TURSO_DATABASE_URL!,
-        authToken: process.env.VITE_TURSO_AUTH_TOKEN!,
+        token: process.env.VITE_TURSO_AUTH_TOKEN!,
     },
 });

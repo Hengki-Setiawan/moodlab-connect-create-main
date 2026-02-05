@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Star, Send, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { db } from '@/lib/turso';
-import { reviews } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { toast } from 'sonner';
+
+import { useState, useEffect } from "react";
+import { Star, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { db } from "@/lib/turso";
+import { reviews } from "@/db/schema";
+import { toast } from "sonner";
+import { eq, desc } from "drizzle-orm";
 
 interface ReviewSectionProps {
     productId: number;
@@ -14,151 +15,150 @@ interface ReviewSectionProps {
 
 export function ReviewSection({ productId }: ReviewSectionProps) {
     const [reviewList, setReviewList] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-
-    // Form State
-    const [userName, setUserName] = useState("");
-    const [rating, setRating] = useState(5);
+    const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
+    const [name, setName] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (productId) fetchReviews();
+    }, [productId]);
 
     const fetchReviews = async () => {
         try {
-            const data = await db.select().from(reviews)
+            const data = await db.select()
+                .from(reviews)
                 .where(eq(reviews.product_id, productId))
                 .orderBy(desc(reviews.created_at));
             setReviewList(data);
         } catch (error) {
-            console.error("Failed to fetch reviews:", error);
-        } finally {
-            setLoading(false);
+            console.error("Failed to fetch reviews", error);
         }
     };
-
-    useEffect(() => {
-        fetchReviews();
-    }, [productId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userName || !comment) {
-            toast.error("Mohon lengkapi nama dan ulasan");
+        if (rating === 0) {
+            toast.error("Silakan berikan rating bintang!");
             return;
         }
 
-        setSubmitting(true);
+        setIsSubmitting(true);
         try {
             await db.insert(reviews).values({
                 product_id: productId,
-                user_name: userName,
-                rating: rating,
-                comment: comment,
+                user_name: name || "Anonymous",
+                rating,
+                comment,
+                created_at: new Date()
             });
-            toast.success("Ulasan berhasil dikirim!");
-            setUserName("");
+            toast.success("Terima kasih atas ulasan Anda!");
+            setRating(0);
             setComment("");
-            setRating(5);
+            setName("");
             fetchReviews();
         } catch (error) {
-            console.error("Failed to submit review:", error);
             toast.error("Gagal mengirim ulasan");
+            console.error(error);
         } finally {
-            setSubmitting(false);
+            setIsSubmitting(false);
         }
     };
 
-    return (
-        <div className="mt-12 border-t pt-8">
-            <h2 className="text-2xl font-bold mb-6">Ulasan Pelanggan</h2>
-
-            {/* Review Form */}
-            <div className="bg-slate-50 p-6 rounded-xl mb-8 border border-slate-100">
-                <h3 className="font-semibold mb-4">Tulis Ulasan</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Rating</label>
-                        <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setRating(star)}
-                                    className={`focus:outline-none transition-colors ${rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
-                                >
-                                    <Star className="w-6 h-6 fill-current" />
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Nama</label>
-                        <Input
-                            value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
-                            placeholder="Nama kamu"
-                            className="bg-white"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Ulasan</label>
-                        <Textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            placeholder="Ceritakan pengalamanmu..."
-                            className="bg-white"
-                            rows={3}
-                        />
-                    </div>
-                    <Button type="submit" disabled={submitting} className="w-full md:w-auto">
-                        {submitting ? "Mengirim..." : (
-                            <>
-                                <Send className="w-4 h-4 mr-2" /> Kirim Ulasan
-                            </>
-                        )}
-                    </Button>
-                </form>
+    const renderStars = (count: number) => {
+        return (
+            <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                        key={s}
+                        className={`w-4 h-4 ${s <= count ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                    />
+                ))}
             </div>
+        );
+    };
 
-            {/* Reviews List */}
-            {loading ? (
-                <p className="text-center text-gray-500">Memuat ulasan...</p>
-            ) : reviewList.length === 0 ? (
-                <p className="text-center text-gray-500 italic">Belum ada ulasan. Jadilah yang pertama!</p>
-            ) : (
+    return (
+        <div className="space-y-8 py-8 border-t">
+            <h3 className="text-2xl font-bold">Ulasan Pembeli ({reviewList.length})</h3>
+
+            <div className="grid md:grid-cols-2 gap-12">
+                {/* Review List */}
                 <div className="space-y-6">
+                    {reviewList.length === 0 && (
+                        <p className="text-muted-foreground text-sm">Belum ada ulasan. Jadilah yang pertama mereview!</p>
+                    )}
                     {reviewList.map((review) => (
-                        <div key={review.id} className="border-b pb-6 last:border-0">
-                            <div className="flex items-center justify-between mb-2">
+                        <div key={review.id} className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                                        <User className="w-4 h-4 text-slate-500" />
+                                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
+                                        <User className="w-4 h-4" />
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-sm">{review.user_name}</p>
-                                        <div className="flex text-yellow-400">
-                                            {[...Array(review.rating)].map((_, i) => (
-                                                <Star key={i} className="w-3 h-3 fill-current" />
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <span className="font-semibold text-sm">{review.user_name}</span>
                                 </div>
-                                <span className="text-xs text-gray-400">
-                                    {new Date(review.created_at).toLocaleDateString('id-ID')}
+                                <span className="text-xs text-muted-foreground">
+                                    {review.created_at ? new Date(review.created_at).toLocaleDateString("id-ID") : "-"}
                                 </span>
                             </div>
-                            <p className="text-gray-700 text-sm leading-relaxed ml-10">
-                                {review.comment}
-                            </p>
+                            {renderStars(review.rating)}
+                            <p className="text-sm text-neutral-600 dark:text-neutral-300">{review.comment}</p>
                             {review.reply && (
-                                <div className="mt-3 ml-10 bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                    <p className="text-xs font-bold text-purple-700 mb-1">Respon Moodlab:</p>
-                                    <p className="text-xs text-purple-800">{review.reply}</p>
+                                <div className="bg-indigo-50 dark:bg-indigo-950/30 p-3 rounded-lg text-xs leading-relaxed ml-4 border-l-2 border-indigo-400">
+                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">Admin:</span> {review.reply}
                                 </div>
                             )}
                         </div>
                     ))}
                 </div>
-            )}
+
+                {/* Review Form */}
+                <div className="bg-white dark:bg-neutral-950 p-6 rounded-2xl border shadow-sm h-fit">
+                    <h4 className="font-bold mb-4">Tulis Ulasan Anda</h4>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Rating</label>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={() => setRating(s)}
+                                        className="focus:outline-none transition-transform hover:scale-110"
+                                    >
+                                        <Star
+                                            className={`w-6 h-6 ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Nama</label>
+                            <Input
+                                placeholder="Nama Anda (Opsional)"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Ulasan</label>
+                            <Textarea
+                                placeholder="Bagaimana pengalaman Anda menggunakan produk ini?"
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? "Mengirim..." : "Kirim Ulasan"}
+                        </Button>
+                    </form>
+                </div>
+            </div>
         </div>
     );
 }

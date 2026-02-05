@@ -31,6 +31,7 @@ const AddAdmin = lazy(() => import("./pages/add-admin"));
 const EditProfile = lazy(() => import("./pages/edit-profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AITest = lazy(() => import("./pages/AITest"));
+const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
 import { supabase } from "@/integrations/supabase/client";
 import { AdminProtected } from "@/components/AdminProtected";
 import { StaffProtected } from "@/components/StaffProtected";
@@ -160,6 +161,7 @@ const AppRoutesWithAnimations = () => {
           <Route path="/auth" element={<Page><Auth /></Page>} />
           <Route path="/cart" element={<Page><Cart /></Page>} />
           <Route path="/checkout" element={<Page><Checkout /></Page>} />
+          <Route path="/order-success" element={<Page><OrderSuccess /></Page>} />
           <Route path="/profile" element={<Page><Profile /></Page>} />
           <Route path="/admin" element={<Page><Admin /></Page>} />
           <Route path="/admin-dashboard" element={<Page><StaffProtected><AdminDashboard /></StaffProtected></Page>} />

@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -10,6 +11,7 @@ import { useCart } from "@/contexts/CartContext";
 import { db } from "@/lib/turso";
 import { orders, orderItems as orderItemsSchema } from "@/db/schema";
 import { supabase } from "@/integrations/supabase/client";
+import { trackBeginCheckout } from "@/lib/analytics";
 import { toast } from "sonner";
 
 const Checkout = () => {
@@ -22,12 +24,115 @@ const Checkout = () => {
     phone: "",
   });
 
+  // Voucher State
+  const [voucherCode, setVoucherCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [appliedVoucher, setAppliedVoucher] = useState<string | null>(null);
+  const [voucherError, setVoucherError] = useState("");
+  const [isCheckingVoucher, setIsCheckingVoucher] = useState(false);
+
+  // Calculate final total
+  const finalTotal = Math.max(0, cartTotal - discount);
+
+  useEffect(() => {
+    // If cart total changes (e.g. quantity update), re-validate voucher if one is applied
+    if (appliedVoucher) {
+      setDiscount(0);
+      setAppliedVoucher(null);
+      setVoucherCode("");
+      toast.info("Total berubah, silakan input ulang voucher jika ada.");
+    }
+  }, [cartTotal]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCustomerDetails(prev => ({
+          ...prev,
+          email: user.email || "",
+          name: user.user_metadata?.full_name || ""
+        }));
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    setIsCheckingVoucher(true);
+    setVoucherError("");
+
+    try {
+      // Dynamic import to avoid initial load weight
+      const { db } = await import("@/lib/turso");
+      const { vouchers } = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+
+      // 1. Fetch voucher
+      const result = await db.select().from(vouchers).where(eq(vouchers.code, voucherCode.trim()));
+
+      if (result.length === 0) {
+        setVoucherError("Kode voucher tidak valid.");
+        setDiscount(0);
+        setAppliedVoucher(null);
+        return;
+      }
+
+      const voucher = result[0];
+
+      // 2. Validate expiry
+      if (voucher.expiry_date && new Date(voucher.expiry_date) < new Date()) {
+        setVoucherError("Voucher sudah kedaluwarsa.");
+        return;
+      }
+
+      // 3. Validate usage limit
+      if (voucher.usage_limit !== -1 && (voucher.used_count || 0) >= (voucher.usage_limit || 0)) {
+        setVoucherError("Kuota voucher sudah habis.");
+        return;
+      }
+
+      // 4. Validate min spend
+      if (cartTotal < (voucher.min_spend || 0)) {
+        setVoucherError(`Minimal belanja Rp ${(voucher.min_spend || 0).toLocaleString('id-ID')}`);
+        return;
+      }
+
+      // 5. Calculate Discount
+      let calculatedDiscount = 0;
+      if (voucher.discount_type === 'percent') {
+        calculatedDiscount = Math.floor(cartTotal * (voucher.amount / 100));
+        if (voucher.max_discount && calculatedDiscount > voucher.max_discount) {
+          calculatedDiscount = voucher.max_discount;
+        }
+      } else {
+        calculatedDiscount = voucher.amount;
+      }
+
+      // Cap discount at total
+      if (calculatedDiscount > cartTotal) {
+        calculatedDiscount = cartTotal;
+      }
+
+      setDiscount(calculatedDiscount);
+      setAppliedVoucher(voucher.code);
+      toast.success(`Voucher ${voucher.code} berhasil dipasang! Hemat Rp ${calculatedDiscount.toLocaleString('id-ID')}`);
+
+    } catch (error) {
+      console.error("Voucher check error:", error);
+      setVoucherError("Gagal mengecek voucher.");
+    } finally {
+      setIsCheckingVoucher(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,12 +160,13 @@ const Checkout = () => {
         return;
       }
 
-      // Create order
       // Create order in Turso
       const orderResult = await db.insert(orders).values({
         user_id: user.id,
-        total_amount: cartTotal,
+        total_amount: finalTotal, // Use discounted amount
         status: "pending",
+        voucher_code: appliedVoucher,
+        discount_amount: discount,
       }).returning();
 
       const orderData = orderResult[0];
@@ -80,8 +186,8 @@ const Checkout = () => {
       // Call edge function to process payment with Midtrans
       const { data, error } = await supabase.functions.invoke("process-payment", {
         body: {
-          orderId: orderData.id.toString(), // Pass as string for consistency
-          amount: cartTotal,
+          orderId: orderData.id.toString(),
+          amount: finalTotal, // Use discounted amount
           customerDetails: {
             first_name: customerDetails.name,
             email: customerDetails.email,
@@ -93,6 +199,8 @@ const Checkout = () => {
             price: item.product.price,
             quantity: item.quantity,
           })),
+          voucher_code: appliedVoucher,
+          discount_amount: discount
         },
       });
 
@@ -100,40 +208,66 @@ const Checkout = () => {
 
       // Open Midtrans payment page
       if (data.token) {
-        // Load Midtrans Snap
-        const script = document.createElement("script");
-        script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-        script.setAttribute("data-client-key", "Mid-client-35fgBhK8ianqJP3d");
-        document.body.appendChild(script);
+        console.log("Payment initiated:", data.token);
 
-        script.onload = () => {
-          // @ts-ignore
-          window.snap.pay(data.token, {
-            onSuccess: async () => {
-              await clearCart();
-              toast.success("Pembayaran berhasil!");
-              navigate("/profile");
-            },
-            onPending: () => {
-              toast.info("Menunggu pembayaran");
-              navigate("/profile");
-            },
-            onError: () => {
-              toast.error("Pembayaran gagal");
-            },
-            onClose: () => {
-              toast.info("Pembayaran dibatalkan");
-            },
-          });
-        };
+        // Trigger standard Midtrans Snap popup
+        // @ts-ignore
+        window.snap.pay(data.token, {
+          onSuccess: function (result: any) {
+            console.log("Payment success:", result);
+            toast.success("Pembayaran berhasil!");
+            clearCart();
+            // Navigate to Success Page with Order Data
+            navigate("/order-success", {
+              state: {
+                orderId: orderData.id,
+                total: finalTotal,
+                items: cartItems.map(item => ({
+                  id: item.product_id,
+                  name: item.product.name,
+                  price: item.product.price,
+                  quantity: item.quantity
+                }))
+              }
+            });
+          },
+          onPending: function (result: any) {
+            console.log("Payment pending:", result);
+            toast.info("Menunggu pembayaran...");
+            navigate("/profile?tab=orders");
+          },
+          onError: function (result: any) {
+            console.log("Payment error:", result);
+            toast.error("Pembayaran gagal!");
+          },
+          onClose: function () {
+            console.log("Customer closed the popup without finishing the payment");
+            toast.warning("Pembayaran belum diselesaikan");
+          },
+        });
       }
-    } catch (error) {
-      console.error("Error processing checkout:", error);
-      toast.error("Gagal memproses pembayaran");
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Gagal memproses checkout");
     } finally {
       setIsProcessing(false);
     }
   };
+
+  // Track Begin Checkout when component mounts or cart is loaded
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      trackBeginCheckout(
+        cartItems.map(item => ({
+          id: item.product_id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity
+        })),
+        cartTotal
+      );
+    }
+  }, [cartItems, cartTotal]);
 
   if (cartItems.length === 0) {
     navigate("/cart");
@@ -141,7 +275,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <Navbar />
 
       <section className="pt-32 pb-20 px-4">
@@ -237,12 +371,65 @@ const Checkout = () => {
                     </div>
                   ))}
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between text-xl font-bold text-primary">
-                      <span>Total:</span>
+                  {/* Voucher Input */}
+                  <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-xl space-y-3">
+                    <label className="text-sm font-medium">Kode Promo / Voucher</label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Contoh: DISKON10"
+                        value={voucherCode}
+                        onChange={(e) => {
+                          setVoucherCode(e.target.value.toUpperCase());
+                          setVoucherError("");
+                        }}
+                        disabled={!!appliedVoucher}
+                      />
+                      {appliedVoucher ? (
+                        <Button variant="destructive" onClick={() => {
+                          setAppliedVoucher(null);
+                          setDiscount(0);
+                          setVoucherCode("");
+                        }}>
+                          Hapus
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          onClick={handleApplyVoucher}
+                          disabled={!voucherCode || isCheckingVoucher}
+                        >
+                          {isCheckingVoucher ? "..." : "Pakai"}
+                        </Button>
+                      )}
+                    </div>
+                    {voucherError && <p className="text-xs text-red-500">{voucherError}</p>}
+                    {appliedVoucher && <p className="text-xs text-green-500">Voucher aktif!</p>}
+                  </div>
+
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
                       <span>{formatPrice(cartTotal)}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Diskon ({appliedVoucher})</span>
+                        <span>- {formatPrice(discount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg pt-2">
+                      <span>Total Bayar</span>
+                      <span className="text-primary">{formatPrice(finalTotal)}</span>
+                    </div>
                   </div>
+
+                  <Button
+                    className="w-full h-12 text-lg"
+                    onClick={handleSubmit}
+                    disabled={isProcessing || cartItems.length === 0}
+                  >
+                    {isProcessing ? "Memproses..." : `Bayar Sekarang • ${formatPrice(finalTotal)}`}
+                  </Button>
                 </CardContent>
               </Card>
 

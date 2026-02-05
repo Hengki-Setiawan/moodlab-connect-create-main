@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Kontak = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [content, setContent] = useState<any>({});
+  const [meta, setMeta] = useState({ title: "Hubungi Kami - Moodlab", description: "Ada pertanyaan? Kami siap membantu." });
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const { db } = await import("@/lib/turso");
+        const { pages } = await import("@/db/schema");
+        const { eq } = await import("drizzle-orm");
+
+        const result = await db.select().from(pages).where(eq(pages.path, "/kontak"));
+        if (result.length > 0) {
+          setMeta({
+            title: result[0].title,
+            description: result[0].description || "Ada pertanyaan? Kami siap membantu."
+          });
+          if (result[0].content) {
+            try {
+              const parsed = JSON.parse(result[0].content);
+              setContent(parsed);
+            } catch (e) {
+              console.error("Failed to parse Contact page content JSON:", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch Contact page content:", e);
+      }
+    };
+    fetchContent();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,10 +89,10 @@ const Kontak = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-4 mb-16">
             <h1 className="text-4xl md:text-6xl font-bold">
-              Hubungi <span className="gradient-text">Kami</span>
+              {content.hero_title || "Hubungi Kami"}
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Ada pertanyaan? Kami siap membantu Anda membangun merek yang kuat
+              {content.hero_subtitle || "Ada pertanyaan? Kami siap membantu Anda membangun merek yang kuat"}
             </p>
           </div>
 
@@ -78,31 +109,31 @@ const Kontak = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="name">Nama Lengkap</Label>
-                    <Input 
-                      id="name" 
-                      name="name" 
-                      required 
+                    <Input
+                      id="name"
+                      name="name"
+                      required
                       placeholder="Masukkan nama lengkap"
                       className="mt-1.5"
                     />
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      required 
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
                       placeholder="email@example.com"
                       className="mt-1.5"
                     />
                   </div>
                   <div>
                     <Label htmlFor="phone">Nomor Telepon</Label>
-                    <Input 
-                      id="phone" 
-                      name="phone" 
-                      required 
+                    <Input
+                      id="phone"
+                      name="phone"
+                      required
                       placeholder="08xxxxxxxxxx"
                       className="mt-1.5"
                     />
@@ -118,9 +149,9 @@ const Kontak = () => {
                       className="mt-1.5"
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting} 
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
                     className="w-full gradient-primary"
                     size="lg"
                   >
@@ -140,7 +171,7 @@ const Kontak = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Email</h3>
-                      <a 
+                      <a
                         href="https://mail.google.com/mail/?view=cm&fs=1&to=moodlab.idn@gmail.com"
                         target="_blank"
                         rel="noopener noreferrer"
@@ -162,12 +193,12 @@ const Kontak = () => {
                     <div>
                       <h3 className="font-semibold mb-1">Instagram</h3>
                       <a
-                        href="https://instagram.com/moodlab.id1"
+                        href={`https://instagram.com/${(content.instagram || "@moodlab.id1").replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        @moodlab.id1
+                        {content.instagram || "@moodlab.id1"}
                       </a>
                     </div>
                   </div>
@@ -183,12 +214,12 @@ const Kontak = () => {
                     <div>
                       <h3 className="font-semibold mb-1">WhatsApp</h3>
                       <a
-                        href="https://wa.me/6281341277339"
+                        href={`https://wa.me/${(content.phone || "6281341277339").replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        081341277339
+                        {content.phone || "081341277339"}
                       </a>
                     </div>
                   </div>
@@ -203,19 +234,19 @@ const Kontak = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Alamat</h3>
-                      <a 
-                        href="https://maps.google.com/?q=Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222"
+                      <a
+                        href={`https://maps.google.com/?q=${content.address || "Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222"}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222
+                        {content.address || "Jl. AP. Pettarani Makassar, Sulawesi Selatan, 90222"}
                       </a>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="border-2 gradient-primary animate-gradient text-primary-foreground">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
@@ -224,12 +255,8 @@ const Kontak = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-2">Jam Operasional</h3>
-                      <p className="text-sm opacity-90">
-                        Senin - Jumat: 09:00 - 18:00 WIB
-                        <br />
-                        Sabtu: 09:00 - 15:00 WIB
-                        <br />
-                        Minggu: Tutup
+                      <p className="text-sm opacity-90 whitespace-pre-line">
+                        {content.hours || "Senin - Jumat: 09:00 - 18:00 WIB\nSabtu: 09:00 - 15:00 WIB\nMinggu: Tutup"}
                       </p>
                     </div>
                   </div>

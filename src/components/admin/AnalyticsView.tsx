@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { format, subDays } from "date-fns";
 import { id } from "date-fns/locale";
 
-const AnalyticsView = () => {
+interface AnalyticsViewProps {
+    orders?: any[];
+}
+
+const AnalyticsView = ({ orders = [] }: AnalyticsViewProps) => {
     const [viewsByDay, setViewsByDay] = useState<{ date: string; count: number }[]>([]);
     const [topPages, setTopPages] = useState<{ path: string; count: number }[]>([]);
     const [topReferrers, setTopReferrers] = useState<{ referrer: string; count: number }[]>([]);
+    const [rawViews, setRawViews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchAnalytics = async () => {
@@ -22,6 +29,8 @@ const AnalyticsView = () => {
                 .gte('created_at', thirtyDaysAgo.toISOString());
 
             if (error) throw error;
+
+            setRawViews(data || []);
 
             const byDay = new Map<string, number>();
             const pages = new Map<string, number>();
@@ -45,7 +54,7 @@ const AnalyticsView = () => {
                 if (v.referrer) referrers.set(v.referrer, (referrers.get(v.referrer) || 0) + 1);
             });
 
-            // Fill missing days for the last 30 days
+            // Fill missing days
             const filledViewsByDay = [];
             for (let i = 29; i >= 0; i--) {
                 const d = subDays(new Date(), i);
@@ -79,6 +88,25 @@ const AnalyticsView = () => {
         }
     };
 
+    const downloadCSV = (data: any[], filename: string) => {
+        if (!data.length) return;
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(fieldName => JSON.stringify(row[fieldName], (key, value) => value === null ? '' : value)).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     useEffect(() => {
         fetchAnalytics();
     }, []);
@@ -87,7 +115,17 @@ const AnalyticsView = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Analytics Detail (30 Hari Terakhir)</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Analytics Detail (30 Hari Terakhir)</h2>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => downloadCSV(rawViews, 'analytics_page_views.csv')}>
+                        <Download className="mr-2 h-4 w-4" /> Export Views
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => downloadCSV(orders, 'orders_export.csv')}>
+                        <Download className="mr-2 h-4 w-4" /> Export Orders
+                    </Button>
+                </div>
+            </div>
 
             <Card>
                 <CardHeader>

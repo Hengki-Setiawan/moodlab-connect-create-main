@@ -28,10 +28,36 @@ const Layanan = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [content, setContent] = useState<any>({});
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchServices();
+  }, []);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const { db } = await import("@/lib/turso");
+        const { pages } = await import("@/db/schema");
+        const { eq } = await import("drizzle-orm");
+
+        const result = await db.select().from(pages).where(eq(pages.path, "/layanan"));
+        if (result.length > 0) {
+          if (result[0].content) {
+            try {
+              const parsed = JSON.parse(result[0].content);
+              setContent(parsed);
+            } catch (e) {
+              console.error("Failed to parse Services page content JSON:", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch Services page content:", e);
+      }
+    };
+    fetchContent();
   }, []);
 
   useEffect(() => {
@@ -98,11 +124,15 @@ const Layanan = () => {
       <section className="pt-32 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-4 mb-12 animate-fade-in-up">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
-              Temukan Solusi <span className="text-indigo-600">Digital</span> Anda
-            </h1>
+            {content.hero_title ? (
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">{content.hero_title}</h1>
+            ) : (
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+                Temukan Solusi <span className="text-indigo-600">Digital</span> Anda
+              </h1>
+            )}
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Jelajahi berbagai layanan profesional kami untuk membantu bisnis Anda bertumbuh.
+              {content.hero_subtitle || "Jelajahi berbagai layanan profesional kami untuk membantu bisnis Anda bertumbuh."}
             </p>
           </div>
 

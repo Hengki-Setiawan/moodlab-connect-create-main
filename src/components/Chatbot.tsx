@@ -189,14 +189,25 @@ export function Chatbot() {
                                         </p>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsOpen(false)}
-                                    className="text-white hover:bg-white/20 rounded-full transition-colors"
-                                >
-                                    <ChevronDown className="w-6 h-6" />
-                                </Button>
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => window.open("https://wa.me/6281234567890", "_blank")}
+                                        className="text-white hover:bg-white/20 rounded-full transition-colors"
+                                        title="Chat Customer Service"
+                                    >
+                                        <MessageCircle className="w-5 h-5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsOpen(false)}
+                                        className="text-white hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <ChevronDown className="w-6 h-6" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 

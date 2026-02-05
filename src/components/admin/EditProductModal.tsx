@@ -24,6 +24,11 @@ interface Product {
   meta_description?: string | null;
   keywords?: string | null;
   stock?: number;
+  // New e-commerce fields
+  preview_images?: string[] | null;
+  license_type?: string | null;
+  license_prices?: Record<string, number> | null;
+  mood_category?: string | null;
 }
 
 interface EditProductModalProps {
@@ -54,6 +59,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     meta_description: '',
     keywords: '',
     stock: '0',
+    // New e-commerce fields
+    preview_images: [] as string[],
+    license_type: 'personal',
+    license_prices: { personal: 0, commercial: 0, extended: 0 },
+    mood_category: 'general',
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -76,6 +86,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         meta_description: product.meta_description || '',
         keywords: product.keywords || '',
         stock: (product.stock ?? 0).toString(),
+        // New e-commerce fields
+        preview_images: product.preview_images || [],
+        license_type: product.license_type || 'personal',
+        license_prices: product.license_prices || { personal: 0, commercial: 0, extended: 0 },
+        mood_category: product.mood_category || 'general',
       });
       // Set preview dari URL yang sudah ada
       if (product.image_url) {
@@ -98,6 +113,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         meta_description: '',
         keywords: '',
         stock: '0',
+        // New e-commerce fields
+        preview_images: [],
+        license_type: 'personal',
+        license_prices: { personal: 0, commercial: 0, extended: 0 },
+        mood_category: 'general',
       });
       setImagePreview(null);
     }
@@ -202,6 +222,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       meta_description: formData.meta_description,
       keywords: formData.keywords,
       stock: Number(formData.stock) || 0,
+      // New e-commerce fields
+      preview_images: formData.preview_images,
+      license_type: formData.license_type,
+      license_prices: formData.license_prices,
+      mood_category: formData.mood_category,
     };
 
     if (!updatedProduct.name?.trim()) {
@@ -372,6 +397,84 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
           <div className="space-y-2">
             <Label htmlFor="file_url">URL File Digital (untuk download)</Label>
             <Input id="file_url" name="file_url" value={formData.file_url} onChange={handleInputChange} placeholder="https://..." className="w-full" />
+          </div>
+
+          {/* New E-commerce Fields */}
+          <div className="border-t pt-4 mt-4">
+            <Label className="text-base font-semibold mb-4 block">Pengaturan E-commerce</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Kategori Mood</Label>
+                <Select value={formData.mood_category} onValueChange={(value) => setFormData(prev => ({ ...prev, mood_category: value }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih mood" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="professional">Professional & Corporate</SelectItem>
+                    <SelectItem value="hype">Hype & Viral</SelectItem>
+                    <SelectItem value="minimalist">Minimalist & Aesthetic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tipe Lisensi</Label>
+                <Select value={formData.license_type} onValueChange={(value) => setFormData(prev => ({ ...prev, license_type: value }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih lisensi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">Personal Use</SelectItem>
+                    <SelectItem value="commercial">Commercial Use</SelectItem>
+                    <SelectItem value="extended">Extended License</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* License Prices */}
+            <div className="mt-4 space-y-2">
+              <Label>Harga per Lisensi (opsional)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Personal (Rp)</Label>
+                  <Input
+                    type="number"
+                    value={formData.license_prices.personal}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      license_prices: { ...prev.license_prices, personal: Number(e.target.value) || 0 }
+                    }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Commercial (Rp)</Label>
+                  <Input
+                    type="number"
+                    value={formData.license_prices.commercial}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      license_prices: { ...prev.license_prices, commercial: Number(e.target.value) || 0 }
+                    }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Extended (Rp)</Label>
+                  <Input
+                    type="number"
+                    value={formData.license_prices.extended}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      license_prices: { ...prev.license_prices, extended: Number(e.target.value) || 0 }
+                    }))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

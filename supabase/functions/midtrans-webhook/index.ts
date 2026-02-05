@@ -1,5 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@libsql/client";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,9 +16,17 @@ serve(async (req) => {
     const notification = await req.json();
     console.log("Received Midtrans webhook:", JSON.stringify(notification));
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const tursoUrl = Deno.env.get("TURSO_DATABASE_URL");
+    const tursoToken = Deno.env.get("TURSO_AUTH_TOKEN");
+
+    if (!tursoUrl || !tursoToken) {
+      throw new Error("Missing Turso configuration");
+    }
+
+    const db = createClient({
+      url: tursoUrl.replace("libsql://", "https://"),
+      authToken: tursoToken,
+    });
 
     const {
       order_id,
@@ -47,66 +56,27 @@ serve(async (req) => {
 
     console.log(`Updating order ${order_id} to status: ${orderStatus}`);
 
-    // Update order status
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({
-        status: orderStatus,
-        midtrans_transaction_id: transaction_id,
-        payment_type: payment_type,
-      })
-      .eq("id", order_id);
+    // Update order status in Turso
+    // Using simple SQL execution since we don't have schema/drizzle in Edge Function easily
+    // Ensure order_id is treated as integer if schema uses integer PK
+    const orderIdInt = parseInt(order_id);
 
-    if (updateError) {
-      console.error("Error updating order:", updateError);
-      throw updateError;
+    if (isNaN(orderIdInt)) {
+      console.error("Invalid order ID format:", order_id);
+      return new Response(
+        JSON.stringify({ error: "Invalid order ID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // If payment is successful, grant access to digital products
-    if (orderStatus === "paid") {
-      console.log(`Payment successful for order ${order_id}, granting product access`);
+    await db.execute({
+      sql: "UPDATE orders SET status = ?, midtrans_transaction_id = ?, payment_type = ? WHERE id = ?",
+      args: [orderStatus, transaction_id || null, payment_type || null, orderIdInt]
+    });
 
-      // Get order items
-      const { data: orderItems, error: itemsError } = await supabase
-        .from("order_items")
-        .select("product_id")
-        .eq("order_id", order_id);
+    console.log(`Order ${order_id} updated successfully`);
 
-      if (itemsError) {
-        console.error("Error fetching order items:", itemsError);
-        throw itemsError;
-      }
-
-      // Get user_id from order
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select("user_id")
-        .eq("id", order_id)
-        .single();
-
-      if (orderError) {
-        console.error("Error fetching order:", orderError);
-        throw orderError;
-      }
-
-      // Grant access to all purchased products
-      const accessRecords = orderItems.map((item) => ({
-        user_id: orderData.user_id,
-        product_id: item.product_id,
-        order_id: order_id,
-      }));
-
-      const { error: accessError } = await supabase
-        .from("user_product_access")
-        .insert(accessRecords);
-
-      if (accessError) {
-        console.error("Error granting product access:", accessError);
-        throw accessError;
-      }
-
-      console.log(`Granted access to ${accessRecords.length} products`);
-    }
+    // We don't need to insert into user_product_access because Profile.tsx reads directly from paid orders.
 
     return new Response(
       JSON.stringify({ success: true }),

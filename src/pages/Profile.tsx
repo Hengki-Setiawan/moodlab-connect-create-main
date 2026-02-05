@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Package, Trash, AlertCircle, User, Mail, Calendar, Phone, LogOut, Edit, Wallet, ShoppingBag, Star, TrendingUp, Sun, Moon } from "lucide-react";
+import { Download, Package, Trash, AlertCircle, User, Mail, Calendar, Phone, LogOut, Edit, Wallet, ShoppingBag, Star, TrendingUp, Sun, Moon, ShieldCheck, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -430,6 +430,58 @@ const Profile = () => {
                   <p className="text-white/80 flex items-center justify-center md:justify-start gap-2 mt-1">
                     <Calendar className="w-4 h-4" /> Bergabung sejak {profile.created_at ? new Date(profile.created_at).getFullYear() : "-"}
                   </p>
+
+                  {/* Loyalty Level Badge */}
+                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-xl border border-white/10">
+                    {(() => {
+                      let level = "Bronze";
+                      let nextLevel = "Silver";
+                      let target = 1000000;
+                      let icon = <Star className="w-4 h-4 text-orange-300" />;
+                      let color = "text-orange-100";
+
+                      if (totalSpent >= 5000000) {
+                        level = "Gold";
+                        nextLevel = "Max";
+                        target = 0;
+                        icon = <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />;
+                        color = "text-yellow-100 font-bold";
+                      } else if (totalSpent >= 1000000) {
+                        level = "Silver";
+                        nextLevel = "Gold";
+                        target = 5000000;
+                        icon = <ShieldCheck className="w-4 h-4 text-slate-300" />;
+                        color = "text-slate-100";
+                      }
+
+                      const progress = target > 0 ? (totalSpent / target) * 100 : 100;
+
+                      return (
+                        <div className="flex flex-col gap-1 w-full min-w-[200px]">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              {icon}
+                              <span className={`uppercase tracking-wider text-xs ${color}`}>{level} Member</span>
+                            </div>
+                            {target > 0 && <span className="text-[10px] text-white/70">{Math.floor(progress)}%</span>}
+                          </div>
+                          {target > 0 && (
+                            <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-green-400 to-emerald-400"
+                                style={{ width: `${Math.min(progress, 100)}%` }}
+                              />
+                            </div>
+                          )}
+                          {target > 0 && (
+                            <p className="text-[10px] text-white/60">
+                              Belanja {formatPrice(target - totalSpent)} lagi untuk {nextLevel}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
