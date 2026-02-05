@@ -20,6 +20,7 @@ interface Service {
   category: string;
   color_class: string;
   is_active: boolean;
+  price?: number;
 }
 
 const Layanan = () => {
@@ -196,11 +197,18 @@ const Layanan = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 pt-2 text-center">
-                          <p className="text-sm text-gray-500 line-clamp-2 mb-4">
+                          <p className="text-sm text-gray-500 line-clamp-2 mb-3">
                             {service.description}
                           </p>
-                          <Button variant="ghost" className="w-full group-hover:bg-indigo-50 group-hover:text-indigo-600 text-xs font-semibold uppercase tracking-wider">
-                            Lihat Detail
+                          {service.price && service.price > 0 ? (
+                            <p className="text-lg font-bold text-green-600 mb-3">
+                              Rp {service.price.toLocaleString('id-ID')}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-400 mb-3">Hubungi untuk harga</p>
+                          )}
+                          <Button variant="ghost" className="w-full group-hover:bg-indigo-600 group-hover:text-white text-xs font-semibold uppercase tracking-wider">
+                            {service.price && service.price > 0 ? 'Pesan Sekarang' : 'Lihat Detail'}
                           </Button>
                         </CardContent>
                       </Card>

@@ -20,7 +20,7 @@ interface Service {
     features: string[];
     category: string;
     image_url?: string;
-    price_range?: string; // Optional if we add it later
+    price?: number;
 }
 
 const ServiceDetail = () => {
@@ -145,9 +145,19 @@ const ServiceDetail = () => {
                             <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold mb-4 capitalize">
                                 {service.category}
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
+                            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
                                 {service.title}
                             </h1>
+                            {service.price && service.price > 0 ? (
+                                <div className="mb-6">
+                                    <span className="text-3xl font-bold text-green-600">Rp {service.price.toLocaleString('id-ID')}</span>
+                                    <span className="text-gray-500 ml-2">(Harga Mulai)</span>
+                                </div>
+                            ) : (
+                                <div className="mb-6">
+                                    <span className="text-xl text-gray-500">Hubungi untuk informasi harga</span>
+                                </div>
+                            )}
                             <p className="text-xl text-gray-600 leading-relaxed">
                                 {service.description}
                             </p>

@@ -7,10 +7,10 @@ console.log("Drizzle Config - Token:", process.env.VITE_TURSO_AUTH_TOKEN ? "Foun
 export default defineConfig({
     schema: "./src/db/schema.ts",
     out: "./drizzle",
-    dialect: "sqlite",
+    dialect: "turso",
 
     dbCredentials: {
         url: process.env.VITE_TURSO_DATABASE_URL!,
-        token: process.env.VITE_TURSO_AUTH_TOKEN!,
+        authToken: process.env.VITE_TURSO_AUTH_TOKEN!,
     },
 });
