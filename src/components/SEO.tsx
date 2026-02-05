@@ -15,7 +15,7 @@ interface SEOProps {
 }
 
 const SEO = ({ title, description, image, url, type = "website", product }: SEOProps) => {
-    const siteTitle = "Moodlab - Solusi Marketing Instan & Aset Digital";
+    const siteTitle = "Moodlab - Upgrade Bisnis Kamu";
     const defaultDescription = "Temukan moodmu untuk upgrade bisnis kamu. Produk digital, template, dan jasa marketing siap pakai untuk UMKM Indonesia.";
     const defaultImage = "/og-image.png";
     const siteUrl = "https://moodlab.id";

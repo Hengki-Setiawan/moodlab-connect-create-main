@@ -15,7 +15,7 @@ import { Helmet } from "react-helmet-async";
 
 const Home = () => {
   const [content, setContent] = useState<any>({});
-  const [meta, setMeta] = useState({ title: "Moodlab - Digital Agency", description: "Jasa Pembuatan Website & Digital Marketing Profesional" });
+  const [meta, setMeta] = useState({ title: "Moodlab - Solusi Marketing Instan", description: "Jasa Pembuatan Website & Digital Marketing Profesional" });
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -128,7 +128,7 @@ const Home = () => {
             <div className="inline-flex items-center rounded-full border border-neutral-200 bg-white/50 px-3 py-1 text-sm leading-6 text-neutral-600 backdrop-blur-xl ring-1 ring-white/10 dark:border-neutral-800 dark:bg-black/50 dark:text-neutral-400">
               <span className="flex items-center gap-1">
                 <Sparkles className="h-4 w-4 text-yellow-500" />
-                {content.hero_badge || "Digital Agency Masa Kini"}
+                {content.hero_badge || "Temukan Mood Kamu"}
               </span>
             </div>
 
@@ -138,15 +138,15 @@ const Home = () => {
               </h1>
             ) : (
               <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight text-neutral-900 dark:text-white">
-                Ubah <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Popularitas</span>
+                Temukan <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Mood</span>
                 <br />
-                Menjadi <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Loyalitas</span>
+                untuk <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Upgrade Bisnis Kamu</span>
               </h1>
             )}
 
             <p className="text-xl text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto leading-relaxed">
               {content.hero_subtitle || (
-                <>Kami memahami "mood" audiens Gen Z Anda. Moodlab hadir untuk membangun konten yang relevan,
+                <>Moodlab hadir untuk membantu anda membangun konten yang relevan,
                   autentik, dan mengubah engagement menjadi loyalitas pelanggan jangka panjang.</>
               )}
             </p>
@@ -263,7 +263,7 @@ const Home = () => {
                   <div className="p-3 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30">
                     <Target className="w-6 h-6" />
                   </div>
-                  Kerjasama Agensi
+                  Layanan Kreatif
                 </CardTitle>
                 <CardDescription className="text-base pt-2">
                   Solusi end-to-end untuk kebutuhan pemasaran digital Anda dari hulu ke hilir
@@ -291,21 +291,21 @@ const Home = () => {
 
       {/* CTA Section */}
       <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-neutral-900 dark:bg-black"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-neutral-900 dark:to-neutral-800"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f0a_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f0a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
 
         <div className="container mx-auto max-w-4xl relative z-10 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
             {content.cta_title || "Siap Mengubah Brand Anda?"}
           </h2>
-          <p className="text-xl text-neutral-400 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-neutral-600 dark:text-neutral-400 mb-10 max-w-2xl mx-auto">
             {content.cta_description || "Mulai perjalanan Anda bersama Moodlab hari ini. Bergabunglah dengan ratusan brand yang telah tumbuh bersama kami."}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="h-14 px-10 rounded-full text-lg bg-white text-black hover:bg-neutral-200 transition-all font-semibold" asChild>
+            <Button size="lg" className="h-14 px-10 rounded-full text-lg bg-primary text-white hover:bg-primary/90 transition-all font-semibold" asChild>
               <Link to="/kontak">Hubungi Kami</Link>
             </Button>
-            <Button size="lg" variant="outline" className="h-14 px-10 rounded-full text-lg border-neutral-700 text-white hover:bg-neutral-800 hover:text-white transition-all bg-transparent" asChild>
+            <Button size="lg" variant="outline" className="h-14 px-10 rounded-full text-lg border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all bg-transparent" asChild>
               <Link to="/about">Pelajari Tim Kami</Link>
             </Button>
           </div>
