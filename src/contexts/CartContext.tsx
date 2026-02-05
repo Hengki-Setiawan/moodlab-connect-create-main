@@ -14,16 +14,28 @@ interface Product {
   file_url?: string | null;
 }
 
+interface Service {
+  id: string;
+  title: string;
+  price: number;
+  image_url?: string | null;
+  category?: string;
+}
+
 interface CartItem {
   id: string;
   product_id: string;
+  service_id?: string;
+  item_type: 'product' | 'service';
   quantity: number;
-  product: Product;
+  product?: Product;
+  service?: Service;
 }
 
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (productId: string) => Promise<void>;
+  addServiceToCart: (serviceId: string) => Promise<void>;
   removeFromCart: (cartItemId: string) => Promise<void>;
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -51,7 +63,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // 1. Fetch cart items from Supabase (only IDs)
       // 1. Fetch cart items from Turso
       const cartData = await db
         .select()
@@ -64,56 +75,89 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // 2. Extract product IDs (convert string to number for Turso if needed)
-      const productIds = cartData
+      // 2. Separate product and service items
+      const productItems = cartData.filter(item => item.item_type === 'product' || !item.item_type);
+      const serviceItems = cartData.filter(item => item.item_type === 'service');
+
+      // 3. Fetch product details from Turso
+      const productIds = productItems
         .map(item => item.product_id)
         .filter((id): id is number => id !== null);
 
-      if (productIds.length === 0) {
-        setCartItems([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // 3. Fetch product details from Turso with error handling
       let productsData: any[] = [];
-      try {
-        productsData = await db
-          .select()
-          .from(products)
-          .where(inArray(products.id, productIds));
-      } catch (tursoError) {
-        console.error("Turso fetch error:", tursoError);
-        // Continue with empty products, cart will show but without product details
-        setCartItems([]);
-        setIsLoading(false);
-        return;
+      if (productIds.length > 0) {
+        try {
+          productsData = await db
+            .select()
+            .from(products)
+            .where(inArray(products.id, productIds));
+        } catch (tursoError) {
+          console.error("Turso fetch error:", tursoError);
+        }
       }
 
-      // 4. Merge data
-      const mergedItems: CartItem[] = cartData.map(item => {
-        const product = productsData.find(p => p.id === item.product_id);
-        if (!product) return null; // Handle case where product might be deleted
+      // 4. Fetch service details from Supabase
+      const serviceIds = serviceItems
+        .map(item => item.service_id)
+        .filter((id): id is string => id !== null);
 
-        return {
-          id: item.id.toString(),
-          product_id: item.product_id?.toString() || "",
-          quantity: item.quantity,
-          product: {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image_url: product.image_url,
-            type: product.type,
-            file_url: product.file_url || null
-          }
-        };
-      }).filter(Boolean) as CartItem[];
+      let servicesData: any[] = [];
+      if (serviceIds.length > 0) {
+        const { data } = await supabase
+          .from('services')
+          .select('id, title, price, image_url, category')
+          .in('id', serviceIds);
+        servicesData = data || [];
+      }
+
+      // 5. Merge data
+      const mergedItems: CartItem[] = [];
+
+      // Add product items
+      productItems.forEach(item => {
+        const product = productsData.find(p => p.id === item.product_id);
+        if (product) {
+          mergedItems.push({
+            id: item.id.toString(),
+            product_id: item.product_id?.toString() || "",
+            item_type: 'product',
+            quantity: item.quantity,
+            product: {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image_url: product.image_url,
+              type: product.type,
+              file_url: product.file_url || null
+            }
+          });
+        }
+      });
+
+      // Add service items
+      serviceItems.forEach(item => {
+        const service = servicesData.find(s => s.id === item.service_id);
+        if (service) {
+          mergedItems.push({
+            id: item.id.toString(),
+            product_id: "",
+            service_id: item.service_id || "",
+            item_type: 'service',
+            quantity: item.quantity,
+            service: {
+              id: service.id,
+              title: service.title,
+              price: service.price || 0,
+              image_url: service.image_url,
+              category: service.category
+            }
+          });
+        }
+      });
 
       setCartItems(mergedItems);
     } catch (error) {
       console.error("Error fetching cart:", error);
-      // Don't show toast for auth-related errors (user not logged in)
       setCartItems([]);
     } finally {
       setIsLoading(false);
@@ -169,6 +213,54 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addServiceToCart = async (serviceId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Silakan login terlebih dahulu");
+        return;
+      }
+
+      // Fetch service details from Supabase
+      const { data: serviceData, error } = await supabase
+        .from('services')
+        .select('id, title, price')
+        .eq('id', serviceId)
+        .single();
+
+      if (error || !serviceData) {
+        toast.error('Layanan tidak ditemukan');
+        return;
+      }
+
+      // Check if service already in cart
+      const existingItem = await db.query.cartItems.findFirst({
+        where: and(
+          eq(cartItemsSchema.user_id, user.id),
+          eq(cartItemsSchema.service_id, serviceId)
+        )
+      });
+
+      if (existingItem) {
+        toast.info("Layanan sudah ada di keranjang");
+        return;
+      }
+
+      await db.insert(cartItemsSchema).values({
+        user_id: user.id,
+        service_id: serviceId,
+        item_type: 'service',
+        quantity: 1,
+      });
+
+      await fetchCart();
+      toast.success("Layanan ditambahkan ke keranjang");
+    } catch (error) {
+      console.error("Error adding service to cart:", error);
+      toast.error("Gagal menambahkan layanan ke keranjang");
+    }
+  };
+
   const removeFromCart = async (cartItemId: string) => {
     try {
       await db.delete(cartItemsSchema)
@@ -216,7 +308,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const cartTotal = cartItems.reduce(
-    (total, item) => total + item.product.price * item.quantity,
+    (total, item) => {
+      if (item.item_type === 'service' && item.service) {
+        return total + item.service.price * item.quantity;
+      }
+      if (item.product) {
+        return total + item.product.price * item.quantity;
+      }
+      return total;
+    },
     0
   );
 
@@ -227,6 +327,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       value={{
         cartItems,
         addToCart,
+        addServiceToCart,
         removeFromCart,
         updateQuantity,
         clearCart,

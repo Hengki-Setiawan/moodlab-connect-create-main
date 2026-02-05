@@ -13,7 +13,7 @@ import { useTheme } from "next-themes";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { db } from "@/lib/turso";
-import { products, orders as ordersSchema, orderItems as orderItemsSchema } from "@/db/schema";
+import { products, orders as ordersSchema, orderItems as orderItemsSchema, refundRequests } from "@/db/schema";
 import { inArray, eq, desc, and } from "drizzle-orm";
 
 interface Profile {
@@ -261,53 +261,42 @@ const Profile = () => {
     }
   };
 
-  const openComplaintForm = (productId: string) => {
-    setComplainProductId(productId);
-    setComplainReason('');
-    setComplainEmail(profile.email || '');
-    setComplainPhone(profile.phone || '');
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
+
+  const handleOpenRefundDialog = (order: Order) => {
+    setSelectedOrderForRefund(order);
+    setRefundReason("");
+    setIsRefundDialogOpen(true);
   };
 
-  const submitComplaint = async (product: { id: string; name: string }) => {
+  const submitRefundRequest = async () => {
+    if (!selectedOrderForRefund) return;
+    setIsSubmittingRefund(true);
     try {
-      setComplainSubmitting(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Silakan login terlebih dahulu');
-        navigate('/auth');
+        toast.error("Silakan login kembali");
         return;
       }
-      // Simpan komplain ke tabel refund_requests jika tersedia
-      const insertPayload = {
+
+      await db.insert(refundRequests).values({
+        order_id: parseInt(selectedOrderForRefund.id),
         user_id: user.id,
-        product_id: product.id,
-        reason: complainReason,
-        contact_email: complainEmail,
-        contact_phone: complainPhone,
-        status: 'pending'
-      } as any;
-      const { error } = await supabase.from('refund_requests').insert(insertPayload);
-      if (error) {
-        console.warn('Gagal menyimpan ke refund_requests, lanjutkan kirim email saja:', error);
-      }
-      // Kirim email via mailto ke tim Moodlab
-      const subject = encodeURIComponent(`Pengajuan Pengembalian - ${product.name}`);
-      const body = encodeURIComponent(
-        `Nama: ${profile.full_name}\n` +
-        `Email: ${complainEmail}\n` +
-        `Nomor: ${complainPhone}\n` +
-        `Produk: ${product.name}\n` +
-        `Alasan Komplain/Pengembalian:\n${complainReason}\n\n` +
-        `Tanggal: ${new Date().toLocaleString('id-ID')}`
-      );
-      window.location.href = `mailto:support@moodlab.id?subject=${subject}&body=${body}`;
-      toast.success('Komplain dikirim. Kami akan menghubungi Anda via email.');
-      setComplainProductId(null);
-    } catch (err) {
-      console.error('Error submitting complaint:', err);
-      toast.error('Gagal mengirim komplain');
+        reason: refundReason,
+        status: 'pending',
+        item_type: 'product' // Default to product for now, or infer from items
+      });
+
+      toast.success("Permintaan refund berhasil dikirim");
+      setIsRefundDialogOpen(false);
+    } catch (error) {
+      console.error("Error submitting refund:", error);
+      toast.error("Gagal mengirim permintaan refund");
     } finally {
-      setComplainSubmitting(false);
+      setIsSubmittingRefund(false);
     }
   };
 
@@ -730,6 +719,15 @@ const Profile = () => {
                                 Batalkan
                               </Button>
                             )}
+                            {(order.status === 'paid' || order.status === 'completed') && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenRefundDialog(order)}
+                              >
+                                Ajukan Refund
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -737,6 +735,33 @@ const Profile = () => {
                   ))
                 )}
               </motion.div>
+
+              <Dialog open={isRefundDialogOpen} onOpenChange={setIsRefundDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Ajukan Refund Pesanan #{selectedOrderForRefund?.id}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Alasan Refund</Label>
+                      <Input
+                        placeholder="Jelaskan alasan pengajuan refund..."
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Tim kami akan meninjau permintaan Anda dalam waktu 1x24 jam.
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsRefundDialogOpen(false)}>Batal</Button>
+                    <Button onClick={submitRefundRequest} disabled={isSubmittingRefund}>
+                      {isSubmittingRefund ? "Mengirim..." : "Kirim Pengajuan"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="products">

@@ -12,8 +12,12 @@ const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, isLoading } = useCart();
 
   const hasDigitalUnavailable = cartItems.some((item) => {
-    const type = (item.product as any).type;
-    const fileUrl = (item.product as any).file_url;
+    if (item.item_type === 'service') return false;
+    const product = item.product;
+    if (!product) return false;
+
+    const type = (product as any).type;
+    const fileUrl = (product as any).file_url;
     const isDigital = type === 'ebook' || type === 'template';
     return isDigital && (!fileUrl || String(fileUrl).trim() === '');
   });
@@ -77,62 +81,82 @@ const Cart = () => {
             </Card>
           ) : (
             <div className="space-y-6">
-              {cartItems.map((item) => (
-                <Card key={item.id}>
-                  <CardContent className="p-6">
-                    <div className="flex gap-4">
-                      {item.product.image_url ? (
-                        <img
-                          src={item.product.image_url}
-                          alt={item.product.name}
-                          className="w-24 h-24 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-24 h-24 bg-gradient-primary rounded-lg" />
-                      )}
-                      
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2">
-                          {item.product.name}
-                        </h3>
-                        <p className="text-2xl font-bold text-primary mb-4">
-                          {formatPrice(item.product.price)}
-                        </p>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
+              {cartItems.map((item) => {
+                const isService = item.item_type === 'service';
+                const name = isService ? item.service?.title : item.product?.name;
+                const price = isService ? item.service?.price : item.product?.price;
+                const image = isService ? item.service?.image_url : item.product?.image_url;
+
+                if (!name || price === undefined) return null; // Skip invalid items
+
+                return (
+                  <Card key={item.id}>
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={name}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-24 h-24 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-xs text-center p-2">
+                            {isService ? 'Layanan' : 'Produk'}
+                          </div>
+                        )}
+
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              {isService && (
+                                <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded mb-1">
+                                  Layanan
+                                </span>
+                              )}
+                              <h3 className="text-xl font-semibold mb-2">
+                                {name}
+                              </h3>
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-primary mb-4">
+                            {formatPrice(price)}
+                          </p>
+
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-12 text-center font-semibold">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+
                             <Button
-                              variant="outline"
+                              variant="destructive"
                               size="icon"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => removeFromCart(item.id)}
                             >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="w-12 text-center font-semibold">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            >
-                              <Plus className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                          
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => removeFromCart(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
 
               <Card>
                 <CardHeader>
@@ -155,8 +179,8 @@ const Cart = () => {
                         Ada produk digital tanpa file di Storage. Checkout dinonaktifkan.
                       </div>
                     )}
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       size="lg"
                       onClick={handleCheckout}
                       disabled={hasDigitalUnavailable}
@@ -169,8 +193,8 @@ const Cart = () => {
             </div>
           )}
         </div>
-       </section>
-       <Footer />
+      </section>
+      <Footer />
     </div>
   );
 };

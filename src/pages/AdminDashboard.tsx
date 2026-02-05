@@ -12,6 +12,8 @@ import AdminProductManager from "@/components/admin/AdminProductManager";
 import ConsultationsManagement from "@/components/admin/ConsultationsManagement";
 import AnalyticsView from "@/components/admin/AnalyticsView";
 import PagesManagement from "@/components/admin/PagesManagement";
+import ServiceOrdersManagement from "@/components/admin/ServiceOrdersManagement";
+import RefundsManagement from "@/components/admin/RefundsManagement";
 import AITest from "@/pages/AITest";
 import { uploadImage } from "@/integrations/supabase/storage";
 import { db } from "@/lib/turso";
@@ -361,6 +363,10 @@ const AdminDashboard = () => {
         return <PagesManagement />;
       case 'services':
         return <ServicesManagement />;
+      case 'service-orders':
+        return <ServiceOrdersManagement />;
+      case 'refunds':
+        return <RefundsManagement />;
       case 'ai-playground':
         return (
           <div className="bg-white rounded-lg shadow p-6">

@@ -142,8 +142,12 @@ const Checkout = () => {
     try {
       // Validasi: blokir jika ada produk digital tanpa file_url
       const hasDigitalUnavailable = cartItems.some((item) => {
-        const type = (item.product as any).type;
-        const fileUrl = (item.product as any).file_url;
+        if (item.item_type === 'service') return false;
+        const product = item.product;
+        if (!product) return false;
+
+        const type = (product as any).type;
+        const fileUrl = (product as any).file_url;
         const isDigital = type === 'ebook' || type === 'template';
         return isDigital && (!fileUrl || String(fileUrl).trim() === '');
       });
@@ -174,12 +178,27 @@ const Checkout = () => {
       if (!orderData) throw new Error("Failed to create order");
 
       // Create order items in Turso
-      const orderItemsData = cartItems.map((item) => ({
-        order_id: orderData.id,
-        product_id: parseInt(item.product_id), // Ensure integer
-        quantity: item.quantity,
-        price: item.product.price,
-      }));
+      const orderItemsData = cartItems.map((item) => {
+        if (item.item_type === 'service' && item.service) {
+          return {
+            order_id: orderData.id,
+            product_id: null,
+            service_id: item.service_id,
+            item_type: 'service',
+            quantity: item.quantity,
+            price: item.service.price,
+          };
+        }
+        // Product
+        return {
+          order_id: orderData.id,
+          product_id: parseInt(item.product_id), // Ensure integer
+          service_id: null,
+          item_type: 'product',
+          quantity: item.quantity,
+          price: item.product.price,
+        };
+      });
 
       await db.insert(orderItemsSchema).values(orderItemsData);
 
@@ -187,18 +206,25 @@ const Checkout = () => {
       const { data, error } = await supabase.functions.invoke("process-payment", {
         body: {
           orderId: orderData.id.toString(),
-          amount: finalTotal, // Use discounted amount
+          amount: finalTotal,
           customerDetails: {
             first_name: customerDetails.name,
             email: customerDetails.email,
             phone: customerDetails.phone,
           },
-          items: cartItems.map((item) => ({
-            id: item.product_id,
-            name: item.product.name,
-            price: item.product.price,
-            quantity: item.quantity,
-          })),
+          items: cartItems.map((item) => {
+            const isService = item.item_type === 'service';
+            const name = isService ? item.service?.title : item.product?.name;
+            const price = isService ? item.service?.price : item.product?.price;
+            const id = isService ? item.service?.id : item.product?.id;
+
+            return {
+              id: id,
+              name: name,
+              price: price,
+              quantity: item.quantity,
+            };
+          }),
           voucher_code: appliedVoucher,
           discount_amount: discount
         },
@@ -223,10 +249,11 @@ const Checkout = () => {
                 orderId: orderData.id,
                 total: finalTotal,
                 items: cartItems.map(item => ({
-                  id: item.product_id,
-                  name: item.product.name,
-                  price: item.product.price,
-                  quantity: item.quantity
+                  id: item.item_type === 'service' ? item.service_id : item.product_id,
+                  name: item.item_type === 'service' ? item.service?.title : item.product?.name,
+                  price: item.item_type === 'service' ? item.service?.price : item.product?.price,
+                  quantity: item.quantity,
+                  type: item.item_type
                 }))
               }
             });
@@ -357,19 +384,27 @@ const Checkout = () => {
                   <CardTitle>Ringkasan Pesanan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex justify-between">
-                      <div>
-                        <p className="font-medium">{item.product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.quantity}x {formatPrice(item.product.price)}
+                  {cartItems.map((item) => {
+                    const isService = item.item_type === 'service';
+                    const name = isService ? item.service?.title : item.product?.name;
+                    const price = isService ? item.service?.price : item.product?.price;
+
+                    if (!name || price === undefined) return null;
+
+                    return (
+                      <div key={item.id} className="flex justify-between">
+                        <div>
+                          <p className="font-medium bg-red-">{name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.quantity}x {formatPrice(price)}
+                          </p>
+                        </div>
+                        <p className="font-semibold">
+                          {formatPrice(price * item.quantity)}
                         </p>
                       </div>
-                      <p className="font-semibold">
-                        {formatPrice(item.product.price * item.quantity)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Voucher Input */}
                   <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-xl space-y-3">

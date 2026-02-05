@@ -5,12 +5,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, CheckCircle2, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageSquare, ExternalLink, ShoppingCart } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useCart } from "@/contexts/CartContext";
 
 interface Service {
     id: string;
@@ -26,10 +27,12 @@ interface Service {
 const ServiceDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { addServiceToCart } = useCart();
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -176,10 +179,28 @@ const ServiceDetail = () => {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                            {/* Add to Cart button for priced services */}
+                            {service.price && service.price > 0 && (
+                                <Button
+                                    size="lg"
+                                    className="h-14 px-8 text-lg rounded-full flex-1 bg-green-600 hover:bg-green-700 hover:shadow-lg transition-all"
+                                    onClick={async () => {
+                                        setIsAddingToCart(true);
+                                        await addServiceToCart(service.id);
+                                        setIsAddingToCart(false);
+                                    }}
+                                    disabled={isAddingToCart}
+                                >
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    {isAddingToCart ? 'Menambahkan...' : 'Tambah ke Keranjang'}
+                                </Button>
+                            )}
+
+                            {/* Consultation dialog for services without price or free consultation */}
                             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button size="lg" className="h-14 px-8 text-lg rounded-full flex-1 gradient-primary hover:shadow-lg shadow-blue-500/25 transition-all">
-                                        Konsultasi Sekarang
+                                    <Button size="lg" variant={service.price && service.price > 0 ? "outline" : "default"} className={`h-14 px-8 text-lg rounded-full flex-1 ${!service.price || service.price === 0 ? 'gradient-primary hover:shadow-lg shadow-blue-500/25' : ''} transition-all`}>
+                                        Konsultasi Gratis
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[500px]">

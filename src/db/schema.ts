@@ -66,6 +66,8 @@ export const orderItems = sqliteTable("order_items", {
     id: integer("id").primaryKey({ autoIncrement: true }),
     order_id: integer("order_id").references(() => orders.id),
     product_id: integer("product_id").references(() => products.id),
+    service_id: text("service_id"), // Supabase service UUID
+    item_type: text("item_type").default("product"), // 'product' | 'service'
     quantity: integer("quantity").notNull(),
     price: integer("price").notNull(),
     created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
@@ -84,6 +86,8 @@ export const cartItems = sqliteTable("cart_items", {
     id: integer("id").primaryKey({ autoIncrement: true }),
     user_id: text("user_id").notNull(),
     product_id: integer("product_id").references(() => products.id),
+    service_id: text("service_id"), // Supabase service UUID
+    item_type: text("item_type").default("product"), // 'product' | 'service'
     quantity: integer("quantity").notNull().default(1),
     created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
@@ -125,3 +129,39 @@ export const bundles = sqliteTable("bundles", {
 
 export type Bundle = typeof bundles.$inferSelect;
 export type NewBundle = typeof bundles.$inferInsert;
+
+// Refund Requests for Order Cancellation
+export const refundRequests = sqliteTable("refund_requests", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    order_id: integer("order_id").references(() => orders.id),
+    user_id: text("user_id").notNull(),
+    item_type: text("item_type").default("product"), // 'product' | 'service'
+    reason: text("reason").notNull(),
+    status: text("status").default("pending"), // 'pending' | 'approved' | 'rejected'
+    admin_notes: text("admin_notes"),
+    refund_amount: integer("refund_amount"),
+    created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+    updated_at: integer("updated_at", { mode: "timestamp" }),
+});
+
+export type RefundRequest = typeof refundRequests.$inferSelect;
+export type NewRefundRequest = typeof refundRequests.$inferInsert;
+
+// Service Orders (after checkout for services)
+export const serviceOrders = sqliteTable("service_orders", {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    order_id: integer("order_id").references(() => orders.id),
+    service_id: text("service_id").notNull(), // Supabase service UUID
+    user_id: text("user_id").notNull(),
+    contact_name: text("contact_name").notNull(),
+    contact_email: text("contact_email").notNull(),
+    contact_phone: text("contact_phone").notNull(),
+    briefing: text("briefing"),
+    service_name: text("service_name"),
+    service_price: integer("service_price"),
+    status: text("status").default("pending_contact"), // 'pending_contact' | 'contacted' | 'in_progress' | 'completed'
+    created_at: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export type ServiceOrder = typeof serviceOrders.$inferSelect;
+export type NewServiceOrder = typeof serviceOrders.$inferInsert;

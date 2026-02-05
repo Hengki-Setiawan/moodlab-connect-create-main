@@ -15,6 +15,13 @@
       "when": 1770303426379,
       "tag": "0001_deep_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770311687625,
+      "tag": "0002_blushing_madripoor",
+      "breakpoints": true
     }
   ]
 }
