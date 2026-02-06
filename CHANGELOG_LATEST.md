@@ -84,5 +84,7 @@ Fokus utama pada hari ini adalah integrasi kecerdasan buatan, pembaruan branding
 - **Home Page:**
   - Memperbaiki teks headline yang salah (masih menampilkan teks lama) di database.
   - Memperbaiki animasi gradient pada teks headline yang tidak berjalan karena konfigurasi tailwind yang kurang lengkap.
+  - Memperbarui subtitle halaman utama menjadi lebih relevan: "Moodlab menghadirkan sinergi layanan kreatif dan produk digital untuk membantu bisnis Anda, relevan, dan memenangkan persaingan di era digital."
+
 
 
