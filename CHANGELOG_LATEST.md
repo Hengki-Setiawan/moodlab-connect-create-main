@@ -30,7 +30,7 @@ Memberikan rasa aman kepada pelanggan dengan fitur pengajuan refund yang terstru
   - Admin dapat melihat alasan, menyetujui, atau menolak pengajuan refund.
 
 ## 4. Pembaruan Admin Dashboard
-Dashboard admin diperluas untuk mengelola fitur-fitur baru.
+Dashboard admin diperluas untuk mengelola fitur-fitur baru.a
 - **Tab Service Orders:**
   - Menampilkan daftar pesanan layanan yang masuk.
   - Melihat detail briefing yang dikirim klien.
@@ -79,4 +79,10 @@ Fokus utama pada hari ini adalah integrasi kecerdasan buatan, pembaruan branding
 - **Tagline:** Diperbarui menjadi **"Temukan Mood untuk Upgrade Bisnis Kamu"**.
 - **Visual:** Background section CTA diubah dari hitam pekat menjadi gradasi terang untuk tampilan yang lebih fresh.
 - **Konsistensi:** Menghapus istilah "Digital Agency" dan menggantinya dengan "Solusi Marketing Instan" di seluruh halaman.
+
+## 5. Perbaikan Bug (Fixes)
+- **Home Page:**
+  - Memperbaiki teks headline yang salah (masih menampilkan teks lama) di database.
+  - Memperbaiki animasi gradient pada teks headline yang tidak berjalan karena konfigurasi tailwind yang kurang lengkap.
+
 

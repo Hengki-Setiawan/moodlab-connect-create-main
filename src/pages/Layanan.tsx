@@ -207,7 +207,7 @@ const Layanan = () => {
                           ) : (
                             <p className="text-sm text-gray-400 mb-3">Hubungi untuk harga</p>
                           )}
-                          <Button variant="ghost" className="w-full group-hover:bg-indigo-600 group-hover:text-white text-xs font-semibold uppercase tracking-wider">
+                          <Button className="w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors duration-300 text-xs font-bold uppercase tracking-wider shadow-sm">
                             {service.price && service.price > 0 ? 'Pesan Sekarang' : 'Lihat Detail'}
                           </Button>
                         </CardContent>

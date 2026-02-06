@@ -133,14 +133,14 @@ const Home = () => {
             </div>
 
             {content.hero_title ? (
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight text-neutral-900 dark:text-white">
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 animate-gradient-x pb-2">
                 {content.hero_title}
               </h1>
             ) : (
               <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight text-neutral-900 dark:text-white">
-                Temukan <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Mood</span>
+                Temukan <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600">Mood</span>
                 <br />
-                untuk <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Upgrade Bisnis Kamu</span>
+                untuk <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">Upgrade Bisnis Kamu</span>
               </h1>
             )}
 
@@ -157,13 +157,13 @@ const Home = () => {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center pt-8"
             >
-              <Button size="lg" asChild className="h-14 px-8 rounded-full text-lg bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1">
+              <Button size="lg" asChild className="h-14 px-8 rounded-full text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all shadow-lg hover:shadow-indigo-500/25 hover:-translate-y-1">
                 <Link to="/layanan">
                   Lihat Layanan
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="h-14 px-8 rounded-full text-lg border-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all">
+              <Button size="lg" variant="outline" asChild className="h-14 px-8 rounded-full text-lg border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all">
                 <Link to="/produk">Jelajahi Produk</Link>
               </Button>
             </motion.div>
