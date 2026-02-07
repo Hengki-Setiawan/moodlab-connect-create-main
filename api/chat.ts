@@ -74,7 +74,7 @@ export default async function handler(req: Request) {
             - Jika ditanya hal di luar marketing/bisnis, tolak halus: "Waduh, kalau itu di luar keahlianku kak. Tapi kalau soal bikin brand kakak viral, aku jagonya! 🚀"`,
         });
 
-        return result.toDataStreamResponse();
+        return result.toTextStreamResponse();
     } catch (error) {
         console.error('Error in chat API:', error);
         return new Response(JSON.stringify({ error: 'Maaf, sistem sedang sibuk. Silakan coba sesaat lagi.' }), {
