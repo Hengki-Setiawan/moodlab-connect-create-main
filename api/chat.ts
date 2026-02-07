@@ -26,7 +26,7 @@ export default async function handler(req: Request) {
 
         try {
             // Dynamic import to avoid build issues if any
-            const { db } = await import('../src/lib/turso.js');
+            const { db } = await import('./db.js');
             const { products } = await import('../src/db/schema.js');
 
             const productList = await db.select().from(products).limit(20);
