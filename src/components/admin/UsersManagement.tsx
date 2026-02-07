@@ -206,7 +206,7 @@ const UsersManagement = () => {
             .insert({
               user_id: selectedUser.id,
               role: role,
-              email: selectedUser.email // Need email for user_roles
+              // email column does not exist in user_roles table
             } as any);
 
           if (insertError) throw new Error(`Gagal tambah role: ${insertError.message}`);
