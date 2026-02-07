@@ -68,7 +68,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 1000, // Increase limit to 1MB to avoid warnings
+      chunkSizeWarningLimit: 3000, // Increase limit to 3MB to avoid warnings
     },
   };
 });
