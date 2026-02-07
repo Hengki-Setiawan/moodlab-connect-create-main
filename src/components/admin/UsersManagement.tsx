@@ -155,10 +155,22 @@ const UsersManagement = () => {
       };
 
       console.log("Updating profile:", profilePayload);
-      const { error: profileError } = await supabase.from("profiles").upsert(profilePayload as any);
+
+      // Use UPDATE instead of UPSERT to avoid RLS "new row" violation on insert
+      // Admins have UPDATE permission but might not have INSERT permission
+      // @ts-ignore
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update(profilePayload as any)
+        .eq('id', selectedUser.id);
+
       if (profileError) {
         console.error("Profile update failed:", profileError);
-        throw new Error(`Gagal update profil: ${profileError.message}`);
+        // Don't block role update, just warn
+        toast.error(`Gagal update profil: ${profileError.message} (Role akan tetap diupdate)`);
+      } else {
+        // Only show this detailed success if we're not also updating role (which shows its own success)
+        console.log("Profile updated successfully");
       }
 
       // Update role
