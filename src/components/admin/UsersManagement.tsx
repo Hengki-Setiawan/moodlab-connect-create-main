@@ -153,29 +153,60 @@ const UsersManagement = () => {
         full_name: fullName,
         phone: phone,
       };
-      const { error: profileError } = await supabase.from("profiles").upsert(profilePayload);
-      if (profileError) throw profileError;
+
+      console.log("Updating profile:", profilePayload);
+      const { error: profileError } = await supabase.from("profiles").upsert(profilePayload as any);
+      if (profileError) {
+        console.error("Profile update failed:", profileError);
+        throw new Error(`Gagal update profil: ${profileError.message}`);
+      }
 
       // Update role
       const role = userData.role ?? (userData as any).role;
-      if (role) {
-        // Delete existing role first (if one-to-one) or just insert/update
-        // Using RLS, admin should be able to do this
-        await supabase.from("user_roles").delete().eq("user_id", selectedUser?.id);
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: selectedUser?.id,
-          role: role,
-          email: selectedUser?.email // Need email for user_roles
-        } as any);
-        if (roleError) throw roleError;
+      if (role && selectedUser?.id) {
+        console.log("Updating role for:", selectedUser.id, "to", role);
+
+        // Check if role exists
+        const { data: existingRole, error: checkError } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", selectedUser.id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("Check role failed:", checkError);
+          throw new Error(`Gagal cek role: ${checkError.message}`);
+        }
+
+        if (existingRole) {
+          // Update existing
+          const { error: updateError } = await supabase
+            .from("user_roles")
+            .update({ role: role } as any)
+            .eq("user_id", selectedUser.id);
+
+          if (updateError) throw new Error(`Gagal update role: ${updateError.message}`);
+        } else {
+          // Insert new
+          // @ts-ignore
+          const { error: insertError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: selectedUser.id,
+              role: role,
+              email: selectedUser.email // Need email for user_roles
+            } as any);
+
+          if (insertError) throw new Error(`Gagal tambah role: ${insertError.message}`);
+        }
       }
 
       toast.success("Data pengguna berhasil disimpan");
       closeModal();
       await loadUsers();
-    } catch (err) {
+    } catch (err: any) {
       console.error("saveUser error:", err);
-      toast.error("Gagal menyimpan data pengguna");
+      toast.error(err.message || "Gagal menyimpan data pengguna");
     } finally {
       setSavingId(null);
     }
