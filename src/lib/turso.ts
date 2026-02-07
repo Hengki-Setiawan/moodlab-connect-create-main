@@ -1,6 +1,7 @@
+/// <reference types="vite/client" />
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "@/db/schema";
+import * as schema from "../db/schema";
 
 const url = import.meta.env?.VITE_TURSO_DATABASE_URL || process.env.VITE_TURSO_DATABASE_URL;
 const authToken = import.meta.env?.VITE_TURSO_AUTH_TOKEN || process.env.VITE_TURSO_AUTH_TOKEN;
