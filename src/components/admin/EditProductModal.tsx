@@ -62,7 +62,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     // New e-commerce fields
     preview_images: [] as string[],
     license_type: 'personal',
-    license_prices: { personal: 0, commercial: 0, extended: 0 },
+    license_prices: { personal: '', commercial: '', extended: '' } as Record<string, string | number>,
     mood_category: 'general',
   });
 
@@ -89,7 +89,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         // New e-commerce fields
         preview_images: product.preview_images || [],
         license_type: product.license_type || 'personal',
-        license_prices: product.license_prices || { personal: 0, commercial: 0, extended: 0 },
+        license_prices: {
+          personal: product.license_prices?.personal || '',
+          commercial: product.license_prices?.commercial || '',
+          extended: product.license_prices?.extended || ''
+        },
         mood_category: product.mood_category || 'general',
       });
       // Set preview dari URL yang sudah ada
@@ -116,7 +120,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         // New e-commerce fields
         preview_images: [],
         license_type: 'personal',
-        license_prices: { personal: 0, commercial: 0, extended: 0 },
+        license_prices: { personal: '', commercial: '', extended: '' },
         mood_category: 'general',
       });
       setImagePreview(null);
@@ -225,7 +229,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       // New e-commerce fields
       preview_images: formData.preview_images,
       license_type: formData.license_type,
-      license_prices: formData.license_prices,
+      license_prices: {
+        personal: Number(formData.license_prices.personal) || 0,
+        commercial: Number(formData.license_prices.commercial) || 0,
+        extended: Number(formData.license_prices.extended) || 0
+      },
       mood_category: formData.mood_category,
     };
 
@@ -444,8 +452,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                     value={formData.license_prices.personal}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      license_prices: { ...prev.license_prices, personal: Number(e.target.value) || 0 }
+                      license_prices: { ...prev.license_prices, personal: e.target.value }
                     }))}
+                    min="0"
                     placeholder="0"
                   />
                 </div>
@@ -456,8 +465,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                     value={formData.license_prices.commercial}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      license_prices: { ...prev.license_prices, commercial: Number(e.target.value) || 0 }
+                      license_prices: { ...prev.license_prices, commercial: e.target.value }
                     }))}
+                    min="0"
                     placeholder="0"
                   />
                 </div>
@@ -468,8 +478,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                     value={formData.license_prices.extended}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      license_prices: { ...prev.license_prices, extended: Number(e.target.value) || 0 }
+                      license_prices: { ...prev.license_prices, extended: e.target.value }
                     }))}
+                    min="0"
                     placeholder="0"
                   />
                 </div>

@@ -10,8 +10,9 @@ interface RoleRow {
   id: string;
   user_id: string;
   role: 'admin' | 'moderator' | 'user';
-  email: string | null;
   created_at?: string;
+  // Email is fetched from profiles table, not user_roles
+  email?: string | null;
 }
 
 export default function AddAdmin() {
@@ -26,12 +27,25 @@ export default function AddAdmin() {
 
   const fetchRoles = async () => {
     try {
+      // user_roles table doesn't have email column, fetch roles first
       const { data, error } = await supabase
         .from('user_roles')
-        .select('id, user_id, role, email, created_at')
+        .select('id, user_id, role, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setRoles((data || []) as RoleRow[]);
+
+      // Enrich roles with email from profiles table
+      const rolesWithEmail = await Promise.all(
+        (data || []).map(async (role: any) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', role.user_id)
+            .single();
+          return { ...role, email: profile?.email ?? null };
+        })
+      );
+      setRoles(rolesWithEmail as RoleRow[]);
     } catch (err) {
       console.error('Gagal memuat daftar peran:', err);
     }
@@ -79,10 +93,10 @@ export default function AddAdmin() {
         return;
       }
 
-      // Tambahkan role baru
+      // Tambahkan role baru (tanpa email karena kolom tidak ada di user_roles)
       const { error: insertError } = await supabase
         .from('user_roles')
-        .insert([{ user_id: targetUser.id, role, email: targetUser.email }] as any);
+        .insert([{ user_id: targetUser.id, role }] as any);
 
       if (insertError) {
         console.error('Error menambahkan role:', insertError);
