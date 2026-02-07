@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { MotionSection } from "@/components/MotionSection";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
-import { motion } from "framer-motion";
 
 import { Helmet } from "react-helmet-async";
 
@@ -119,10 +118,7 @@ const Home = () => {
         <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-black [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#63e_100%)] opacity-50"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
             className="text-center space-y-8"
           >
             <div className="inline-flex items-center rounded-full border border-neutral-200 bg-white/50 px-3 py-1 text-sm leading-6 text-neutral-600 backdrop-blur-xl ring-1 ring-white/10 dark:border-neutral-800 dark:bg-black/50 dark:text-neutral-400">
@@ -151,10 +147,7 @@ const Home = () => {
               )}
             </p>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+            <div
               className="flex flex-col sm:flex-row gap-4 justify-center pt-8"
             >
               <Button size="lg" asChild className="h-14 px-8 rounded-full text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all shadow-lg hover:shadow-indigo-500/25 hover:-translate-y-1">
@@ -166,8 +159,8 @@ const Home = () => {
               <Button size="lg" variant="outline" asChild className="h-14 px-8 rounded-full text-lg border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all">
                 <Link to="/produk">Jelajahi Produk</Link>
               </Button>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
