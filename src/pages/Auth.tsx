@@ -237,7 +237,7 @@ const Auth = () => {
         }
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -251,11 +251,17 @@ const Auth = () => {
 
       if (error) throw error;
 
-      setSignupEmailState(email);
-      setVerifyOpen(true);
-      toast.success("Akun berhasil dibuat!", {
-        description: "Email harus dikonfirmasi terlebih dahulu sebelum bisa login.",
-      });
+      // Jika sesi langsung terbentuk (verifikasi email dimatikan), langsung login
+      if (data.session) {
+        toast.success("Akun berhasil dibuat & masuk otomatis!");
+        navigate("/profile");
+      } else {
+        setSignupEmailState(email);
+        setVerifyOpen(true);
+        toast.success("Akun berhasil dibuat!", {
+          description: "Email harus dikonfirmasi terlebih dahulu sebelum bisa login.",
+        });
+      }
     } catch (error) {
       console.error("Signup error:", error);
       const rawMsg = typeof (error as any)?.message === 'string' ? (error as any).message : '';
